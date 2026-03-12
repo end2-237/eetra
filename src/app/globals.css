@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,500;12..96,700;12..96,800&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@400;500&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Fira+Code:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -52,7 +52,7 @@ html, body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
-body{
+body {
   overflow-x: hidden;
 }
 
@@ -66,6 +66,10 @@ body{
 /* ─── A4 doc blocks ─── */
 [contenteditable]:focus { outline: 2px solid rgba(27,79,216,0.15); outline-offset: 2px; border-radius: 3px; }
 
+/* Page delete button — hidden unless parent is hovered */
+.page-delete-btn { opacity: 0; }
+#pages-wrapper > div:hover .page-delete-btn { opacity: 1; }
+
 /* ─── Animations ─── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }
@@ -78,8 +82,13 @@ body{
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .animate-fade-up  { animation: fadeUp .7s cubic-bezier(.23,1,.32,1) both; }
+.animate-slide-in { animation: slideIn .25s cubic-bezier(.23,1,.32,1) both; }
 .delay-100  { animation-delay: .1s; }
 .delay-200  { animation-delay: .2s; }
 .delay-300  { animation-delay: .3s; }

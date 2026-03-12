@@ -24,11 +24,19 @@ export type BlockType =
   | 'clause'
   | 'sign'
   | 'divider'
+  | 'image'
+  | 'checklist'
+
+export interface TableData {
+  headers: string[]
+  rows: string[][]
+}
 
 export interface DocBlock {
   id: string
   type: BlockType
   content?: string
+  tableData?: TableData
 }
 
 export interface DocPage {
@@ -53,6 +61,15 @@ export interface Comment {
   text: string
   author: string
   createdAt: Date
+  resolved: boolean
+  replies: CommentReply[]
+}
+
+export interface CommentReply {
+  id: string
+  text: string
+  author: string
+  createdAt: Date
 }
 
 export interface Template {
@@ -61,7 +78,95 @@ export interface Template {
   name: string
   desc: string
   tags: string[]
-  blocks: Array<{ type: BlockType; content?: string }>
+  blocks: Array<{ type: BlockType; content?: string; tableData?: TableData }>
 }
 
 export type TabName = 'editor' | 'templates' | 'analytics' | 'comments'
+
+// Document Style Profile
+export interface DocumentStyle {
+  fontTitle: string
+  fontBody: string
+  fontMono: string
+  accentColor: string
+  preset: 'classic' | 'modern' | 'editorial' | 'minimal'
+}
+
+export const FONT_TITLE_OPTIONS = [
+  { value: 'Bricolage Grotesque', label: 'Bricolage Grotesque', preview: 'Aa' },
+  { value: 'Playfair Display', label: 'Playfair Display', preview: 'Aa' },
+  { value: 'DM Serif Display', label: 'DM Serif Display', preview: 'Aa' },
+  { value: 'Syne', label: 'Syne', preview: 'Aa' },
+  { value: 'Space Grotesk', label: 'Space Grotesk', preview: 'Aa' },
+  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', preview: 'Aa' },
+]
+
+export const FONT_BODY_OPTIONS = [
+  { value: 'Bricolage Grotesque', label: 'Bricolage Grotesque', preview: 'Lorem ipsum' },
+  { value: 'Libre Caslon Text', label: 'Libre Caslon', preview: 'Lorem ipsum' },
+  { value: 'Source Serif 4', label: 'Source Serif 4', preview: 'Lorem ipsum' },
+  { value: 'DM Sans', label: 'DM Sans', preview: 'Lorem ipsum' },
+  { value: 'Lato', label: 'Lato', preview: 'Lorem ipsum' },
+]
+
+export const FONT_MONO_OPTIONS = [
+  { value: 'DM Mono', label: 'DM Mono' },
+  { value: 'Fira Code', label: 'Fira Code' },
+  { value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
+  { value: 'JetBrains Mono', label: 'JetBrains Mono' },
+]
+
+export const STYLE_PRESETS: Record<string, DocumentStyle> = {
+  classic: {
+    fontTitle: 'Bricolage Grotesque',
+    fontBody: 'Libre Caslon Text',
+    fontMono: 'DM Mono',
+    accentColor: '#1B4FD8',
+    preset: 'classic',
+  },
+  modern: {
+    fontTitle: 'Space Grotesk',
+    fontBody: 'DM Sans',
+    fontMono: 'Fira Code',
+    accentColor: '#0F172A',
+    preset: 'modern',
+  },
+  editorial: {
+    fontTitle: 'Playfair Display',
+    fontBody: 'Source Serif 4',
+    fontMono: 'IBM Plex Mono',
+    accentColor: '#4A1D96',
+    preset: 'editorial',
+  },
+  minimal: {
+    fontTitle: 'Syne',
+    fontBody: 'DM Sans',
+    fontMono: 'JetBrains Mono',
+    accentColor: '#374151',
+    preset: 'minimal',
+  },
+}
+
+// Document History
+export interface HistoryEntry {
+  id: string
+  docId: string
+  title: string
+  entityName: string
+  type: string
+  pageCount: number
+  blockCount: number
+  exportedAt: Date
+  signature: string
+  qrData: string
+}
+
+// Team
+export interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'editor' | 'viewer'
+  addedAt: Date
+  avatar: string
+}

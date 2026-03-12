@@ -1,22 +1,28 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
+import { useHistory } from '@/contexts/HistoryContext'
 import { CoverPage } from './document/CoverPage'
 import { ContentPage } from './document/ContentPage'
-import { formatDate } from '@/lib/utils'
+import { formatDate, generateSignature, buildQrUrl } from '@/lib/utils'
 
 export function Canvas() {
-  const { zoom, pages, docId, addPage } = useDocument()
+  const { zoom, pages, docId, addPage, title, docStyle } = useDocument()
   const { profile } = useProfile()
+  const { addEntry } = useHistory()
   const wrapperRef = useRef<HTMLDivElement>(null)
+
+  // Auto-pagination: called when a page overflows
+  const handlePageOverflow = useCallback(() => {
+    addPage()
+  }, [addPage])
 
   // Listen for PDF export event
   useEffect(() => {
     const handler = async () => {
       if (typeof window === 'undefined') return
-      // @ts-ignore — html2pdf loaded via CDN fallback
       const html2pdf = (await import('html2pdf.js')).default
       const wrapper = wrapperRef.current
       if (!wrapper) return
@@ -30,10 +36,25 @@ export function Canvas() {
         jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
       }).from(wrapper).save()
       wrapper.style.transform = orig
+
+      // Log to history
+      const sig = generateSignature(docId, profile.name || 'EETRA', Date.now())
+      const allBlocks = pages.flatMap(p => p.blocks)
+      addEntry({
+        id: Math.random().toString(36).slice(2, 10),
+        docId,
+        title: title || 'Sans titre',
+        entityName: profile.name || 'EETRA',
+        type: 'PDF Export',
+        pageCount: pages.length + 1,
+        blockCount: allBlocks.length,
+        signature: sig,
+        qrData: buildQrUrl(docId, sig),
+      })
     }
     window.addEventListener('eetra:export-pdf', handler)
     return () => window.removeEventListener('eetra:export-pdf', handler)
-  }, [profile, docId])
+  }, [profile, docId, pages, title, addEntry])
 
   return (
     <div id="canvas" className="flex-1 overflow-auto flex justify-center"
@@ -61,7 +82,12 @@ export function Canvas() {
           date={formatDate(new Date())}
         />
         {pages.map((page, i) => (
-          <ContentPage key={page.id} page={page} pageNumber={i + 2} />
+          <ContentPage
+            key={page.id}
+            page={page}
+            pageNumber={i + 2}
+            onOverflow={handlePageOverflow}
+          />
         ))}
         {/* Hidden trigger for PagesPanel */}
         <button data-add-page onClick={addPage} style={{ display: 'none' }} />

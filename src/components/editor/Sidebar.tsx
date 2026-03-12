@@ -1,9 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { FileText, Edit3, Grid, BarChart2, MessageSquare, Download, Link2, Home, User } from 'lucide-react'
+import { FileText, Edit3, Grid, BarChart2, MessageSquare, Download, Link2, Home, User, Clock, Users, Palette } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
+import { useHistory } from '@/contexts/HistoryContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { getInitials } from '@/lib/utils'
 
@@ -11,8 +12,9 @@ interface Props { showToast: (msg: string, type?: 'ok' | 'err' | 'default') => v
 
 export function Sidebar({ showToast }: Props) {
   const router = useRouter()
-  const { activeTab, setActiveTab, docId } = useDocument()
+  const { activeTab, setActiveTab, docId, setShowStyleModal } = useDocument()
   const { profile } = useProfile()
+  const { entries } = useHistory()
 
   function copyLink() {
     const link = `${process.env.NEXT_PUBLIC_APP_URL || 'https://eetra.app'}/view/${docId}`
@@ -25,6 +27,8 @@ export function Sidebar({ showToast }: Props) {
     { id: 'analytics', icon: <BarChart2 size={14} />,    label: 'Analytics' },
     { id: 'comments',  icon: <MessageSquare size={14} />, label: 'Commentaires' },
   ] as const
+
+  const btnBase = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-500 transition-all duration-150 border-none cursor-pointer text-left mb-0.5"
 
   return (
     <aside className="w-[236px] min-w-[236px] flex flex-col border-r"
@@ -68,14 +72,14 @@ export function Sidebar({ showToast }: Props) {
       <div className="h-px mx-3 mb-2" style={{ background: 'var(--border)' }} />
 
       {/* Nav */}
-      <nav className="flex-1 px-2 py-1 overflow-y-auto">
+      <nav className="flex-1 px-2 py-1 overflow-y-auto hide-scroll">
         <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2"
           style={{ color: 'var(--text4)' }}>
           Workspace
         </div>
         {navItems.map(item => (
           <button key={item.id} onClick={() => setActiveTab(item.id)}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-500 transition-all duration-150 border-none cursor-pointer text-left mb-0.5"
+            className={btnBase}
             style={activeTab === item.id
               ? { background: 'var(--accentS)', color: 'var(--accent)', fontWeight: 700 }
               : { background: 'transparent', color: 'var(--text3)', fontWeight: 500 }
@@ -94,8 +98,8 @@ export function Sidebar({ showToast }: Props) {
           style={{ color: 'var(--text4)' }}>
           Export
         </div>
-        <button onClick={() => { window.dispatchEvent(new CustomEvent('eetra:export-pdf')) }}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-500 transition-all duration-150 border-none cursor-pointer text-left mb-0.5"
+        <button onClick={() => window.dispatchEvent(new CustomEvent('eetra:export-pdf'))}
+          className={btnBase}
           style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
           onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
           onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
@@ -104,13 +108,56 @@ export function Sidebar({ showToast }: Props) {
           Exporter PDF
         </button>
         <button onClick={copyLink}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] font-500 transition-all duration-150 border-none cursor-pointer text-left"
+          className={btnBase}
           style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
           onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
           onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
         >
           <Link2 size={14} />
           Lien Sécurisé
+        </button>
+
+        <div className="h-px mx-1 my-3" style={{ background: 'var(--border)' }} />
+
+        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2"
+          style={{ color: 'var(--text4)' }}>
+          Outils
+        </div>
+
+        <button onClick={() => setShowStyleModal(true)}
+          className={btnBase}
+          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
+          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
+          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
+        >
+          <Palette size={14} />
+          Style du Document
+        </button>
+
+        <button onClick={() => router.push('/history')}
+          className={btnBase}
+          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
+          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
+          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
+        >
+          <Clock size={14} />
+          Historique
+          {entries.length > 0 && (
+            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{ background: 'var(--accentS2)', color: 'var(--accent)' }}>
+              {entries.length}
+            </span>
+          )}
+        </button>
+
+        <button onClick={() => router.push('/team')}
+          className={btnBase}
+          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
+          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
+          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
+        >
+          <Users size={14} />
+          Équipe
         </button>
       </nav>
 

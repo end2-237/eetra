@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback } from 'react'
-import { DocBlock, DocPage, Comment, TabName } from '@/types'
+import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS } from '@/types'
 import { generateId, generateDocId } from '@/lib/utils'
 
 interface DocumentContextType {
@@ -18,6 +18,8 @@ interface DocumentContextType {
   zoom: number
   modified: boolean
   selectedTemplate: string | null
+  docStyle: DocumentStyle
+  showStyleModal: boolean
 
   setTitle: (v: string) => void
   setSubtitle: (v: string) => void
@@ -28,17 +30,22 @@ interface DocumentContextType {
   setActiveTab: (t: TabName) => void
   setZoom: (z: number) => void
   setSelectedTemplate: (id: string | null) => void
+  setDocStyle: (s: DocumentStyle) => void
+  setShowStyleModal: (v: boolean) => void
 
   addPage: () => void
   removePage: (id: string) => void
   addBlock: (type: DocBlock['type'], content?: string) => void
   removeBlock: (pageId: string, blockId: string) => void
   updateBlock: (pageId: string, blockId: string, content: string) => void
+  updateBlockTable: (pageId: string, blockId: string, tableData: NonNullable<DocBlock['tableData']>) => void
   setPageBlocks: (pageId: string, blocks: DocBlock[]) => void
   clearCurrentPage: () => void
 
   addComment: (text: string, author: string) => void
   removeComment: (id: string) => void
+  resolveComment: (id: string) => void
+  addReply: (commentId: string, text: string, author: string) => void
   markSaved: () => void
   resetDocument: () => void
 }
@@ -59,6 +66,8 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const [zoom, setZoom] = useState(1)
   const [modified, setModified] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
+  const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
+  const [showStyleModal, setShowStyleModal] = useState(true)
 
   const markModified = () => setModified(true)
   const markSaved = () => setModified(false)
@@ -71,8 +80,12 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const removePage = useCallback((id: string) => {
-    setPages(prev => prev.filter(p => p.id !== id))
-    setCurrentPageIndex(prev => Math.max(0, prev - 1))
+    setPages(prev => {
+      const idx = prev.findIndex(p => p.id === id)
+      const next = prev.filter(p => p.id !== id)
+      setCurrentPageIndex(ci => Math.max(0, ci >= idx ? ci - 1 : ci))
+      return next
+    })
     markModified()
   }, [])
 
@@ -111,6 +124,17 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     markModified()
   }, [])
 
+  const updateBlockTable = useCallback((pageId: string, blockId: string, tableData: NonNullable<DocBlock['tableData']>) => {
+    setPages(prev =>
+      prev.map(p =>
+        p.id === pageId
+          ? { ...p, blocks: p.blocks.map(b => (b.id === blockId ? { ...b, tableData } : b)) }
+          : p
+      )
+    )
+    markModified()
+  }, [])
+
   const setPageBlocks = useCallback((pageId: string, blocks: DocBlock[]) => {
     setPages(prev => prev.map(p => (p.id === pageId ? { ...p, blocks } : p)))
     markModified()
@@ -128,12 +152,21 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   }, [currentPageIndex])
 
   const addComment = useCallback((text: string, author: string) => {
-    const comment: Comment = { id: generateId(), text, author, createdAt: new Date() }
+    const comment: Comment = { id: generateId(), text, author, createdAt: new Date(), resolved: false, replies: [] }
     setComments(prev => [...prev, comment])
   }, [])
 
   const removeComment = useCallback((id: string) => {
     setComments(prev => prev.filter(c => c.id !== id))
+  }, [])
+
+  const resolveComment = useCallback((id: string) => {
+    setComments(prev => prev.map(c => c.id === id ? { ...c, resolved: !c.resolved } : c))
+  }, [])
+
+  const addReply = useCallback((commentId: string, text: string, author: string) => {
+    const reply: CommentReply = { id: generateId(), text, author, createdAt: new Date() }
+    setComments(prev => prev.map(c => c.id === commentId ? { ...c, replies: [...c.replies, reply] } : c))
   }, [])
 
   const resetDocument = useCallback(() => {
@@ -152,11 +185,13 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       value={{
         docId, title, subtitle, ref, destination, confidentiality,
         pages, currentPageIndex, comments, activeTab, zoom, modified, selectedTemplate,
+        docStyle, showStyleModal,
         setTitle, setSubtitle, setRef, setDestination, setConfidentiality,
         setCurrentPageIndex, setActiveTab, setZoom, setSelectedTemplate,
-        addPage, removePage, addBlock, removeBlock, updateBlock,
+        setDocStyle, setShowStyleModal,
+        addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable,
         setPageBlocks, clearCurrentPage,
-        addComment, removeComment, markSaved, resetDocument,
+        addComment, removeComment, resolveComment, addReply, markSaved, resetDocument,
       }}
     >
       {children}

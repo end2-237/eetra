@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ProfileProvider } from '@/contexts/ProfileContext'
+import { HistoryProvider } from '@/contexts/HistoryContext'
+import { TeamProvider } from '@/contexts/TeamContext'
 
 export const metadata: Metadata = {
   title: 'EETRA — Plateforme Document d\'Entreprise',
@@ -15,7 +17,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <ProfileProvider>
-            {children}
+            <HistoryProvider>
+              <TeamProvider>
+                {children}
+              </TeamProvider>
+            </HistoryProvider>
           </ProfileProvider>
         </ThemeProvider>
       </body>

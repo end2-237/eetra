@@ -1,22 +1,59 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect, useCallback } from 'react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { DocPage } from '@/types'
 import { BlockRenderer } from '../blocks/BlockRenderer'
-import { X } from 'lucide-react'
+import { X, Trash2 } from 'lucide-react'
 
 interface Props {
   page: DocPage
   pageNumber: number
+  onOverflow?: () => void
 }
 
-export function ContentPage({ page, pageNumber }: Props) {
-  const { title, confidentiality, docId, removeBlock } = useDocument()
+const CONTENT_MAX_HEIGHT = 940 // px — usable A4 zone
+
+export function ContentPage({ page, pageNumber, onOverflow }: Props) {
+  const { title, confidentiality, docId, removeBlock, removePage, updateBlockTable, docStyle } = useDocument()
   const { profile } = useProfile()
   const co = profile.color
   const name = profile.name || 'EETRA'
+  const contentRef = useRef<HTMLDivElement>(null)
+  const overflowFiredRef = useRef(false)
+
+  const checkOverflow = useCallback(() => {
+    const el = contentRef.current
+    if (!el) return
+    if (el.scrollHeight > CONTENT_MAX_HEIGHT && !overflowFiredRef.current) {
+      overflowFiredRef.current = true
+      onOverflow?.()
+    }
+  }, [onOverflow])
+
+  useEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const observer = new ResizeObserver(checkOverflow)
+    observer.observe(el)
+    checkOverflow()
+    return () => observer.disconnect()
+  }, [checkOverflow, page.blocks])
+
+  // Reset overflow flag when blocks change (user removed blocks)
+  useEffect(() => {
+    if (page.blocks.length === 0) overflowFiredRef.current = false
+  }, [page.blocks.length])
+
+  const handleDeletePage = () => {
+    if (window.confirm(`Supprimer la page ${pageNumber} ? Cette action est irréversible.`)) {
+      removePage(page.id)
+    }
+  }
+
+  const fontTitle = docStyle?.fontTitle || 'Bricolage Grotesque'
+  const fontBody = docStyle?.fontBody || 'Bricolage Grotesque'
 
   return (
     <div
@@ -25,7 +62,7 @@ export function ContentPage({ page, pageNumber }: Props) {
         width: 794, minHeight: 1123, background: '#fff', color: '#111',
         position: 'relative', flexShrink: 0,
         boxShadow: '0 2px 8px rgba(0,0,0,.12), 0 16px 48px rgba(0,0,0,.1)',
-        marginBottom: 28, fontFamily: 'Bricolage Grotesque, sans-serif',
+        marginBottom: 28, fontFamily: `'${fontBody}', sans-serif`,
       }}
     >
       {/* Side accent */}
@@ -37,7 +74,7 @@ export function ContentPage({ page, pageNumber }: Props) {
           {profile.logoDataUrl && (
             <img src={profile.logoDataUrl} style={{ height: 18, maxWidth: 56, objectFit: 'contain' }} alt="" />
           )}
-          <span style={{ fontWeight: 800, fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: '#aaa' }}>{name}</span>
+          <span style={{ fontFamily: `'${fontTitle}', sans-serif`, fontWeight: 800, fontSize: 10, letterSpacing: '.15em', textTransform: 'uppercase', color: '#aaa' }}>{name}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: '#ccc', letterSpacing: '.04em' }}>
@@ -49,8 +86,8 @@ export function ContentPage({ page, pageNumber }: Props) {
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ padding: '28px 56px', minHeight: 980, position: 'relative' }}>
+      {/* Content zone */}
+      <div ref={contentRef} style={{ padding: '28px 56px', minHeight: CONTENT_MAX_HEIGHT, position: 'relative' }}>
         {page.blocks.length === 0 ? (
           <p style={{ color: '#ccc', fontStyle: 'italic', fontSize: 12 }}>
             Ajoutez des blocs depuis le panneau gauche, ou choisissez un Smart Template.
@@ -58,8 +95,14 @@ export function ContentPage({ page, pageNumber }: Props) {
         ) : (
           page.blocks.map(block => (
             <div key={block.id} className="group relative" style={{ marginBottom: 20 }}>
-              <BlockRenderer block={block} color={co} entityName={name} />
-              {/* Delete button */}
+              <BlockRenderer
+                block={block}
+                color={co}
+                entityName={name}
+                pageId={page.id}
+                onUpdateTable={(blockId, tableData) => updateBlockTable(page.id, blockId, tableData)}
+              />
+              {/* Delete block button */}
               <button
                 onClick={() => removeBlock(page.id, block.id)}
                 className="absolute opacity-0 group-hover:opacity-100 transition-opacity"
@@ -84,10 +127,28 @@ export function ContentPage({ page, pageNumber }: Props) {
         <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 8, color: '#ccc', letterSpacing: '.06em' }}>
           {profile.watermark ? 'EETRA Document Platform · ' : ''}{docId}
         </span>
-        <span style={{ fontFamily: 'Libre Caslon Text, serif', fontSize: 26, fontStyle: 'italic', color: '#e8e8e8' }}>
+        <span style={{ fontFamily: 'Libre Caslon Text, Georgia, serif', fontSize: 26, fontStyle: 'italic', color: '#e8e8e8' }}>
           {String(pageNumber).padStart(2, '0')}
         </span>
       </div>
+
+      {/* Delete page button (top-right, outside page) */}
+      <button
+        onClick={handleDeletePage}
+        title={`Supprimer la page ${pageNumber}`}
+        style={{
+          position: 'absolute', top: 8, right: -40,
+          width: 28, height: 28, borderRadius: 6,
+          background: '#fff', border: '1px solid #e0e0e0',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: '#aaa', transition: 'all .15s',
+        }}
+        className="page-delete-btn"
+        onMouseEnter={e => { (e.currentTarget).style.background = '#FECACA'; (e.currentTarget).style.borderColor = '#FCA5A5'; (e.currentTarget).style.color = '#DC2626'; }}
+        onMouseLeave={e => { (e.currentTarget).style.background = '#fff'; (e.currentTarget).style.borderColor = '#e0e0e0'; (e.currentTarget).style.color = '#aaa'; }}
+      >
+        <Trash2 size={11} />
+      </button>
     </div>
   )
 }

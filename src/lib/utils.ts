@@ -28,3 +28,30 @@ export function getInitials(name: string): string {
     .slice(0, 2)
     .toUpperCase()
 }
+
+/**
+ * Generate a deterministic document signature hash
+ * Uses a simple but visually distinctive hex string derived from doc properties
+ */
+export function generateSignature(docId: string, entityName: string, timestamp: number): string {
+  const input = `${docId}:${entityName}:${timestamp}`
+  let hash = 0
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  const abs = Math.abs(hash)
+  const part1 = abs.toString(16).padStart(8, '0').toUpperCase()
+  const part2 = (abs * 31337 & 0xFFFFFFFF).toString(16).padStart(8, '0').toUpperCase()
+  const part3 = ((abs ^ 0xDEADBEEF) & 0xFFFFFFFF).toString(16).padStart(8, '0').toUpperCase()
+  return `EESIG-${part1}-${part2}-${part3}`
+}
+
+/**
+ * Build the QR code URL for document verification
+ */
+export function buildQrUrl(docId: string, signature: string, size = 80): string {
+  const data = encodeURIComponent(`https://eetra.app/verify/${docId}?sig=${signature}`)
+  return `https://api.qrserver.com/v1/create-qr-code/?data=${data}&size=${size}x${size}&bgcolor=ffffff&color=111111&margin=4`
+}

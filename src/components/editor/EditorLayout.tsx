@@ -14,6 +14,7 @@ import { EditorPanel } from './panels/EditorPanel'
 import { TemplatesPanel } from './panels/TemplatesPanel'
 import { AnalyticsPanel } from './panels/AnalyticsPanel'
 import { CommentsPanel } from './panels/CommentsPanel'
+import { DocumentStyleModal } from './DocumentStyleModal'
 
 export function EditorLayout() {
   const { addPage, activeTab, modified, markSaved } = useDocument()
@@ -49,6 +50,9 @@ export function EditorLayout() {
           <Canvas />
         </div>
       </div>
+
+      {/* Style modal (shown on first load) */}
+      <DocumentStyleModal />
 
       <Toast {...toast} />
     </div>

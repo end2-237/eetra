@@ -10,10 +10,11 @@ import { X, Trash2 } from 'lucide-react'
 interface Props {
   page: DocPage
   pageNumber: number
-  onOverflow?: () => void
+  onOverflow?: (pageId: string, blockId: string) => void
 }
 
-const CONTENT_MAX_HEIGHT = 940 // px — usable A4 zone
+// Usable height in px for A4 content zone (1123 - header ~72px - footer ~48px - paddings)
+const CONTENT_MAX_HEIGHT = 900
 
 export function ContentPage({ page, pageNumber, onOverflow }: Props) {
   const { title, confidentiality, docId, removeBlock, removePage, updateBlockTable, docStyle } = useDocument()
@@ -25,12 +26,18 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
 
   const checkOverflow = useCallback(() => {
     const el = contentRef.current
-    if (!el) return
-    if (el.scrollHeight > CONTENT_MAX_HEIGHT && !overflowFiredRef.current) {
-      overflowFiredRef.current = true
-      onOverflow?.()
+    if (!el || overflowFiredRef.current) return
+    if (el.scrollHeight > CONTENT_MAX_HEIGHT) {
+      // Only overflow if there are at least 2 blocks
+      if (page.blocks.length >= 2) {
+        overflowFiredRef.current = true
+        const lastBlock = page.blocks[page.blocks.length - 1]
+        onOverflow?.(page.id, lastBlock.id)
+        // Reset after a short delay to allow re-checking after React state update
+        setTimeout(() => { overflowFiredRef.current = false }, 600)
+      }
     }
-  }, [onOverflow])
+  }, [onOverflow, page.id, page.blocks])
 
   useEffect(() => {
     const el = contentRef.current
@@ -41,9 +48,9 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
     return () => observer.disconnect()
   }, [checkOverflow, page.blocks])
 
-  // Reset overflow flag when blocks change (user removed blocks)
+  // Reset overflow flag when block count drops (user removed blocks)
   useEffect(() => {
-    if (page.blocks.length === 0) overflowFiredRef.current = false
+    overflowFiredRef.current = false
   }, [page.blocks.length])
 
   const handleDeletePage = () => {
@@ -86,8 +93,17 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
         </div>
       </div>
 
-      {/* Content zone */}
-      <div ref={contentRef} style={{ padding: '28px 56px', minHeight: CONTENT_MAX_HEIGHT, position: 'relative' }}>
+      {/* Content zone — max height enforced to detect overflow */}
+      <div
+        ref={contentRef}
+        style={{
+          padding: '28px 56px',
+          minHeight: CONTENT_MAX_HEIGHT,
+          maxHeight: CONTENT_MAX_HEIGHT,
+          overflow: 'hidden',
+          position: 'relative',
+        }}
+      >
         {page.blocks.length === 0 ? (
           <p style={{ color: '#ccc', fontStyle: 'italic', fontSize: 12 }}>
             Ajoutez des blocs depuis le panneau gauche, ou choisissez un Smart Template.
@@ -102,10 +118,10 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
                 pageId={page.id}
                 onUpdateTable={(blockId, tableData) => updateBlockTable(page.id, blockId, tableData)}
               />
-              {/* Delete block button */}
+              {/* Delete block button — hidden during PDF export */}
               <button
                 onClick={() => removeBlock(page.id, block.id)}
-                className="absolute opacity-0 group-hover:opacity-100 transition-opacity"
+                className="pdf-hidden absolute opacity-0 group-hover:opacity-100 transition-opacity"
                 style={{
                   right: -32, top: '50%', transform: 'translateY(-50%)',
                   width: 24, height: 24, borderRadius: 5, background: '#fff',
@@ -132,10 +148,11 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
         </span>
       </div>
 
-      {/* Delete page button (top-right, outside page) */}
+      {/* Delete page button — hidden during PDF export */}
       <button
         onClick={handleDeletePage}
         title={`Supprimer la page ${pageNumber}`}
+        className="page-delete-btn pdf-hidden"
         style={{
           position: 'absolute', top: 8, right: -40,
           width: 28, height: 28, borderRadius: 6,
@@ -143,7 +160,6 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', color: '#aaa', transition: 'all .15s',
         }}
-        className="page-delete-btn"
         onMouseEnter={e => { (e.currentTarget).style.background = '#FECACA'; (e.currentTarget).style.borderColor = '#FCA5A5'; (e.currentTarget).style.color = '#DC2626'; }}
         onMouseLeave={e => { (e.currentTarget).style.background = '#fff'; (e.currentTarget).style.borderColor = '#e0e0e0'; (e.currentTarget).style.color = '#aaa'; }}
       >

@@ -41,6 +41,7 @@ interface DocumentContextType {
   updateBlockTable: (pageId: string, blockId: string, tableData: NonNullable<DocBlock['tableData']>) => void
   setPageBlocks: (pageId: string, blocks: DocBlock[]) => void
   clearCurrentPage: () => void
+  overflowBlock: (fromPageId: string, blockId: string) => void
 
   addComment: (text: string, author: string) => void
   removeComment: (id: string) => void
@@ -151,6 +152,48 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     markModified()
   }, [currentPageIndex])
 
+  /**
+   * Move a block that caused overflow from its page to the next page.
+   * If no next page exists, a new one is created automatically.
+   * If the page only has 1 block, we don't move it (prevents infinite loop).
+   */
+  const overflowBlock = useCallback((fromPageId: string, blockId: string) => {
+    setPages(prev => {
+      const fromIdx = prev.findIndex(p => p.id === fromPageId)
+      if (fromIdx === -1) return prev
+
+      const fromPage = prev[fromIdx]
+      // Never move if it's the only block — avoids infinite loop
+      if (fromPage.blocks.length <= 1) return prev
+
+      const blockIdx = fromPage.blocks.findIndex(b => b.id === blockId)
+      if (blockIdx === -1) return prev
+
+      const block = fromPage.blocks[blockIdx]
+      const updated = [...prev]
+
+      // Remove block from source page
+      updated[fromIdx] = {
+        ...fromPage,
+        blocks: fromPage.blocks.filter(b => b.id !== blockId),
+      }
+
+      // Prepend to next page or create a new one
+      if (fromIdx + 1 < updated.length) {
+        updated[fromIdx + 1] = {
+          ...updated[fromIdx + 1],
+          blocks: [block, ...updated[fromIdx + 1].blocks],
+        }
+      } else {
+        const newPage: DocPage = { id: generateId(), blocks: [block] }
+        updated.splice(fromIdx + 1, 0, newPage)
+      }
+
+      return updated
+    })
+    markModified()
+  }, [])
+
   const addComment = useCallback((text: string, author: string) => {
     const comment: Comment = { id: generateId(), text, author, createdAt: new Date(), resolved: false, replies: [] }
     setComments(prev => [...prev, comment])
@@ -190,7 +233,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
         setCurrentPageIndex, setActiveTab, setZoom, setSelectedTemplate,
         setDocStyle, setShowStyleModal,
         addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable,
-        setPageBlocks, clearCurrentPage,
+        setPageBlocks, clearCurrentPage, overflowBlock,
         addComment, removeComment, resolveComment, addReply, markSaved, resetDocument,
       }}
     >

@@ -9,15 +9,15 @@ import { ContentPage } from './document/ContentPage'
 import { formatDate, generateSignature, buildQrUrl } from '@/lib/utils'
 
 export function Canvas() {
-  const { zoom, pages, docId, addPage, title, docStyle } = useDocument()
+  const { zoom, pages, docId, addPage, title, docStyle, overflowBlock } = useDocument()
   const { profile } = useProfile()
   const { addEntry } = useHistory()
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // Auto-pagination: called when a page overflows
-  const handlePageOverflow = useCallback(() => {
-    addPage()
-  }, [addPage])
+  // Called when a page overflows — moves the offending block to the next page
+  const handlePageOverflow = useCallback((pageId: string, blockId: string) => {
+    overflowBlock(pageId, blockId)
+  }, [overflowBlock])
 
   // Listen for PDF export event
   useEffect(() => {
@@ -26,16 +26,26 @@ export function Canvas() {
       const html2pdf = (await import('html2pdf.js')).default
       const wrapper = wrapperRef.current
       if (!wrapper) return
+
       const orig = wrapper.style.transform
       wrapper.style.transform = 'none'
-      await html2pdf().set({
-        margin: 0,
-        filename: `EETRA-${profile.name || 'Document'}-${docId}.pdf`,
-        image: { type: 'jpeg', quality: 1 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
-      }).from(wrapper).save()
-      wrapper.style.transform = orig
+
+      // Hide all interactive controls before capture
+      document.body.classList.add('pdf-exporting')
+
+      try {
+        await html2pdf().set({
+          margin: 0,
+          filename: `EETRA-${profile.name || 'Document'}-${docId}.pdf`,
+          image: { type: 'jpeg', quality: 1 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
+        }).from(wrapper).save()
+      } finally {
+        // Always restore interactive controls
+        document.body.classList.remove('pdf-exporting')
+        wrapper.style.transform = orig
+      }
 
       // Log to history
       const sig = generateSignature(docId, profile.name || 'EETRA', Date.now())

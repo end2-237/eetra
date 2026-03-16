@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { DocBlock, TableData } from '@/types'
-import { Plus, Trash2, Columns } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 interface Props {
   block: DocBlock
@@ -12,7 +12,11 @@ interface Props {
   onUpdateTable?: (blockId: string, tableData: TableData) => void
 }
 
-function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: string; onUpdateTable?: (blockId: string, tableData: TableData) => void }) {
+function InteractiveTable({ block, co, onUpdateTable }: {
+  block: DocBlock
+  co: string
+  onUpdateTable?: (blockId: string, tableData: TableData) => void
+}) {
   const defaultData: TableData = block.tableData || {
     headers: ['Indicateur', 'Réf. 2025', 'Cible 2026', 'Variation'],
     rows: [
@@ -30,42 +34,18 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
     onUpdateTable?.(block.id, newData)
   }, [block.id, onUpdateTable])
 
-  const addRow = () => {
-    update({
-      ...data,
-      rows: [...data.rows, data.headers.map(() => '—')],
-    })
-  }
-
-  const removeRow = (i: number) => {
-    update({ ...data, rows: data.rows.filter((_, idx) => idx !== i) })
-  }
-
-  const addCol = () => {
-    update({
-      headers: [...data.headers, 'Colonne'],
-      rows: data.rows.map(r => [...r, '—']),
-    })
-  }
-
-  const removeCol = (i: number) => {
-    update({
-      headers: data.headers.filter((_, idx) => idx !== i),
-      rows: data.rows.map(r => r.filter((_, idx) => idx !== i)),
-    })
-  }
-
+  const addRow = () => update({ ...data, rows: [...data.rows, data.headers.map(() => '—')] })
+  const removeRow = (i: number) => update({ ...data, rows: data.rows.filter((_, idx) => idx !== i) })
+  const addCol = () => update({ headers: [...data.headers, 'Colonne'], rows: data.rows.map(r => [...r, '—']) })
+  const removeCol = (i: number) => update({
+    headers: data.headers.filter((_, idx) => idx !== i),
+    rows: data.rows.map(r => r.filter((_, idx) => idx !== i)),
+  })
   const updateHeader = (i: number, val: string) => {
-    const headers = [...data.headers]
-    headers[i] = val
-    update({ ...data, headers })
+    const headers = [...data.headers]; headers[i] = val; update({ ...data, headers })
   }
-
   const updateCell = (r: number, c: number, val: string) => {
-    const rows = data.rows.map((row, ri) =>
-      ri === r ? row.map((cell, ci) => (ci === c ? val : cell)) : row
-    )
-    update({ ...data, rows })
+    update({ ...data, rows: data.rows.map((row, ri) => ri === r ? row.map((cell, ci) => ci === c ? val : cell) : row) })
   }
 
   return (
@@ -84,10 +64,12 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
                   >
                     {h}
                   </span>
+                  {/* Delete column button — hidden in PDF */}
                   {data.headers.length > 1 && (
                     <button
                       onClick={() => removeCol(ci)}
                       title="Supprimer colonne"
+                      className="pdf-hidden"
                       style={{ width: 14, height: 14, borderRadius: 3, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#DC2626', flexShrink: 0, padding: 0 }}
                     >
                       ×
@@ -96,8 +78,8 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
                 </div>
               </th>
             ))}
-            {/* Add column */}
-            <th style={{ width: 28, padding: '4px' }}>
+            {/* Add column button — hidden in PDF */}
+            <th style={{ width: 28, padding: '4px' }} className="pdf-hidden">
               <button
                 onClick={addCol}
                 title="Ajouter une colonne"
@@ -123,7 +105,8 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
                   </span>
                 </td>
               ))}
-              <td style={{ padding: '4px', width: 28 }}>
+              {/* Delete row button — hidden in PDF */}
+              <td style={{ padding: '4px', width: 28 }} className="pdf-hidden">
                 <button
                   onClick={() => removeRow(ri)}
                   title="Supprimer ligne"
@@ -136,9 +119,10 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
           ))}
         </tbody>
       </table>
-      {/* Add row */}
+      {/* Add row button — hidden in PDF */}
       <button
         onClick={addRow}
+        className="pdf-hidden"
         style={{ marginTop: 6, width: '100%', padding: '6px', borderRadius: 5, background: `${co}10`, border: `1px dashed ${co}50`, cursor: 'pointer', color: co, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
       >
         <Plus size={10} /> Ajouter une ligne

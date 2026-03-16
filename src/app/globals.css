@@ -70,6 +70,14 @@ body {
 .page-delete-btn { opacity: 0; }
 #pages-wrapper > div:hover .page-delete-btn { opacity: 1; }
 
+/* ─── PDF Export: hide all interactive controls ─── */
+body.pdf-exporting .pdf-hidden {
+  display: none !important;
+}
+body.pdf-exporting .page-delete-btn {
+  display: none !important;
+}
+
 /* ─── Animations ─── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(24px); }

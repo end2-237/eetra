@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { ProfileProvider } from '@/contexts/ProfileContext'
 import { HistoryProvider } from '@/contexts/HistoryContext'
 import { TeamProvider } from '@/contexts/TeamContext'
+import { PlanProvider } from '@/contexts/PlanContext'
 
 export const metadata: Metadata = {
   title: 'EETRA — Plateforme Document d\'Entreprise',
@@ -17,11 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <ThemeProvider>
           <ProfileProvider>
-            <HistoryProvider>
-              <TeamProvider>
-                {children}
-              </TeamProvider>
-            </HistoryProvider>
+            <PlanProvider>
+              <HistoryProvider>
+                <TeamProvider>
+                  {children}
+                </TeamProvider>
+              </HistoryProvider>
+            </PlanProvider>
           </ProfileProvider>
         </ThemeProvider>
       </body>

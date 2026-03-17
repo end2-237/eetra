@@ -1,8 +1,10 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS } from '@/types'
 import { generateId, generateDocId } from '@/lib/utils'
+
+const STORAGE_DRAFT = 'eetra-document-draft'
 
 interface DocumentContextType {
   docId: string
@@ -20,6 +22,8 @@ interface DocumentContextType {
   selectedTemplate: string | null
   docStyle: DocumentStyle
   showStyleModal: boolean
+  canUndo: boolean
+  canRedo: boolean
 
   setTitle: (v: string) => void
   setSubtitle: (v: string) => void
@@ -42,6 +46,9 @@ interface DocumentContextType {
   setPageBlocks: (pageId: string, blocks: DocBlock[]) => void
   clearCurrentPage: () => void
   overflowBlock: (fromPageId: string, blockId: string) => void
+  undo: () => void
+  redo: () => void
+  clearDraft: () => void
 
   addComment: (text: string, author: string) => void
   removeComment: (id: string) => void
@@ -68,20 +75,116 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const [modified, setModified] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
-  const [showStyleModal, setShowStyleModal] = useState(true)
+  const [showStyleModal, setShowStyleModal] = useState(false)
+
+  // Undo/Redo
+  const pageHistoryRef = useRef<string[]>([])
+  const historyIdxRef = useRef(-1)
+  const isRestoringRef = useRef(false)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
+
+  function syncUndoRedoFlags() {
+    setCanUndo(historyIdxRef.current > 0)
+    setCanRedo(historyIdxRef.current < pageHistoryRef.current.length - 1)
+  }
+
+  function pushHistory(currentPages: DocPage[]) {
+    if (isRestoringRef.current) return
+    const serialized = JSON.stringify(currentPages)
+    // Trim redo stack
+    if (historyIdxRef.current < pageHistoryRef.current.length - 1) {
+      pageHistoryRef.current = pageHistoryRef.current.slice(0, historyIdxRef.current + 1)
+    }
+    pageHistoryRef.current.push(serialized)
+    if (pageHistoryRef.current.length > 50) pageHistoryRef.current.shift()
+    historyIdxRef.current = pageHistoryRef.current.length - 1
+    syncUndoRedoFlags()
+  }
+
+  const undo = useCallback(() => {
+    if (historyIdxRef.current <= 0) return
+    historyIdxRef.current -= 1
+    isRestoringRef.current = true
+    const snapshot = JSON.parse(pageHistoryRef.current[historyIdxRef.current]) as DocPage[]
+    setPages(snapshot)
+    setModified(true)
+    syncUndoRedoFlags()
+    requestAnimationFrame(() => { isRestoringRef.current = false })
+  }, [])
+
+  const redo = useCallback(() => {
+    if (historyIdxRef.current >= pageHistoryRef.current.length - 1) return
+    historyIdxRef.current += 1
+    isRestoringRef.current = true
+    const snapshot = JSON.parse(pageHistoryRef.current[historyIdxRef.current]) as DocPage[]
+    setPages(snapshot)
+    setModified(true)
+    syncUndoRedoFlags()
+    requestAnimationFrame(() => { isRestoringRef.current = false })
+  }, [])
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_DRAFT)
+      if (saved) {
+        const draft = JSON.parse(saved)
+        if (draft.title) setTitle(draft.title)
+        if (draft.subtitle) setSubtitle(draft.subtitle)
+        if (draft.ref) setRef(draft.ref)
+        if (draft.destination) setDestination(draft.destination)
+        if (draft.confidentiality) setConfidentiality(draft.confidentiality)
+        if (draft.pages?.length > 0) {
+          setPages(draft.pages)
+          setCurrentPageIndex(0)
+          // Seed history
+          pageHistoryRef.current = [JSON.stringify(draft.pages)]
+          historyIdxRef.current = 0
+        }
+        if (draft.docStyle) setDocStyle(draft.docStyle)
+      }
+    } catch {}
+  }, [])
+
+  // Persist to localStorage when pages/metadata change
+  useEffect(() => {
+    if (!modified && pages.length === 0) return
+    try {
+      const draft = { title, subtitle, ref, destination, confidentiality, pages, docStyle }
+      localStorage.setItem(STORAGE_DRAFT, JSON.stringify(draft))
+    } catch {}
+  }, [pages, title, subtitle, ref, destination, confidentiality, docStyle, modified])
 
   const markModified = () => setModified(true)
   const markSaved = () => setModified(false)
 
+  const clearDraft = useCallback(() => {
+    try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
+    setPages([])
+    setTitle('')
+    setSubtitle('')
+    setRef('')
+    setDestination('')
+    setModified(false)
+    pageHistoryRef.current = []
+    historyIdxRef.current = -1
+    syncUndoRedoFlags()
+  }, [])
+
   const addPage = useCallback(() => {
     const newPage: DocPage = { id: generateId(), blocks: [] }
-    setPages(prev => [...prev, newPage])
+    setPages(prev => {
+      pushHistory(prev)
+      return [...prev, newPage]
+    })
     setCurrentPageIndex(prev => prev + 1)
     markModified()
   }, [])
 
   const removePage = useCallback((id: string) => {
     setPages(prev => {
+      pushHistory(prev)
       const idx = prev.findIndex(p => p.id === id)
       const next = prev.filter(p => p.id !== id)
       setCurrentPageIndex(ci => Math.max(0, ci >= idx ? ci - 1 : ci))
@@ -93,6 +196,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const addBlock = useCallback((type: DocBlock['type'], content?: string) => {
     const block: DocBlock = { id: generateId(), type, content }
     setPages(prev => {
+      pushHistory(prev)
       const updated = [...prev]
       if (updated[currentPageIndex]) {
         updated[currentPageIndex] = {
@@ -106,11 +210,12 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   }, [currentPageIndex])
 
   const removeBlock = useCallback((pageId: string, blockId: string) => {
-    setPages(prev =>
-      prev.map(p =>
+    setPages(prev => {
+      pushHistory(prev)
+      return prev.map(p =>
         p.id === pageId ? { ...p, blocks: p.blocks.filter(b => b.id !== blockId) } : p
       )
-    )
+    })
     markModified()
   }, [])
 
@@ -118,7 +223,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     setPages(prev =>
       prev.map(p =>
         p.id === pageId
-          ? { ...p, blocks: p.blocks.map(b => (b.id === blockId ? { ...b, content } : b)) }
+          ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, content } : b) }
           : p
       )
     )
@@ -129,7 +234,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     setPages(prev =>
       prev.map(p =>
         p.id === pageId
-          ? { ...p, blocks: p.blocks.map(b => (b.id === blockId ? { ...b, tableData } : b)) }
+          ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, tableData } : b) }
           : p
       )
     )
@@ -137,12 +242,16 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const setPageBlocks = useCallback((pageId: string, blocks: DocBlock[]) => {
-    setPages(prev => prev.map(p => (p.id === pageId ? { ...p, blocks } : p)))
+    setPages(prev => {
+      pushHistory(prev)
+      return prev.map(p => p.id === pageId ? { ...p, blocks } : p)
+    })
     markModified()
   }, [])
 
   const clearCurrentPage = useCallback(() => {
     setPages(prev => {
+      pushHistory(prev)
       const updated = [...prev]
       if (updated[currentPageIndex]) {
         updated[currentPageIndex] = { ...updated[currentPageIndex], blocks: [] }
@@ -152,43 +261,21 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     markModified()
   }, [currentPageIndex])
 
-  /**
-   * Move a block that caused overflow from its page to the next page.
-   * If no next page exists, a new one is created automatically.
-   * If the page only has 1 block, we don't move it (prevents infinite loop).
-   */
   const overflowBlock = useCallback((fromPageId: string, blockId: string) => {
     setPages(prev => {
       const fromIdx = prev.findIndex(p => p.id === fromPageId)
       if (fromIdx === -1) return prev
-
       const fromPage = prev[fromIdx]
-      // Never move if it's the only block — avoids infinite loop
       if (fromPage.blocks.length <= 1) return prev
-
-      const blockIdx = fromPage.blocks.findIndex(b => b.id === blockId)
-      if (blockIdx === -1) return prev
-
-      const block = fromPage.blocks[blockIdx]
+      const block = fromPage.blocks.find(b => b.id === blockId)
+      if (!block) return prev
       const updated = [...prev]
-
-      // Remove block from source page
-      updated[fromIdx] = {
-        ...fromPage,
-        blocks: fromPage.blocks.filter(b => b.id !== blockId),
-      }
-
-      // Prepend to next page or create a new one
+      updated[fromIdx] = { ...fromPage, blocks: fromPage.blocks.filter(b => b.id !== blockId) }
       if (fromIdx + 1 < updated.length) {
-        updated[fromIdx + 1] = {
-          ...updated[fromIdx + 1],
-          blocks: [block, ...updated[fromIdx + 1].blocks],
-        }
+        updated[fromIdx + 1] = { ...updated[fromIdx + 1], blocks: [block, ...updated[fromIdx + 1].blocks] }
       } else {
-        const newPage: DocPage = { id: generateId(), blocks: [block] }
-        updated.splice(fromIdx + 1, 0, newPage)
+        updated.splice(fromIdx + 1, 0, { id: generateId(), blocks: [block] })
       }
-
       return updated
     })
     markModified()
@@ -213,27 +300,22 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const resetDocument = useCallback(() => {
-    setPages([])
+    clearDraft()
     setCurrentPageIndex(0)
-    setTitle('')
-    setSubtitle('')
-    setRef('')
-    setDestination('')
     setConfidentiality('CONFIDENTIEL')
-    setModified(false)
-  }, [])
+  }, [clearDraft])
 
   return (
     <DocumentContext.Provider
       value={{
         docId, title, subtitle, ref, destination, confidentiality,
         pages, currentPageIndex, comments, activeTab, zoom, modified, selectedTemplate,
-        docStyle, showStyleModal,
+        docStyle, showStyleModal, canUndo, canRedo,
         setTitle, setSubtitle, setRef, setDestination, setConfidentiality,
         setCurrentPageIndex, setActiveTab, setZoom, setSelectedTemplate,
         setDocStyle, setShowStyleModal,
         addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable,
-        setPageBlocks, clearCurrentPage, overflowBlock,
+        setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
         addComment, removeComment, resolveComment, addReply, markSaved, resetDocument,
       }}
     >
@@ -243,3 +325,4 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useDocument = () => useContext(DocumentContext)
+export { STORAGE_DRAFT }

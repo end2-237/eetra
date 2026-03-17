@@ -52,9 +52,7 @@ html, body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
 }
-body {
-  overflow-x: hidden;
-}
+body { overflow-x: hidden; }
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -64,19 +62,19 @@ body {
 .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
 /* ─── A4 doc blocks ─── */
-[contenteditable]:focus { outline: 2px solid rgba(27,79,216,0.15); outline-offset: 2px; border-radius: 3px; }
+[contenteditable]:focus {
+  outline: 2px solid rgba(27,79,216,0.15);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 
-/* Page delete button — hidden unless parent is hovered */
+/* Page delete button */
 .page-delete-btn { opacity: 0; }
 #pages-wrapper > div:hover .page-delete-btn { opacity: 1; }
 
 /* ─── PDF Export: hide all interactive controls ─── */
-body.pdf-exporting .pdf-hidden {
-  display: none !important;
-}
-body.pdf-exporting .page-delete-btn {
-  display: none !important;
-}
+body.pdf-exporting .pdf-hidden { display: none !important; }
+body.pdf-exporting .page-delete-btn { display: none !important; }
 
 /* ─── Animations ─── */
 @keyframes fadeUp {
@@ -94,9 +92,15 @@ body.pdf-exporting .page-delete-btn {
   from { opacity: 0; transform: translateY(-8px) scale(.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
 .animate-fade-up  { animation: fadeUp .7s cubic-bezier(.23,1,.32,1) both; }
 .animate-slide-in { animation: slideIn .25s cubic-bezier(.23,1,.32,1) both; }
+.animate-slide-up { animation: slideUp .3s cubic-bezier(.23,1,.32,1) both; }
+
 .delay-100  { animation-delay: .1s; }
 .delay-200  { animation-delay: .2s; }
 .delay-300  { animation-delay: .3s; }

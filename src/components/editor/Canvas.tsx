@@ -14,40 +14,74 @@ export function Canvas() {
   const { addEntry } = useHistory()
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  // Called when a page overflows — moves the offending block to the next page
   const handlePageOverflow = useCallback((pageId: string, blockId: string) => {
     overflowBlock(pageId, blockId)
   }, [overflowBlock])
 
-  // Listen for PDF export event
+  // ─── High-quality print-based PDF export ─────────────────────────────────
+  const handlePrintPDF = useCallback(async () => {
+    document.body.classList.add('pdf-exporting')
+    const prevTitle = document.title
+    document.title = `EETRA-${profile.name || 'Document'}-${docId}`
+
+    // Small delay to let CSS apply
+    await new Promise(r => setTimeout(r, 200))
+
+    window.print()
+
+    setTimeout(() => {
+      document.body.classList.remove('pdf-exporting')
+      document.title = prevTitle
+    }, 500)
+
+    // Log to history
+    const sig = generateSignature(docId, profile.name || 'EETRA', Date.now())
+    const allBlocks = pages.flatMap(p => p.blocks)
+    addEntry({
+      id: Math.random().toString(36).slice(2, 10),
+      docId,
+      title: title || 'Sans titre',
+      entityName: profile.name || 'EETRA',
+      type: 'PDF Export',
+      pageCount: pages.length + 1,
+      blockCount: allBlocks.length,
+      signature: sig,
+      qrData: buildQrUrl(docId, sig),
+    })
+  }, [profile, docId, pages, title, addEntry])
+
+  // ─── Fallback: html2pdf for inline download (optional) ───────────────────
+  const handleHtml2PdfExport = useCallback(async () => {
+    if (typeof window === 'undefined') return
+    const html2pdf = (await import('html2pdf.js')).default
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+
+    const orig = wrapper.style.transform
+    wrapper.style.transform = 'none'
+    document.body.classList.add('pdf-exporting')
+
+    try {
+      await html2pdf().set({
+        margin: 0,
+        filename: `EETRA-${profile.name || 'Document'}-${docId}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 3, useCORS: true, logging: false, allowTaint: false },
+        jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait', compress: true },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+      }).from(wrapper).save()
+    } finally {
+      document.body.classList.remove('pdf-exporting')
+      wrapper.style.transform = orig
+    }
+  }, [profile, docId])
+
+  // ─── Listen for export events ──────────────────────────────────────────────
   useEffect(() => {
-    const handler = async () => {
-      if (typeof window === 'undefined') return
-      const html2pdf = (await import('html2pdf.js')).default
-      const wrapper = wrapperRef.current
-      if (!wrapper) return
-
-      const orig = wrapper.style.transform
-      wrapper.style.transform = 'none'
-
-      // Hide all interactive controls before capture
-      document.body.classList.add('pdf-exporting')
-
-      try {
-        await html2pdf().set({
-          margin: 0,
-          filename: `EETRA-${profile.name || 'Document'}-${docId}.pdf`,
-          image: { type: 'jpeg', quality: 1 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
-          jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' },
-        }).from(wrapper).save()
-      } finally {
-        // Always restore interactive controls
-        document.body.classList.remove('pdf-exporting')
-        wrapper.style.transform = orig
-      }
-
-      // Log to history
+    const handlePrint = () => handlePrintPDF()
+    const handleDownload = async () => {
+      // Log then download
+      await handleHtml2PdfExport()
       const sig = generateSignature(docId, profile.name || 'EETRA', Date.now())
       const allBlocks = pages.flatMap(p => p.blocks)
       addEntry({
@@ -62,9 +96,16 @@ export function Canvas() {
         qrData: buildQrUrl(docId, sig),
       })
     }
-    window.addEventListener('eetra:export-pdf', handler)
-    return () => window.removeEventListener('eetra:export-pdf', handler)
-  }, [profile, docId, pages, title, addEntry])
+
+    // Main export (print-quality)
+    window.addEventListener('eetra:export-pdf', handlePrint)
+    // Alternative download event (html2pdf)
+    window.addEventListener('eetra:download-pdf', handleDownload)
+    return () => {
+      window.removeEventListener('eetra:export-pdf', handlePrint)
+      window.removeEventListener('eetra:download-pdf', handleDownload)
+    }
+  }, [handlePrintPDF, handleHtml2PdfExport, profile, docId, pages, title, addEntry])
 
   return (
     <div id="canvas" className="flex-1 overflow-auto flex justify-center"
@@ -99,7 +140,6 @@ export function Canvas() {
             onOverflow={handlePageOverflow}
           />
         ))}
-        {/* Hidden trigger for PagesPanel */}
         <button data-add-page onClick={addPage} style={{ display: 'none' }} />
       </div>
     </div>

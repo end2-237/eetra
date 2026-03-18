@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useDocument, STORAGE_DRAFT } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
+import { useLibrary } from '@/contexts/LibraryContext'
 import { useToast } from '@/hooks/useToast'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { usePlan } from '@/contexts/PlanContext'
@@ -17,6 +18,7 @@ import { AnalyticsPanel } from './panels/AnalyticsPanel'
 import { CommentsPanel } from './panels/CommentsPanel'
 import { DocumentStyleModal } from './DocumentStyleModal'
 import { PlanUpgradeModal } from './PlanUpgradeModal'
+import { GuidedTour } from '@/components/onboarding/GuidedTour'
 import { makeWelcomeBlocks, WELCOME_DOC, WELCOME_PROFILE } from '@/lib/welcomeDoc'
 import { generateId } from '@/lib/utils'
 
@@ -27,40 +29,56 @@ export function EditorLayout() {
     addPage, activeTab, modified, markSaved, undo, redo,
     canUndo, canRedo, setTitle, setSubtitle, setRef, setDestination,
     setConfidentiality, setPageBlocks, pages, setShowStyleModal,
+    title, subtitle, ref, destination, confidentiality, docId, docStyle,
   } = useDocument()
-  const { updateProfile } = useProfile()
+  const { updateProfile, profile } = useProfile()
+  const { saveDocument } = useLibrary()
   const { toast, showToast } = useToast()
   const { plan } = usePlan()
   const [status, setStatus] = useState('Document actif')
+
+  // Auto-save to library
+  const saveToLibrary = () => {
+    if (!pages.length) return
+    const allBlocks = pages.flatMap(p => p.blocks)
+    saveDocument({
+      id: docId,
+      title: title || 'Sans titre',
+      subtitle,
+      ref,
+      destination,
+      confidentiality,
+      pages,
+      docStyle,
+      entityName: profile.name || 'EETRA',
+      pageCount: pages.length + 1,
+      blockCount: allBlocks.length,
+      thumbnail: pages[0]?.blocks.find(b => b.type === 'section')?.content || '',
+    })
+  }
 
   // Initialize document on mount
   useEffect(() => {
     const hasDraft = !!localStorage.getItem(STORAGE_DRAFT)
     const isFirstVisit = !localStorage.getItem(FIRST_VISIT_KEY)
 
-    if (!hasDraft) {
-      addPage()
-    }
+    if (!hasDraft) addPage()
 
     if (isFirstVisit && !hasDraft) {
       localStorage.setItem(FIRST_VISIT_KEY, '1')
-      // Load demo profile
       updateProfile(WELCOME_PROFILE)
-      // Load welcome doc content
       setTimeout(() => {
         setTitle(WELCOME_DOC.title)
         setSubtitle(WELCOME_DOC.subtitle)
         setRef(WELCOME_DOC.ref)
         setDestination(WELCOME_DOC.destination)
         setConfidentiality(WELCOME_DOC.confidentiality)
-        // Apply blocks to first page — we'll trigger from pages
       }, 50)
       setShowStyleModal(true)
       showToast('Bienvenue sur EETRA ! Document exemple chargé.', 'ok')
     }
   }, []) // eslint-disable-line
 
-  // Apply welcome blocks after first page is added
   const [welcomeApplied, setWelcomeApplied] = useState(false)
   useEffect(() => {
     if (welcomeApplied) return
@@ -75,12 +93,11 @@ export function EditorLayout() {
     }
   }, [pages, welcomeApplied, setPageBlocks])
 
-  // Keyboard shortcuts: Ctrl+Z, Ctrl+Y, Ctrl+S
+  // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
       if (!mod) return
-
       if (e.key === 'z' && !e.shiftKey) {
         e.preventDefault()
         if (canUndo) { undo(); showToast('Action annulée', 'default') }
@@ -94,6 +111,7 @@ export function EditorLayout() {
       if (e.key === 's') {
         e.preventDefault()
         markSaved()
+        saveToLibrary()
         setStatus('Sauvegardé ✓')
         setTimeout(() => setStatus('Document actif'), 2000)
         showToast('Document sauvegardé', 'ok')
@@ -101,10 +119,11 @@ export function EditorLayout() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [undo, redo, canUndo, canRedo, markSaved, showToast])
+  }, [undo, redo, canUndo, canRedo, markSaved, showToast]) // eslint-disable-line
 
   useAutoSave(modified, () => {
     markSaved()
+    saveToLibrary()
     setStatus('Sauvegardé ✓')
     setTimeout(() => setStatus('Document actif'), 2000)
   })
@@ -117,18 +136,29 @@ export function EditorLayout() {
         <Topbar status={status} showToast={showToast} />
 
         <div className="flex-1 flex overflow-hidden">
-          <div style={{ display: activeTab === 'editor'    ? 'flex' : 'none' }}><EditorPanel showToast={showToast} /></div>
-          <div style={{ display: activeTab === 'templates' ? 'flex' : 'none' }}><TemplatesPanel showToast={showToast} /></div>
-          <div style={{ display: activeTab === 'analytics' ? 'flex' : 'none' }}><AnalyticsPanel /></div>
-          <div style={{ display: activeTab === 'comments'  ? 'flex' : 'none' }}><CommentsPanel showToast={showToast} /></div>
+          <div style={{ display: activeTab === 'editor'    ? 'flex' : 'none' }} data-tour="editor-panel">
+            <EditorPanel showToast={showToast} />
+          </div>
+          <div style={{ display: activeTab === 'templates' ? 'flex' : 'none' }} data-tour="templates-panel">
+            <TemplatesPanel showToast={showToast} />
+          </div>
+          <div style={{ display: activeTab === 'analytics' ? 'flex' : 'none' }}>
+            <AnalyticsPanel />
+          </div>
+          <div style={{ display: activeTab === 'comments'  ? 'flex' : 'none' }}>
+            <CommentsPanel showToast={showToast} />
+          </div>
 
-          <PagesPanel />
+          <div data-tour="pages-panel">
+            <PagesPanel />
+          </div>
           <Canvas />
         </div>
       </div>
 
       <DocumentStyleModal />
       <PlanUpgradeModal />
+      <GuidedTour />
       <Toast {...toast} />
     </div>
   )

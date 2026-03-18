@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { DocPage } from '@/types'
@@ -13,27 +13,75 @@ interface Props {
   onOverflow?: (pageId: string, blockId: string) => void
 }
 
-// Usable height in px for A4 content zone (1123 - header ~72px - footer ~48px - paddings)
 const CONTENT_MAX_HEIGHT = 900
 
 export function ContentPage({ page, pageNumber, onOverflow }: Props) {
-  const { title, confidentiality, docId, removeBlock, removePage, updateBlockTable, docStyle } = useDocument()
+  const { title, confidentiality, docId, removeBlock, removePage, updateBlockTable, updateBlock, setPageBlocks, docStyle } = useDocument()
   const { profile } = useProfile()
   const co = profile.color
   const name = profile.name || 'EETRA'
   const contentRef = useRef<HTMLDivElement>(null)
   const overflowFiredRef = useRef(false)
 
+  // ─── Drag & Drop state ────────────────────────────────────────────────────
+  const [dragState, setDragState] = useState<{
+    draggingId: string | null
+    overBlockId: string | null
+    overPosition: 'before' | 'after'
+  }>({ draggingId: null, overBlockId: null, overPosition: 'after' })
+
+  const handleDragStart = useCallback((e: React.DragEvent, blockId: string) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', blockId)
+    setDragState(prev => ({ ...prev, draggingId: blockId }))
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, blockId: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const midY = rect.top + rect.height / 2
+    const position = e.clientY < midY ? 'before' : 'after'
+    setDragState(prev => ({
+      ...prev,
+      overBlockId: blockId,
+      overPosition: position,
+    }))
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent, targetBlockId: string) => {
+    e.preventDefault()
+    const draggingId = e.dataTransfer.getData('text/plain') || dragState.draggingId
+    if (!draggingId || draggingId === targetBlockId) {
+      setDragState({ draggingId: null, overBlockId: null, overPosition: 'after' })
+      return
+    }
+    const newBlocks = [...page.blocks]
+    const fromIdx = newBlocks.findIndex(b => b.id === draggingId)
+    let toIdx = newBlocks.findIndex(b => b.id === targetBlockId)
+    if (fromIdx === -1 || toIdx === -1) return
+    const [moved] = newBlocks.splice(fromIdx, 1)
+    // Recalculate toIdx after splice
+    toIdx = newBlocks.findIndex(b => b.id === targetBlockId)
+    const insertAt = dragState.overPosition === 'after' ? toIdx + 1 : toIdx
+    newBlocks.splice(insertAt, 0, moved)
+    setPageBlocks(page.id, newBlocks)
+    setDragState({ draggingId: null, overBlockId: null, overPosition: 'after' })
+  }, [dragState, page.blocks, page.id, setPageBlocks])
+
+  const handleDragEnd = useCallback(() => {
+    setDragState({ draggingId: null, overBlockId: null, overPosition: 'after' })
+  }, [])
+
+  // ─── Overflow detection ───────────────────────────────────────────────────
   const checkOverflow = useCallback(() => {
     const el = contentRef.current
     if (!el || overflowFiredRef.current) return
     if (el.scrollHeight > CONTENT_MAX_HEIGHT) {
-      // Only overflow if there are at least 2 blocks
       if (page.blocks.length >= 2) {
         overflowFiredRef.current = true
         const lastBlock = page.blocks[page.blocks.length - 1]
         onOverflow?.(page.id, lastBlock.id)
-        // Reset after a short delay to allow re-checking after React state update
         setTimeout(() => { overflowFiredRef.current = false }, 600)
       }
     }
@@ -48,10 +96,7 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
     return () => observer.disconnect()
   }, [checkOverflow, page.blocks])
 
-  // Reset overflow flag when block count drops (user removed blocks)
-  useEffect(() => {
-    overflowFiredRef.current = false
-  }, [page.blocks.length])
+  useEffect(() => { overflowFiredRef.current = false }, [page.blocks.length])
 
   const handleDeletePage = () => {
     if (window.confirm(`Supprimer la page ${pageNumber} ? Cette action est irréversible.`)) {
@@ -75,7 +120,7 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
       {/* Side accent */}
       <div style={{ position: 'absolute', left: 0, top: 0, width: 4, height: '100%', background: co, opacity: .25 }} />
 
-      {/* Page header */}
+      {/* Header */}
       <div style={{ padding: '26px 56px 18px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {profile.logoDataUrl && (
@@ -93,7 +138,7 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
         </div>
       </div>
 
-      {/* Content zone — max height enforced to detect overflow */}
+      {/* Content zone */}
       <div
         ref={contentRef}
         style={{
@@ -105,40 +150,65 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
         }}
       >
         {page.blocks.length === 0 ? (
-          <p style={{ color: '#ccc', fontStyle: 'italic', fontSize: 12 }}>
-            Ajoutez des blocs depuis le panneau gauche, ou choisissez un Smart Template.
-          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
+            <p style={{ color: '#ddd', fontStyle: 'italic', fontSize: 12 }}>
+              Ajoutez des blocs depuis le panneau gauche, ou choisissez un Smart Template.
+            </p>
+            <p style={{ color: '#e0e0e0', fontSize: 10 }}>Glissez-déposez les blocs pour les réordonner</p>
+          </div>
         ) : (
-          page.blocks.map(block => (
-            <div key={block.id} className="group relative" style={{ marginBottom: 20 }}>
-              <BlockRenderer
-                block={block}
-                color={co}
-                entityName={name}
-                pageId={page.id}
-                onUpdateTable={(blockId, tableData) => updateBlockTable(page.id, blockId, tableData)}
-              />
-              {/* Delete block button — hidden during PDF export */}
-              <button
-                onClick={() => removeBlock(page.id, block.id)}
-                className="pdf-hidden absolute opacity-0 group-hover:opacity-100 transition-opacity"
+          page.blocks.map(block => {
+            const isDragging = dragState.draggingId === block.id
+            const isOver = dragState.overBlockId === block.id && dragState.draggingId !== block.id
+            return (
+              <div
+                key={block.id}
+                className="group relative block-item"
+                draggable
+                onDragStart={e => handleDragStart(e, block.id)}
+                onDragOver={e => handleDragOver(e, block.id)}
+                onDrop={e => handleDrop(e, block.id)}
+                onDragEnd={handleDragEnd}
                 style={{
-                  right: -32, top: '50%', transform: 'translateY(-50%)',
-                  width: 24, height: 24, borderRadius: 5, background: '#fff',
-                  border: '1px solid #e0e0e0', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', cursor: 'pointer', color: '#999',
+                  marginBottom: 20,
+                  opacity: isDragging ? 0.4 : 1,
+                  transition: 'opacity .15s, transform .15s',
+                  borderTop: isOver && dragState.overPosition === 'before' ? `2px solid ${co}` : '2px solid transparent',
+                  borderBottom: isOver && dragState.overPosition === 'after' ? `2px solid ${co}` : '2px solid transparent',
+                  paddingLeft: 4,
                 }}
-                onMouseEnter={e => { (e.currentTarget).style.background = '#FECACA'; (e.currentTarget).style.borderColor = '#FCA5A5'; (e.currentTarget).style.color = '#DC2626'; }}
-                onMouseLeave={e => { (e.currentTarget).style.background = '#fff'; (e.currentTarget).style.borderColor = '#e0e0e0'; (e.currentTarget).style.color = '#999'; }}
               >
-                <X size={10} />
-              </button>
-            </div>
-          ))
+                <BlockRenderer
+                  block={block}
+                  color={co}
+                  entityName={name}
+                  pageId={page.id}
+                  onUpdateTable={(blockId, tableData) => updateBlockTable(page.id, blockId, tableData)}
+                  onUpdateContent={(blockId, content) => updateBlock(page.id, blockId, content)}
+                />
+
+                {/* Delete block button */}
+                <button
+                  onClick={() => removeBlock(page.id, block.id)}
+                  className="pdf-hidden absolute opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{
+                    right: -36, top: '50%', transform: 'translateY(-50%)',
+                    width: 24, height: 24, borderRadius: 5, background: '#fff',
+                    border: '1px solid #e0e0e0', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', cursor: 'pointer', color: '#999',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget).style.background = '#FECACA'; (e.currentTarget).style.borderColor = '#FCA5A5'; (e.currentTarget).style.color = '#DC2626'; }}
+                  onMouseLeave={e => { (e.currentTarget).style.background = '#fff'; (e.currentTarget).style.borderColor = '#e0e0e0'; (e.currentTarget).style.color = '#999'; }}
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            )
+          })
         )}
       </div>
 
-      {/* Page footer */}
+      {/* Footer */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '14px 56px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 8, color: '#ccc', letterSpacing: '.06em' }}>
           {profile.watermark ? 'EETRA Document Platform · ' : ''}{docId}
@@ -148,7 +218,7 @@ export function ContentPage({ page, pageNumber, onOverflow }: Props) {
         </span>
       </div>
 
-      {/* Delete page button — hidden during PDF export */}
+      {/* Delete page button */}
       <button
         onClick={handleDeletePage}
         title={`Supprimer la page ${pageNumber}`}

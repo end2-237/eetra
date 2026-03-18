@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useLayoutEffect } from 'react'
 import { DocBlock, TableData } from '@/types'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, GripVertical } from 'lucide-react'
 
 interface Props {
   block: DocBlock
@@ -10,12 +10,190 @@ interface Props {
   entityName: string
   pageId: string
   onUpdateTable?: (blockId: string, tableData: TableData) => void
+  onUpdateContent?: (blockId: string, content: string) => void
+  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>
+}
+
+// ─── Editable text hook ───────────────────────────────────────────────────────
+function useEditableRef(initialContent: string, blockId: string) {
+  const ref = useRef<any>(null)
+  useLayoutEffect(() => {
+    if (ref.current) {
+      ref.current.textContent = initialContent
+    }
+  }, [blockId]) // re-init only when block changes (new page load)
+  return ref
+}
+
+// ─── Sub-components per block type ───────────────────────────────────────────
+
+function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
+  const ref = useEditableRef(block.content || `SECTION // ${block.id.toUpperCase()}`, block.id)
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 4, height: 16, background: co, borderRadius: 2, flexShrink: 0 }} />
+      <h2
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={e => onUpdateContent?.(block.id, e.currentTarget.textContent || '')}
+        style={{ fontFamily: 'inherit', fontSize: 10, fontWeight: 800, letterSpacing: '.22em', textTransform: 'uppercase', color: '#111', margin: 0, outline: 'none', cursor: 'text' }}
+      />
+    </div>
+  )
+}
+
+function TextBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+  const ref = useEditableRef(block.content || '', block.id)
+  return (
+    <p
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      onBlur={e => onUpdateContent?.(block.id, e.currentTarget.textContent || '')}
+      style={{ fontFamily: 'inherit', fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0, textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 20 }}
+    />
+  )
+}
+
+function QuoteBlock({ block, co, entityName, onUpdateContent }: { block: DocBlock; co: string; entityName: string; onUpdateContent?: Props['onUpdateContent'] }) {
+  const textRef = useEditableRef(block.content?.split('\n')[0] || '"L\'excellence opérationnelle est le fondement de toute croissance durable."', block.id)
+  return (
+    <div style={{ borderLeft: `3px solid ${co}`, padding: '14px 18px', background: '#fafafa' }}>
+      <p
+        ref={textRef}
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={e => onUpdateContent?.(block.id, e.currentTarget.textContent || '')}
+        style={{ fontFamily: 'Libre Caslon Text, Georgia, serif', fontSize: 16, fontStyle: 'italic', color: '#222', margin: '0 0 8px', outline: 'none', cursor: 'text' }}
+      />
+      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#999' }}>
+        Direction Générale — {entityName}
+      </span>
+    </div>
+  )
+}
+
+function KpiBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
+  const defaultKpis = [
+    { val: '12M FCFA', label: 'Revenus Cible' },
+    { val: '21%', label: 'Marge Nette' },
+    { val: '+38%', label: 'Croissance' },
+    { val: '47', label: 'Effectifs 2026' },
+  ]
+
+  // Store kpi data as JSON in block.content
+  const getKpis = () => {
+    try {
+      if (block.content) return JSON.parse(block.content)
+    } catch {}
+    return defaultKpis
+  }
+
+  const [kpis, setKpis] = useState(getKpis)
+
+  const updateKpi = (idx: number, field: 'val' | 'label', value: string) => {
+    const next = kpis.map((k: any, i: number) => i === idx ? { ...k, [field]: value } : k)
+    setKpis(next)
+    onUpdateContent?.(block.id, JSON.stringify(next))
+  }
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+      {kpis.map((kpi: any, i: number) => (
+        <div key={i} style={{ background: '#F5F7FA', borderTop: `3px solid ${co}`, borderRadius: '0 0 8px 8px', padding: '14px 10px', textAlign: 'center' }}>
+          <div
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={e => updateKpi(i, 'val', e.currentTarget.textContent || '')}
+            style={{ fontFamily: 'inherit', fontSize: 20, fontWeight: 900, letterSpacing: '-.02em', marginBottom: 4, outline: 'none', cursor: 'text' }}
+          >{kpi.val}</div>
+          <div
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={e => updateKpi(i, 'label', e.currentTarget.textContent || '')}
+            style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.15em', textTransform: 'uppercase', color: '#999', outline: 'none', cursor: 'text' }}
+          >{kpi.label}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ClauseBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
+  const titleRef = useEditableRef(block.content?.split('\n')[0] || 'Article — Disposition Contractuelle', block.id)
+  const bodyRef = useEditableRef(block.content?.split('\n').slice(1).join('\n') || 'Les parties s\'engagent à respecter l\'ensemble des termes et obligations stipulés dans le présent accord, conformément aux dispositions légales et réglementaires applicables.', block.id)
+
+  const syncContent = () => {
+    const title = titleRef.current?.textContent || ''
+    const body = bodyRef.current?.textContent || ''
+    onUpdateContent?.(block.id, `${title}\n${body}`)
+  }
+
+  return (
+    <div style={{ background: '#FAFAFA', border: '1px solid #E8E8E8', borderRadius: 7, padding: 16 }}>
+      <div
+        ref={titleRef}
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={syncContent}
+        style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: co, marginBottom: 8, outline: 'none', cursor: 'text' }}
+      />
+      <p
+        ref={bodyRef}
+        contentEditable
+        suppressContentEditableWarning
+        onBlur={syncContent}
+        style={{ fontFamily: 'Libre Caslon Text, Georgia, serif', fontSize: 12, lineHeight: 1.8, color: '#555', margin: 0, outline: 'none', whiteSpace: 'pre-wrap', cursor: 'text' }}
+      />
+    </div>
+  )
+}
+
+function ChecklistBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+  const defaultItems = ['Item à compléter 1', 'Item à compléter 2', 'Item à compléter 3']
+  const getItems = () => {
+    if (block.content) return block.content.split('\n').filter(Boolean)
+    return defaultItems
+  }
+  const [items, setItems] = useState(getItems)
+  const [checked, setChecked] = useState<boolean[]>(items.map(() => false))
+
+  const updateItem = (idx: number, val: string) => {
+    const next = items.map((item, i) => i === idx ? val : item)
+    setItems(next)
+    onUpdateContent?.(block.id, next.join('\n'))
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {items.map((item, i) => (
+        <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
+          <div
+            onClick={() => setChecked(c => c.map((v, idx) => idx === i ? !v : v))}
+            style={{
+              width: 16, height: 16, borderRadius: 4, border: `2px solid ${checked[i] ? '#059669' : '#1B4FD8'}`,
+              marginTop: 2, flexShrink: 0, background: checked[i] ? '#059669' : 'transparent',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all .15s',
+            }}
+          >
+            {checked[i] && <span style={{ color: '#fff', fontSize: 10, lineHeight: 1 }}>✓</span>}
+          </div>
+          <span
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={e => updateItem(i, e.currentTarget.textContent || '')}
+            style={{ fontSize: 12, color: checked[i] ? '#999' : '#555', outline: 'none', cursor: 'text', textDecoration: checked[i] ? 'line-through' : 'none' }}
+          >{item}</span>
+        </label>
+      ))}
+    </div>
+  )
 }
 
 function InteractiveTable({ block, co, onUpdateTable }: {
-  block: DocBlock
-  co: string
-  onUpdateTable?: (blockId: string, tableData: TableData) => void
+  block: DocBlock; co: string; onUpdateTable?: (blockId: string, tableData: TableData) => void
 }) {
   const defaultData: TableData = block.tableData || {
     headers: ['Indicateur', 'Réf. 2025', 'Cible 2026', 'Variation'],
@@ -26,7 +204,6 @@ function InteractiveTable({ block, co, onUpdateTable }: {
       ["Nouveaux Marchés", "2", "4", "+100%"],
     ],
   }
-
   const [data, setData] = useState<TableData>(defaultData)
 
   const update = useCallback((newData: TableData) => {
@@ -54,37 +231,23 @@ function InteractiveTable({ block, co, onUpdateTable }: {
         <thead>
           <tr style={{ borderBottom: `2px solid ${co}` }}>
             {data.headers.map((h, ci) => (
-              <th key={ci} style={{ textAlign: 'left', padding: '8px 10px', position: 'relative' }}>
+              <th key={ci} style={{ textAlign: 'left', padding: '8px 10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span
-                    contentEditable
-                    suppressContentEditableWarning
+                    contentEditable suppressContentEditableWarning
                     onBlur={e => updateHeader(ci, e.currentTarget.textContent || '')}
-                    style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#111', outline: 'none', flex: 1 }}
-                  >
-                    {h}
-                  </span>
-                  {/* Delete column button — hidden in PDF */}
+                    style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#111', outline: 'none', flex: 1, cursor: 'text' }}
+                  >{h}</span>
                   {data.headers.length > 1 && (
-                    <button
-                      onClick={() => removeCol(ci)}
-                      title="Supprimer colonne"
-                      className="pdf-hidden"
-                      style={{ width: 14, height: 14, borderRadius: 3, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#DC2626', flexShrink: 0, padding: 0 }}
-                    >
-                      ×
-                    </button>
+                    <button onClick={() => removeCol(ci)} className="pdf-hidden"
+                      style={{ width: 14, height: 14, borderRadius: 3, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#DC2626', flexShrink: 0, padding: 0 }}>×</button>
                   )}
                 </div>
               </th>
             ))}
-            {/* Add column button — hidden in PDF */}
             <th style={{ width: 28, padding: '4px' }} className="pdf-hidden">
-              <button
-                onClick={addCol}
-                title="Ajouter une colonne"
-                style={{ width: 22, height: 22, borderRadius: 4, background: `${co}18`, border: `1px dashed ${co}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: co, padding: 0 }}
-              >
+              <button onClick={addCol}
+                style={{ width: 22, height: 22, borderRadius: 4, background: `${co}18`, border: `1px dashed ${co}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: co, padding: 0 }}>
                 <Plus size={10} />
               </button>
             </th>
@@ -96,22 +259,15 @@ function InteractiveTable({ block, co, onUpdateTable }: {
               {row.map((cell, ci) => (
                 <td key={ci} style={{ padding: '9px 10px' }}>
                   <span
-                    contentEditable
-                    suppressContentEditableWarning
+                    contentEditable suppressContentEditableWarning
                     onBlur={e => updateCell(ri, ci, e.currentTarget.textContent || '')}
-                    style={{ color: '#555', outline: 'none', display: 'block', minWidth: 40 }}
-                  >
-                    {cell}
-                  </span>
+                    style={{ color: '#555', outline: 'none', display: 'block', minWidth: 40, cursor: 'text' }}
+                  >{cell}</span>
                 </td>
               ))}
-              {/* Delete row button — hidden in PDF */}
               <td style={{ padding: '4px', width: 28 }} className="pdf-hidden">
-                <button
-                  onClick={() => removeRow(ri)}
-                  title="Supprimer ligne"
-                  style={{ width: 22, height: 22, borderRadius: 4, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', padding: 0 }}
-                >
+                <button onClick={() => removeRow(ri)}
+                  style={{ width: 22, height: 22, borderRadius: 4, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', padding: 0 }}>
                   <Trash2 size={9} />
                 </button>
               </td>
@@ -119,84 +275,48 @@ function InteractiveTable({ block, co, onUpdateTable }: {
           ))}
         </tbody>
       </table>
-      {/* Add row button — hidden in PDF */}
-      <button
-        onClick={addRow}
-        className="pdf-hidden"
-        style={{ marginTop: 6, width: '100%', padding: '6px', borderRadius: 5, background: `${co}10`, border: `1px dashed ${co}50`, cursor: 'pointer', color: co, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-      >
+      <button onClick={addRow} className="pdf-hidden"
+        style={{ marginTop: 6, width: '100%', padding: '6px', borderRadius: 5, background: `${co}10`, border: `1px dashed ${co}50`, cursor: 'pointer', color: co, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Plus size={10} /> Ajouter une ligne
       </button>
     </div>
   )
 }
 
-export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpdateTable }: Props) {
+// ─── Main BlockRenderer ───────────────────────────────────────────────────────
+
+export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpdateTable, onUpdateContent, dragHandleProps }: Props) {
   const { type } = block
 
-  if (type === 'section') return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 4, height: 16, background: co, borderRadius: 2, flexShrink: 0 }} />
-      <h2
-        contentEditable suppressContentEditableWarning
-        style={{ fontFamily: 'inherit', fontSize: 10, fontWeight: 800, letterSpacing: '.22em', textTransform: 'uppercase', color: '#111', margin: 0, outline: 'none' }}
-      >
-        {block.content || `SECTION // ${en.toUpperCase()}`}
-      </h2>
-    </div>
-  )
-
-  if (type === 'text') return (
-    <p
-      contentEditable suppressContentEditableWarning
-      style={{ fontFamily: 'inherit', fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0, textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap' }}
+  const dragHandle = (
+    <div
+      {...dragHandleProps}
+      className="pdf-hidden block-drag-handle"
+      title="Déplacer le bloc"
+      style={{
+        position: 'absolute', left: -28, top: '50%', transform: 'translateY(-50%)',
+        width: 20, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'grab', opacity: 0, transition: 'opacity .15s', color: '#bbb',
+      }}
     >
-      {block.content || `Rédigez votre contenu ici. Les perspectives stratégiques pour ${en} s'articulent autour de vecteurs de croissance que ce document vise à détailler avec rigueur.`}
-    </p>
-  )
-
-  if (type === 'quote') return (
-    <div style={{ borderLeft: `3px solid ${co}`, padding: '14px 18px', background: '#fafafa' }}>
-      <p contentEditable suppressContentEditableWarning
-        style={{ fontFamily: 'Libre Caslon Text, Georgia, serif', fontSize: 16, fontStyle: 'italic', color: '#222', margin: '0 0 8px', outline: 'none' }}>
-        {block.content || '"L\'excellence opérationnelle est le fondement de toute croissance durable."'}
-      </p>
-      <span contentEditable suppressContentEditableWarning
-        style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#999', outline: 'none' }}>
-        Direction Générale — {en}
-      </span>
+      <GripVertical size={13} />
     </div>
   )
 
-  if (type === 'table') return (
-    <InteractiveTable block={block} co={co} onUpdateTable={onUpdateTable} />
-  )
-
-  if (type === 'kpi') return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
-      {[["12M FCFA", "Revenus Cible"], ["21%", "Marge Nette"], ["+38%", "Croissance"], ["47", "Effectifs 2026"]].map(([v, l]) => (
-        <div key={l} style={{ background: '#F5F7FA', borderTop: `3px solid ${co}`, borderRadius: '0 0 8px 8px', padding: '14px 10px', textAlign: 'center' }}>
-          <div contentEditable suppressContentEditableWarning
-            style={{ fontFamily: 'inherit', fontSize: 20, fontWeight: 900, letterSpacing: '-.02em', marginBottom: 4, outline: 'none' }}>{v}</div>
-          <div contentEditable suppressContentEditableWarning
-            style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.15em', textTransform: 'uppercase', color: '#999', outline: 'none' }}>{l}</div>
-        </div>
-      ))}
+  const wrap = (children: React.ReactNode) => (
+    <div style={{ position: 'relative' }}>
+      {dragHandle}
+      {children}
     </div>
   )
 
-  if (type === 'clause') return (
-    <div style={{ background: '#FAFAFA', border: '1px solid #E8E8E8', borderRadius: 7, padding: 16 }}>
-      <div contentEditable suppressContentEditableWarning
-        style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: co, marginBottom: 8, outline: 'none' }}>
-        {block.content?.split('\n')[0] || 'Article — Disposition Contractuelle'}
-      </div>
-      <p contentEditable suppressContentEditableWarning
-        style={{ fontFamily: 'Libre Caslon Text, Georgia, serif', fontSize: 12, lineHeight: 1.8, color: '#555', margin: 0, outline: 'none', whiteSpace: 'pre-wrap' }}>
-        {block.content?.split('\n').slice(1).join('\n') || 'Les parties s\'engagent à respecter l\'ensemble des termes et obligations stipulés dans le présent accord, conformément aux dispositions légales et réglementaires applicables.'}
-      </p>
-    </div>
-  )
+  if (type === 'section') return wrap(<SectionBlock block={block} co={co} onUpdateContent={onUpdateContent} />)
+  if (type === 'text') return wrap(<TextBlock block={block} onUpdateContent={onUpdateContent} />)
+  if (type === 'quote') return wrap(<QuoteBlock block={block} co={co} entityName={en} onUpdateContent={onUpdateContent} />)
+  if (type === 'table') return wrap(<InteractiveTable block={block} co={co} onUpdateTable={onUpdateTable} />)
+  if (type === 'kpi') return wrap(<KpiBlock block={block} co={co} onUpdateContent={onUpdateContent} />)
+  if (type === 'clause') return wrap(<ClauseBlock block={block} co={co} onUpdateContent={onUpdateContent} />)
+  if (type === 'checklist') return wrap(<ChecklistBlock block={block} onUpdateContent={onUpdateContent} />)
 
   if (type === 'sign') return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginTop: 16, paddingTop: 16 }}>
@@ -204,7 +324,7 @@ export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpda
         <div key={role}>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.15em', textTransform: 'uppercase', color: '#bbb', marginBottom: 24 }}>{role}</div>
           <div style={{ borderBottom: '1px solid #333', height: 40, marginBottom: 8 }} />
-          <div contentEditable suppressContentEditableWarning style={{ fontSize: 11, color: '#888', outline: 'none' }}>
+          <div contentEditable suppressContentEditableWarning style={{ fontSize: 11, color: '#888', outline: 'none', cursor: 'text' }}>
             {role === 'Émetteur' ? (en || 'Émetteur — Titre') : 'Nom, Titre'}
           </div>
           <div style={{ fontSize: 10, color: '#bbb', marginTop: 3 }}>Date : ___/___/2026</div>
@@ -218,19 +338,6 @@ export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpda
       <div style={{ flex: 1, height: 1, background: '#e8e8e8' }} />
       <div style={{ width: 5, height: 5, borderRadius: '50%', background: co, opacity: .4 }} />
       <div style={{ flex: 1, height: 1, background: '#e8e8e8' }} />
-    </div>
-  )
-
-  if (type === 'checklist') return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      {['Item à compléter 1', 'Item à compléter 2', 'Item à compléter 3'].map((item, i) => (
-        <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-          <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${co}`, marginTop: 2, flexShrink: 0 }} />
-          <span contentEditable suppressContentEditableWarning style={{ fontSize: 12, color: '#555', outline: 'none' }}>
-            {block.content?.split('\n')[i] || item}
-          </span>
-        </label>
-      ))}
     </div>
   )
 

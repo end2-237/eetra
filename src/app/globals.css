@@ -72,9 +72,15 @@ body { overflow-x: hidden; }
 .page-delete-btn { opacity: 0; }
 #pages-wrapper > div:hover .page-delete-btn { opacity: 1; }
 
+/* ─── Drag & Drop ─── */
+.block-item:hover .block-drag-handle { opacity: 1 !important; }
+.block-item[draggable="true"] { cursor: default; }
+.block-item[draggable="true"]:active { cursor: grabbing; }
+
 /* ─── PDF Export: hide all interactive controls ─── */
 body.pdf-exporting .pdf-hidden { display: none !important; }
 body.pdf-exporting .page-delete-btn { display: none !important; }
+body.pdf-exporting .block-drag-handle { display: none !important; }
 
 /* ─── Animations ─── */
 @keyframes fadeUp {
@@ -109,3 +115,83 @@ body.pdf-exporting .page-delete-btn { display: none !important; }
 
 .animate-pulse-dot { animation: pulse 2s infinite; }
 .animate-spin-fast { animation: spin .6s linear infinite; }
+
+/* ─── Print / PDF Export ────────────────────────────────────────────────────
+   Uses the browser's native PDF renderer for maximum quality.
+   Triggered by window.print() after adding the pdf-exporting class.
+──────────────────────────────────────────────────────────────────────────── */
+@media print {
+  /* Force exact color rendering */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide everything except the document canvas */
+  body > * { display: none !important; }
+  body > div > aside,
+  body > div > div > div:first-child,
+  .topbar,
+  nav,
+  aside {
+    display: none !important;
+  }
+
+  /* Show only the canvas wrapper */
+  #canvas {
+    display: flex !important;
+    overflow: visible !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1 !important;
+  }
+
+  /* Pages wrapper — no scaling, no gap */
+  #pages-wrapper {
+    transform: none !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Each A4 page = one print page */
+  #pages-wrapper > div {
+    page-break-after: always !important;
+    break-after: page !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    overflow: hidden !important;
+  }
+
+  /* Last page — no forced page break */
+  #pages-wrapper > div:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Hide interactive controls */
+  .pdf-hidden,
+  .page-delete-btn,
+  .block-drag-handle,
+  [class*="group-hover"],
+  button.absolute {
+    display: none !important;
+  }
+
+  /* Ensure fonts render correctly */
+  body {
+    font-family: 'Bricolage Grotesque', sans-serif !important;
+    background: white !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 0;
+    size: A4 portrait;
+  }
+}

@@ -5,6 +5,7 @@ import { ProfileProvider } from '@/contexts/ProfileContext'
 import { HistoryProvider } from '@/contexts/HistoryContext'
 import { TeamProvider } from '@/contexts/TeamContext'
 import { PlanProvider } from '@/contexts/PlanContext'
+import { LibraryProvider } from '@/contexts/LibraryContext'
 
 export const metadata: Metadata = {
   title: 'EETRA — Plateforme Document d\'Entreprise',
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <PlanProvider>
               <HistoryProvider>
                 <TeamProvider>
-                  {children}
+                  <LibraryProvider>
+                    {children}
+                  </LibraryProvider>
                 </TeamProvider>
               </HistoryProvider>
             </PlanProvider>

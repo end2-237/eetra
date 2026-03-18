@@ -3,11 +3,12 @@
 import { useRouter } from 'next/navigation'
 import {
   FileText, Edit3, Grid, BarChart2, MessageSquare, Download, Link2,
-  Home, User, Clock, Users, Palette, Zap, RotateCcw,
+  Home, User, Clock, Users, Palette, Zap, RotateCcw, BookOpen, FolderOpen,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useHistory } from '@/contexts/HistoryContext'
+import { useLibrary } from '@/contexts/LibraryContext'
 import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { getInitials } from '@/lib/utils'
@@ -19,6 +20,7 @@ export function Sidebar({ showToast }: Props) {
   const { activeTab, setActiveTab, docId, setShowStyleModal, clearDraft, pages } = useDocument()
   const { profile } = useProfile()
   const { entries } = useHistory()
+  const { documents } = useLibrary()
   const { plan, planId, usage, getRemainingDocs, requestUpgrade } = usePlan()
 
   function copyLink() {
@@ -34,10 +36,10 @@ export function Sidebar({ showToast }: Props) {
   }
 
   const navItems = [
-    { id: 'editor',    icon: <Edit3 size={14} />,        label: 'Éditeur' },
-    { id: 'templates', icon: <Grid size={14} />,          label: 'Smart Templates' },
-    { id: 'analytics', icon: <BarChart2 size={14} />,     label: 'Analytics' },
-    { id: 'comments',  icon: <MessageSquare size={14} />, label: 'Commentaires' },
+    { id: 'editor',    icon: <Edit3 size={14} />,        label: 'Éditeur',       tourAttr: 'editor-nav' },
+    { id: 'templates', icon: <Grid size={14} />,          label: 'Smart Templates', tourAttr: 'templates-nav' },
+    { id: 'analytics', icon: <BarChart2 size={14} />,     label: 'Analytics',     tourAttr: undefined },
+    { id: 'comments',  icon: <MessageSquare size={14} />, label: 'Commentaires',  tourAttr: undefined },
   ] as const
 
   const btnBase = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 border-none cursor-pointer text-left mb-0.5"
@@ -67,7 +69,7 @@ export function Sidebar({ showToast }: Props) {
 
       {/* Company badge */}
       <div className="mx-3 mb-3 rounded-xl border px-3 py-2.5 flex items-center gap-2.5"
-        style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+        style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }} data-tour="company-badge">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
           style={{ background: 'var(--accentS)' }}>
           {profile.logoDataUrl
@@ -109,6 +111,7 @@ export function Sidebar({ showToast }: Props) {
         {navItems.map(item => (
           <button key={item.id} onClick={() => setActiveTab(item.id)}
             className={btnBase}
+            {...(item.tourAttr ? { 'data-tour': item.tourAttr } : {})}
             style={activeTab === item.id
               ? { background: 'var(--accentS)', color: 'var(--accent)', fontWeight: 700 }
               : { background: 'transparent', color: 'var(--text3)', fontWeight: 500 }
@@ -134,11 +137,28 @@ export function Sidebar({ showToast }: Props) {
           <RotateCcw size={14} /> Nouveau Document
         </button>
 
+        <button onClick={() => router.push('/documents')}
+          className={btnBase}
+          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
+          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
+          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
+        >
+          <FolderOpen size={14} /> Mes Documents
+          {documents.length > 0 && (
+            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{ background: 'var(--bg3)', color: 'var(--text4)' }}>
+              {documents.length}
+            </span>
+          )}
+        </button>
+
         <div className="h-px mx-1 my-3" style={{ background: 'var(--border)' }} />
 
         <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Export</div>
 
-        <button onClick={() => window.dispatchEvent(new CustomEvent('eetra:export-pdf'))}
+        <button
+          data-tour="export-btn"
+          onClick={() => window.dispatchEvent(new CustomEvent('eetra:export-pdf'))}
           className={btnBase}
           style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
           onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
@@ -157,7 +177,7 @@ export function Sidebar({ showToast }: Props) {
         </button>
 
         <div className="h-px mx-1 my-3" style={{ background: 'var(--border)' }} />
-        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Outils</div>
+        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Outils & Ressources</div>
 
         <button onClick={() => setShowStyleModal(true)}
           className={btnBase}
@@ -183,6 +203,20 @@ export function Sidebar({ showToast }: Props) {
           )}
         </button>
 
+        {/* NEW: Ebooks */}
+        <button onClick={() => router.push('/ebooks')}
+          className={btnBase}
+          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
+          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
+          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
+        >
+          <BookOpen size={14} /> Bibliothèque
+          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+            style={{ background: 'rgba(5,150,105,.1)', color: '#059669' }}>
+            NEW
+          </span>
+        </button>
+
         <button onClick={() => router.push('/team')}
           className={btnBase}
           style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
@@ -192,7 +226,7 @@ export function Sidebar({ showToast }: Props) {
           <Users size={14} /> Équipe
         </button>
 
-        {/* Usage meter (starter plan) */}
+        {/* Usage meter */}
         {showUsageMeter && (
           <div className="mx-1 mt-3 rounded-xl p-3 border" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
             <div className="flex items-center justify-between mb-2">
@@ -242,25 +276,14 @@ export function Sidebar({ showToast }: Props) {
             <Home size={12} /> Accueil
           </button>
         </div>
-        {/* Legal links */}
         <div className="px-3 pb-3 flex gap-3 flex-wrap">
           <button onClick={() => router.push('/legal')}
             className="text-[10px] border-none bg-transparent cursor-pointer"
-            style={{ color: 'var(--text4)' }}
-            onMouseEnter={e => (e.currentTarget).style.color = 'var(--text3)'}
-            onMouseLeave={e => (e.currentTarget).style.color = 'var(--text4)'}
-          >
-            CGU
-          </button>
+            style={{ color: 'var(--text4)' }}>CGU</button>
           <button onClick={() => router.push('/legal#privacy')}
             className="text-[10px] border-none bg-transparent cursor-pointer"
-            style={{ color: 'var(--text4)' }}
-            onMouseEnter={e => (e.currentTarget).style.color = 'var(--text3)'}
-            onMouseLeave={e => (e.currentTarget).style.color = 'var(--text4)'}
-          >
-            Confidentialité
-          </button>
-          <span className="text-[10px] ml-auto" style={{ color: 'var(--text4)' }}>v2.1</span>
+            style={{ color: 'var(--text4)' }}>Confidentialité</button>
+          <span className="text-[10px] ml-auto" style={{ color: 'var(--text4)' }}>v2.2</span>
         </div>
       </div>
     </aside>

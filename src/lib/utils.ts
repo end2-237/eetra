@@ -1,38 +1,13 @@
 import { clsx, type ClassValue } from 'clsx'
-
-export function cn(...inputs: ClassValue[]) {
-  return clsx(inputs)
-}
-
-export function generateDocId(): string {
-  return 'EE-' + Math.random().toString(36).slice(2, 7).toUpperCase()
-}
-
-export function generateId(): string {
-  return Math.random().toString(36).slice(2, 10)
-}
-
+export function cn(...inputs: ClassValue[]) { return clsx(inputs) }
+export function generateDocId(): string { return 'EE-' + Math.random().toString(36).slice(2, 7).toUpperCase() }
+export function generateId(): string { return Math.random().toString(36).slice(2, 10) }
 export function formatDate(date: Date): string {
-  return date.toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  })
+  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 }
-
 export function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
+  return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 }
-
-/**
- * Generate a deterministic document signature hash
- * Uses a simple but visually distinctive hex string derived from doc properties
- */
 export function generateSignature(docId: string, entityName: string, timestamp: number): string {
   const input = `${docId}:${entityName}:${timestamp}`
   let hash = 0
@@ -47,11 +22,8 @@ export function generateSignature(docId: string, entityName: string, timestamp: 
   const part3 = ((abs ^ 0xDEADBEEF) & 0xFFFFFFFF).toString(16).padStart(8, '0').toUpperCase()
   return `EESIG-${part1}-${part2}-${part3}`
 }
-
-/**
- * Build the QR code URL for document verification
- */
 export function buildQrUrl(docId: string, signature: string, size = 80): string {
-  const data = encodeURIComponent(`https://eetra.app/verify/${docId}?sig=${signature}`)
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://eetra.app'
+  const data = encodeURIComponent(`${appUrl}/verify/${docId}?sig=${signature}`)
   return `https://api.qrserver.com/v1/create-qr-code/?data=${data}&size=${size}x${size}&bgcolor=ffffff&color=111111&margin=4`
 }

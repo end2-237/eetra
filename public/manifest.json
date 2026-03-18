@@ -1,0 +1,20 @@
+{
+  "name": "EETRA — Plateforme Document d'Entreprise",
+  "short_name": "EETRA",
+  "description": "Créez des documents professionnels avec votre charte corporate",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#1B4FD8",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "fr"
+}

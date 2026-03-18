@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0D1117"/>
+  
+  <!-- Accent bar left -->
+  <rect x="0" y="0" width="8" height="630" fill="#1B4FD8"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,.03)" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Blue glow -->
+  <circle cx="900" cy="200" r="300" fill="rgba(27,79,216,.08)"/>
+  
+  <!-- Logo mark -->
+  <rect x="80" y="80" width="56" height="56" rx="14" fill="#1B4FD8"/>
+  <path d="M102 96h28l10 10v22a2 2 0 01-2 2H102a2 2 0 01-2-2V98a2 2 0 012-2z" stroke="white" stroke-width="2.5" fill="none"/>
+  <polyline points="118 96 118 106 128 106" stroke="white" stroke-width="2.5" fill="none"/>
+  <line x1="104" y1="118" x2="128" y2="118" stroke="white" stroke-width="2.5"/>
+  <line x1="104" y1="124" x2="128" y2="124" stroke="white" stroke-width="2.5"/>
+  
+  <!-- EETRA wordmark -->
+  <text x="152" y="122" font-family="Arial Black, sans-serif" font-size="38" font-weight="900" fill="white" letter-spacing="-1">EETRA</text>
+  
+  <!-- Main headline -->
+  <text x="80" y="240" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="white" letter-spacing="-2">Documents</text>
+  <text x="80" y="320" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" fill="#1B4FD8" letter-spacing="-2">Professionnels</text>
+  
+  <!-- Sub -->
+  <text x="80" y="390" font-family="Arial, sans-serif" font-size="28" fill="rgba(255,255,255,.55)">Business Plans · Audits · Appels d'Offres · Contrats</text>
+  
+  <!-- Tags -->
+  <rect x="80" y="430" width="160" height="36" rx="18" fill="rgba(27,79,216,.3)" stroke="#1B4FD8" stroke-width="1"/>
+  <text x="160" y="454" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#3B7FFF">Export PDF</text>
+  
+  <rect x="256" y="430" width="144" height="36" rx="18" fill="rgba(27,79,216,.3)" stroke="#1B4FD8" stroke-width="1"/>
+  <text x="328" y="454" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#3B7FFF">IA Rédaction</text>
+  
+  <rect x="416" y="430" width="172" height="36" rx="18" fill="rgba(27,79,216,.3)" stroke="#1B4FD8" stroke-width="1"/>
+  <text x="502" y="454" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#3B7FFF">6 Templates Pro</text>
+  
+  <!-- Document mockup right -->
+  <rect x="780" y="140" width="340" height="440" rx="12" fill="white"/>
+  <rect x="780" y="140" width="8" height="440" rx="4" fill="#1B4FD8"/>
+  <rect x="800" y="165" width="200" height="10" rx="4" fill="#e8e8e8"/>
+  <rect x="800" y="185" width="140" height="8" rx="4" fill="#f0f0f0"/>
+  <rect x="800" y="220" width="300" height="3" rx="1.5" fill="#1B4FD8"/>
+  <rect x="800" y="240" width="280" height="8" rx="4" fill="#f0f0f0"/>
+  <rect x="800" y="258" width="260" height="8" rx="4" fill="#f0f0f0"/>
+  <rect x="800" y="276" width="280" height="8" rx="4" fill="#f0f0f0"/>
+  
+  <!-- KPI boxes -->
+  <rect x="800" y="305" width="64" height="50" rx="4" fill="#F5F7FA"/>
+  <rect x="800" y="305" width="64" height="3" rx="1.5" fill="#1B4FD8"/>
+  <text x="832" y="335" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="14" font-weight="900" fill="#111">12M</text>
+  <text x="832" y="349" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">CA</text>
+  
+  <rect x="872" y="305" width="64" height="50" rx="4" fill="#F5F7FA"/>
+  <rect x="872" y="305" width="64" height="3" rx="1.5" fill="#1B4FD8"/>
+  <text x="904" y="335" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="14" font-weight="900" fill="#111">21%</text>
+  <text x="904" y="349" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">Marge</text>
+  
+  <rect x="944" y="305" width="64" height="50" rx="4" fill="#F5F7FA"/>
+  <rect x="944" y="305" width="64" height="3" rx="1.5" fill="#1B4FD8"/>
+  <text x="976" y="335" text-anchor="middle" font-family="Arial Black, sans-serif" font-size="14" font-weight="900" fill="#111">+38%</text>
+  <text x="976" y="349" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">Crois.</text>
+  
+  <rect x="800" y="370" width="300" height="8" rx="4" fill="#f0f0f0"/>
+  <rect x="800" y="388" width="260" height="8" rx="4" fill="#f0f0f0"/>
+  <rect x="800" y="406" width="280" height="8" rx="4" fill="#f0f0f0"/>
+  
+  <!-- Footer -->
+  <rect x="0" y="570" width="1200" height="60" fill="rgba(0,0,0,.4)"/>
+  <text x="80" y="603" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,.4)">eetra.app</text>
+  <text x="1120" y="603" text-anchor="end" font-family="Arial, sans-serif" font-size="16" fill="rgba(255,255,255,.4)">v2.2</text>
+</svg>

@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useLayoutEffect } from 'react'
 import { DocBlock, TableData } from '@/types'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { SafeBlock } from '@/components/ErrorBoundary'
+import { sanitizeContent } from '@/lib/sanitize'
 
 interface Props {
   block: DocBlock
@@ -21,11 +23,16 @@ function useEditableRef(initialContent: string, blockId: string) {
     if (ref.current) {
       ref.current.textContent = initialContent
     }
-  }, [blockId]) // re-init only when block changes (new page load)
+  }, [blockId])
   return ref
 }
 
-// ─── Sub-components per block type ───────────────────────────────────────────
+// Safely read textContent from a contenteditable element and sanitize it
+function readAndSanitize(el: HTMLElement): string {
+  return sanitizeContent(el.textContent || '')
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
   const ref = useEditableRef(block.content || `SECTION // ${block.id.toUpperCase()}`, block.id)
@@ -36,7 +43,7 @@ function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: str
         ref={ref}
         contentEditable
         suppressContentEditableWarning
-        onBlur={e => onUpdateContent?.(block.id, e.currentTarget.textContent || '')}
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
         style={{ fontFamily: 'inherit', fontSize: 10, fontWeight: 800, letterSpacing: '.22em', textTransform: 'uppercase', color: '#111', margin: 0, outline: 'none', cursor: 'text' }}
       />
     </div>
@@ -50,7 +57,7 @@ function TextBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateConten
       ref={ref}
       contentEditable
       suppressContentEditableWarning
-      onBlur={e => onUpdateContent?.(block.id, e.currentTarget.textContent || '')}
+      onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
       style={{ fontFamily: 'inherit', fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0, textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 20 }}
     />
   )
@@ -64,7 +71,7 @@ function QuoteBlock({ block, co, entityName, onUpdateContent }: { block: DocBloc
         ref={textRef}
         contentEditable
         suppressContentEditableWarning
-        onBlur={e => onUpdateContent?.(block.id, e.currentTarget.textContent || '')}
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
         style={{ fontFamily: 'Libre Caslon Text, Georgia, serif', fontSize: 16, fontStyle: 'italic', color: '#222', margin: '0 0 8px', outline: 'none', cursor: 'text' }}
       />
       <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#999' }}>
@@ -82,7 +89,6 @@ function KpiBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string;
     { val: '47', label: 'Effectifs 2026' },
   ]
 
-  // Store kpi data as JSON in block.content
   const getKpis = () => {
     try {
       if (block.content) return JSON.parse(block.content)
@@ -93,7 +99,8 @@ function KpiBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string;
   const [kpis, setKpis] = useState(getKpis)
 
   const updateKpi = (idx: number, field: 'val' | 'label', value: string) => {
-    const next = kpis.map((k: any, i: number) => i === idx ? { ...k, [field]: value } : k)
+    const sanitized = sanitizeContent(value)
+    const next = kpis.map((k: any, i: number) => i === idx ? { ...k, [field]: sanitized } : k)
     setKpis(next)
     onUpdateContent?.(block.id, JSON.stringify(next))
   }
@@ -124,9 +131,9 @@ function ClauseBlock({ block, co, onUpdateContent }: { block: DocBlock; co: stri
   const titleRef = useEditableRef(block.content?.split('\n')[0] || 'Article — Disposition Contractuelle', block.id)
   const bodyRef = useEditableRef(block.content?.split('\n').slice(1).join('\n') || 'Les parties s\'engagent à respecter l\'ensemble des termes et obligations stipulés dans le présent accord, conformément aux dispositions légales et réglementaires applicables.', block.id)
 
-  const syncContent = () => {
-    const title = titleRef.current?.textContent || ''
-    const body = bodyRef.current?.textContent || ''
+  const syncContent = (e: React.FocusEvent<HTMLElement>) => {
+    const title = sanitizeContent(titleRef.current?.textContent || '')
+    const body = sanitizeContent(bodyRef.current?.textContent || '')
     onUpdateContent?.(block.id, `${title}\n${body}`)
   }
 
@@ -160,7 +167,8 @@ function ChecklistBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateC
   const [checked, setChecked] = useState<boolean[]>(items.map(() => false))
 
   const updateItem = (idx: number, val: string) => {
-    const next = items.map((item, i) => i === idx ? val : item)
+    const sanitized = sanitizeContent(val)
+    const next = items.map((item, i) => i === idx ? sanitized : item)
     setItems(next)
     onUpdateContent?.(block.id, next.join('\n'))
   }
@@ -219,10 +227,10 @@ function InteractiveTable({ block, co, onUpdateTable }: {
     rows: data.rows.map(r => r.filter((_, idx) => idx !== i)),
   })
   const updateHeader = (i: number, val: string) => {
-    const headers = [...data.headers]; headers[i] = val; update({ ...data, headers })
+    const headers = [...data.headers]; headers[i] = sanitizeContent(val); update({ ...data, headers })
   }
   const updateCell = (r: number, c: number, val: string) => {
-    update({ ...data, rows: data.rows.map((row, ri) => ri === r ? row.map((cell, ci) => ci === c ? val : cell) : row) })
+    update({ ...data, rows: data.rows.map((row, ri) => ri === r ? row.map((cell, ci) => ci === c ? sanitizeContent(val) : cell) : row) })
   }
 
   return (
@@ -303,20 +311,22 @@ export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpda
     </div>
   )
 
-  const wrap = (children: React.ReactNode) => (
+  const wrap = (children: React.ReactNode, label?: string) => (
     <div style={{ position: 'relative' }}>
       {dragHandle}
-      {children}
+      <SafeBlock label={label || type}>
+        {children}
+      </SafeBlock>
     </div>
   )
 
-  if (type === 'section') return wrap(<SectionBlock block={block} co={co} onUpdateContent={onUpdateContent} />)
-  if (type === 'text') return wrap(<TextBlock block={block} onUpdateContent={onUpdateContent} />)
-  if (type === 'quote') return wrap(<QuoteBlock block={block} co={co} entityName={en} onUpdateContent={onUpdateContent} />)
-  if (type === 'table') return wrap(<InteractiveTable block={block} co={co} onUpdateTable={onUpdateTable} />)
-  if (type === 'kpi') return wrap(<KpiBlock block={block} co={co} onUpdateContent={onUpdateContent} />)
-  if (type === 'clause') return wrap(<ClauseBlock block={block} co={co} onUpdateContent={onUpdateContent} />)
-  if (type === 'checklist') return wrap(<ChecklistBlock block={block} onUpdateContent={onUpdateContent} />)
+  if (type === 'section') return wrap(<SectionBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'Section')
+  if (type === 'text') return wrap(<TextBlock block={block} onUpdateContent={onUpdateContent} />, 'Text')
+  if (type === 'quote') return wrap(<QuoteBlock block={block} co={co} entityName={en} onUpdateContent={onUpdateContent} />, 'Quote')
+  if (type === 'table') return wrap(<InteractiveTable block={block} co={co} onUpdateTable={onUpdateTable} />, 'Table')
+  if (type === 'kpi') return wrap(<KpiBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'KPI')
+  if (type === 'clause') return wrap(<ClauseBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'Clause')
+  if (type === 'checklist') return wrap(<ChecklistBlock block={block} onUpdateContent={onUpdateContent} />, 'Checklist')
 
   if (type === 'sign') return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginTop: 16, paddingTop: 16 }}>

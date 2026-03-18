@@ -13,15 +13,6 @@ module.exports = {
         serif: ['Libre Caslon Text', 'serif'],
         mono: ['DM Mono', 'monospace'],
       },
-      colors: {
-        accent: {
-          DEFAULT: '#1B4FD8',
-          hover: '#1540B0',
-          light: 'rgba(27,79,216,0.08)',
-          light2: 'rgba(27,79,216,0.15)',
-          dark: '#3B7FFF',
-        },
-      },
     },
   },
   plugins: [],

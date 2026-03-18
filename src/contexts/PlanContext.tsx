@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
+import { getPlanToken, setPlanToken, clearPlanToken, requestPlanToken, verifyPlanToken, type PlanToken } from '@/lib/planToken'
 
 export type PlanId = 'starter' | 'pro' | 'business'
 
@@ -45,7 +46,8 @@ interface PlanContextType {
   usage: UsageData
   showUpgradeModal: boolean
   upgradeReason: string
-  setPlanId: (id: PlanId) => void
+  tokenVerified: boolean
+  setPlanId: (id: PlanId) => Promise<void>
   canAddPage: (currentPageCount: number) => boolean
   canUseAI: () => boolean
   requestUpgrade: (reason: string) => void
@@ -56,11 +58,12 @@ interface PlanContextType {
 
 const PlanContext = createContext<PlanContextType>({} as PlanContextType)
 
-const KEY_PLAN = 'eetra-plan'
 const KEY_USAGE = 'eetra-usage'
 
 export function PlanProvider({ children }: { children: React.ReactNode }) {
-  const [planId, _setPlanId] = useState<PlanId>('pro') // default pro for demo
+  // Default to starter — upgraded via signed token only
+  const [planId, _setPlanId] = useState<PlanId>('starter')
+  const [tokenVerified, setTokenVerified] = useState(false)
   const [usage, setUsage] = useState<UsageData>({
     docsThisMonth: 0,
     month: new Date().getMonth(),
@@ -68,12 +71,11 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   })
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeReason, setUpgradeReason] = useState('')
+  const verifyInProgress = useRef(false)
 
   useEffect(() => {
+    // Load usage data
     try {
-      const stored = localStorage.getItem(KEY_PLAN) as PlanId | null
-      if (stored && PLAN_CONFIGS[stored]) _setPlanId(stored)
-
       const storedUsage = localStorage.getItem(KEY_USAGE)
       if (storedUsage) {
         const parsed = JSON.parse(storedUsage) as UsageData
@@ -85,11 +87,59 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch {}
+
+    // Validate plan token on mount
+    validateStoredToken()
   }, [])
 
-  const setPlanId = useCallback((id: PlanId) => {
-    _setPlanId(id)
-    try { localStorage.setItem(KEY_PLAN, id) } catch {}
+  const validateStoredToken = async () => {
+    if (verifyInProgress.current) return
+    verifyInProgress.current = true
+
+    try {
+      const token = getPlanToken()
+      if (!token) {
+        // No token = starter plan
+        _setPlanId('starter')
+        setTokenVerified(false)
+        return
+      }
+
+      // Quick client-side expiry check
+      if (Date.now() > token.exp) {
+        clearPlanToken()
+        _setPlanId('starter')
+        setTokenVerified(false)
+        return
+      }
+
+      // Server-side signature verification
+      const valid = await verifyPlanToken(token)
+      if (valid && token.plan in PLAN_CONFIGS) {
+        _setPlanId(token.plan as PlanId)
+        setTokenVerified(true)
+      } else {
+        clearPlanToken()
+        _setPlanId('starter')
+        setTokenVerified(false)
+      }
+    } catch {
+      // On network error, degrade gracefully to starter
+      _setPlanId('starter')
+      setTokenVerified(false)
+    } finally {
+      verifyInProgress.current = false
+    }
+  }
+
+  const setPlanId = useCallback(async (id: PlanId) => {
+    // Request a signed token from the server
+    const token = await requestPlanToken(id)
+    if (token) {
+      _setPlanId(id)
+      setTokenVerified(true)
+    }
+    // If request fails, plan stays as-is
   }, [])
 
   const plan = PLAN_CONFIGS[planId]
@@ -128,7 +178,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PlanContext.Provider value={{
-      planId, plan, usage, showUpgradeModal, upgradeReason,
+      planId, plan, usage, showUpgradeModal, upgradeReason, tokenVerified,
       setPlanId, canAddPage, canUseAI, requestUpgrade,
       dismissUpgrade, incrementDocUsage, getRemainingDocs,
     }}>

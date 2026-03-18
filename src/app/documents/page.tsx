@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, Plus, Search, Trash2, Copy, ArrowLeft, Clock, Layers } from 'lucide-react'
 import { useLibrary } from '@/contexts/LibraryContext'
-import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Button } from '@/components/ui/Button'
+
+const STORAGE_DRAFT = 'eetra-document-draft'
 
 const CONF_COLORS: Record<string, string> = {
   'CONFIDENTIEL': '#DC2626',
@@ -19,11 +20,6 @@ const CONF_COLORS: Record<string, string> = {
 export default function DocumentsPage() {
   const router = useRouter()
   const { documents, deleteDocument, duplicateDocument } = useLibrary()
-  const {
-    pages, title, subtitle, ref, destination, confidentiality,
-    docStyle, setTitle, setSubtitle, setRef, setDestination,
-    setConfidentiality, setPageBlocks, addPage, clearDraft,
-  } = useDocument()
   const { profile } = useProfile()
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'title'>('date')
@@ -39,41 +35,41 @@ export default function DocumentsPage() {
       : a.title.localeCompare(b.title)
     )
 
+  // FIX: Write document state to STORAGE_DRAFT before navigating.
+  // DocumentContext reads from STORAGE_DRAFT on mount, so this
+  // correctly loads all pages + blocks without the "setPageBlocks on
+  // non-existent page" bug that caused blank document reloads.
   const handleOpenDocument = (docId: string) => {
     const doc = documents.find(d => d.id === docId)
     if (!doc) return
 
-    clearDraft()
-    setTitle(doc.title)
-    setSubtitle(doc.subtitle)
-    setRef(doc.ref)
-    setDestination(doc.destination)
-    setConfidentiality(doc.confidentiality)
-
-    // Load pages
-    if (doc.pages.length > 0) {
-      // Add pages then set blocks
-      doc.pages.forEach(page => {
-        setPageBlocks(page.id, page.blocks)
-      })
-    } else {
-      addPage()
+    try {
+      const draftPayload = {
+        title: doc.title,
+        subtitle: doc.subtitle,
+        ref: doc.ref,
+        destination: doc.destination,
+        confidentiality: doc.confidentiality,
+        pages: doc.pages,
+        docStyle: doc.docStyle,
+      }
+      localStorage.setItem(STORAGE_DRAFT, JSON.stringify(draftPayload))
+    } catch (err) {
+      console.error('[EETRA] Failed to write draft for document load', err)
     }
 
     router.push('/editor')
   }
 
   const handleNewDocument = () => {
-    clearDraft()
-    addPage()
+    try {
+      localStorage.removeItem(STORAGE_DRAFT)
+    } catch {}
     router.push('/editor')
   }
 
   const handleDuplicate = (id: string) => {
-    const copy = duplicateDocument(id)
-    if (copy) {
-      // Toast would be nice but we don't have it here
-    }
+    duplicateDocument(id)
   }
 
   return (
@@ -145,6 +141,7 @@ export default function DocumentsPage() {
             style={{ background: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
             onFocus={e => e.target.style.borderColor = 'var(--accent)'}
             onBlur={e => e.target.style.borderColor = 'var(--border)'}
+            maxLength={100}
           />
         </div>
 
@@ -191,10 +188,8 @@ export default function DocumentsPage() {
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.transform = ''; }}
                   onClick={() => handleOpenDocument(doc.id)}
                 >
-                  {/* Color accent top */}
                   <div className="w-full h-1 rounded-full mb-4" style={{ background: doc.docStyle?.accentColor || 'var(--accent)' }} />
 
-                  {/* Conf badge */}
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${confColor}15`, color: confColor }}>
                       {doc.confidentiality}
@@ -216,7 +211,6 @@ export default function DocumentsPage() {
                     </span>
                   </div>
 
-                  {/* Action buttons - show on hover */}
                   <div className="flex gap-2 mt-3 pt-3 border-t opacity-0 group-hover:opacity-100 transition-opacity" style={{ borderColor: 'var(--border)' }}>
                     <button
                       onClick={e => { e.stopPropagation(); handleDuplicate(doc.id) }}

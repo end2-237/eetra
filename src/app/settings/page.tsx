@@ -192,10 +192,15 @@ export default function SettingsPage() {
                     ].map(({ label, key, ph }) => (
                       <div key={key}>
                         <label className={lbl} style={labelStyle}>{label}</label>
-                        <input className={inputClass} style={inputStyle} placeholder={ph}
-                          value={(profile as Record<string, string>)[key] || ''}
-                          onChange={e => updateProfile({ [key]: e.target.value })}
-                          onFocus={focusStyle} onBlur={blurStyle} />
+                        // ... (haut du fichier inchangé)
+<input 
+  className={inputClass} 
+  style={inputStyle} 
+  placeholder={ph}
+  // Modification de la ligne 196 ci-dessous :
+  value={(profile as unknown as Record<string, string>)[key] || ''}
+  onChange={e => updateProfile({ [key]: e.target.value })}
+/>
                       </div>
                     ))}
                   </div>

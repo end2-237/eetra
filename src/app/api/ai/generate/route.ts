@@ -32,17 +32,15 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
   return { allowed: true, remaining: RATE_LIMIT - entry.count }
 }
 
-
+// Cleanup old entries every 1000 requests to prevent memory leak
 let requestCount = 0
 function maybeCleanup() {
   requestCount++
   if (requestCount % 1000 === 0) {
     const now = Date.now()
-    
+    // Modification ici : utilisation de forEach pour éviter l'erreur d'itération au build
     rateLimitMap.forEach((entry, key) => {
-      if (now > entry.resetAt) {
-        rateLimitMap.delete(key)
-      }
+      if (now > entry.resetAt) rateLimitMap.delete(key)
     })
   }
 }
@@ -98,7 +96,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'intro') {
-    // Validate entity name and title are non-empty after sanitization
     if (!safeEntityName || !safeTitle) {
       return NextResponse.json({ error: 'Entity name and title required' }, { status: 400 })
     }

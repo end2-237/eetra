@@ -32,15 +32,18 @@ function checkRateLimit(key: string): { allowed: boolean; remaining: number } {
   return { allowed: true, remaining: RATE_LIMIT - entry.count }
 }
 
-// Cleanup old entries every 1000 requests to prevent memory leak
+
 let requestCount = 0
 function maybeCleanup() {
   requestCount++
   if (requestCount % 1000 === 0) {
     const now = Date.now()
-    for (const [key, entry] of rateLimitMap.entries()) {
-      if (now > entry.resetAt) rateLimitMap.delete(key)
-    }
+    
+    rateLimitMap.forEach((entry, key) => {
+      if (now > entry.resetAt) {
+        rateLimitMap.delete(key)
+      }
+    })
   }
 }
 

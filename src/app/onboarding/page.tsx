@@ -219,7 +219,7 @@ export default function OnboardingPage() {
                 <div key={key}>
                   <label className={labelClass} style={{ color: 'var(--text3)' }}>{label}</label>
                   <input type={type} className={inputClass} style={inputStyle} placeholder={ph}
-                    value={(profile as Record<string, string>)[key] || ''}
+                    value={(profile as unknown as Record<string, string>)[key] || ''}
                     onChange={e => updateProfile({ [key]: e.target.value })}
                     onFocus={focusStyle} onBlur={blurStyle}
                   />

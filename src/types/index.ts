@@ -8,12 +8,35 @@ export interface CompanyProfile {
 export type BlockType =
   | 'section' | 'text' | 'quote' | 'table' | 'kpi'
   | 'clause' | 'sign' | 'divider' | 'image' | 'checklist'
+  | 'chart'
 
 export interface TableData { headers: string[]; rows: string[][] }
 
-export interface DocBlock {
-  id: string; type: BlockType; content?: string; tableData?: TableData
+export interface ChartBlockData {
+  type: 'bar' | 'line' | 'pie' | 'donut'
+  title: string
+  data: {
+    labels: string[]
+    datasets: { label: string; data: number[]; color?: string }[]
+  }
 }
+
+export interface ImageBlockData {
+  src: string
+  caption: string
+  align: 'left' | 'center' | 'right'
+  size: 'sm' | 'md' | 'lg' | 'full'
+}
+
+export interface DocBlock {
+  id: string
+  type: BlockType
+  content?: string
+  tableData?: TableData
+  chartData?: ChartBlockData
+  imageData?: ImageBlockData
+}
+
 export interface DocPage { id: string; blocks: DocBlock[] }
 
 export interface Comment {

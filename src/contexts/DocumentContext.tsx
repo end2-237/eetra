@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
-import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS } from '@/types'
+import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS, ChartBlockData, ImageBlockData } from '@/types'
 import { generateId, generateDocId } from '@/lib/utils'
 import { sanitizeContent } from '@/lib/sanitize'
 
@@ -18,6 +18,8 @@ interface DocumentContextType {
   addPage: () => void; removePage: (id: string) => void; addBlock: (type: DocBlock['type'], content?: string) => void
   removeBlock: (pageId: string, blockId: string) => void; updateBlock: (pageId: string, blockId: string, content: string) => void
   updateBlockTable: (pageId: string, blockId: string, tableData: NonNullable<DocBlock['tableData']>) => void
+  updateBlockChart: (pageId: string, blockId: string, chartData: ChartBlockData) => void
+  updateBlockImage: (pageId: string, blockId: string, imageData: ImageBlockData) => void
   setPageBlocks: (pageId: string, blocks: DocBlock[]) => void; clearCurrentPage: () => void
   overflowBlock: (fromPageId: string, blockId: string) => void; undo: () => void; redo: () => void; clearDraft: () => void
   addComment: (text: string, author: string) => void; removeComment: (id: string) => void
@@ -44,7 +46,6 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const [docStyle, setDocStyleState] = useState<DocumentStyle>(STYLE_PRESETS.classic)
   const [showStyleModal, setShowStyleModal] = useState(false)
 
-  // Undo/Redo
   const pageHistoryRef = useRef<string[]>([])
   const historyIdxRef = useRef(-1)
   const isRestoringRef = useRef(false)
@@ -81,7 +82,6 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     requestAnimationFrame(() => { isRestoringRef.current = false })
   }, [])
 
-  // Load draft from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_DRAFT)
@@ -102,7 +102,6 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [])
 
-  // Sanitized setters
   const setTitle = useCallback((v: string) => { setTitleState(sanitizeContent(v).slice(0, 200)); setModified(true) }, [])
   const setSubtitle = useCallback((v: string) => { setSubtitleState(sanitizeContent(v).slice(0, 300)); setModified(true) }, [])
   const setRef = useCallback((v: string) => { setRefState(sanitizeContent(v).slice(0, 100)); setModified(true) }, [])
@@ -110,7 +109,6 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const setConfidentiality = useCallback((v: string) => { setConfidentialityState(v); setModified(true) }, [])
   const setDocStyle = useCallback((s: DocumentStyle) => { setDocStyleState(s); setModified(true) }, [])
 
-  // Persist to localStorage when pages/metadata change
   useEffect(() => {
     if (!modified && pages.length === 0) return
     try {
@@ -166,6 +164,14 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     setPages(prev => prev.map(p => p.id === pageId ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, tableData } : b) } : p)); setModified(true)
   }, [])
 
+  const updateBlockChart = useCallback((pageId: string, blockId: string, chartData: ChartBlockData) => {
+    setPages(prev => prev.map(p => p.id === pageId ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, chartData } : b) } : p)); setModified(true)
+  }, [])
+
+  const updateBlockImage = useCallback((pageId: string, blockId: string, imageData: ImageBlockData) => {
+    setPages(prev => prev.map(p => p.id === pageId ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, imageData } : b) } : p)); setModified(true)
+  }, [])
+
   const setPageBlocks = useCallback((pageId: string, blocks: DocBlock[]) => {
     setPages(prev => { pushHistory(prev); return prev.map(p => p.id === pageId ? { ...p, blocks } : p) }); setModified(true)
   }, [])
@@ -209,7 +215,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     <DocumentContext.Provider value={{
       docId, title, subtitle, ref, destination, confidentiality, pages, currentPageIndex, comments, activeTab, zoom, modified, selectedTemplate, docStyle, showStyleModal, canUndo, canRedo,
       setTitle, setSubtitle, setRef, setDestination, setConfidentiality, setCurrentPageIndex, setActiveTab, setZoom, setSelectedTemplate, setDocStyle, setShowStyleModal,
-      addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable, setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
+      addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable, updateBlockChart, updateBlockImage, setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
       addComment, removeComment, resolveComment, addReply, markSaved, resetDocument,
     }}>
       {children}

@@ -2,290 +2,178 @@
 
 import { useRouter } from 'next/navigation'
 import {
-  FileText, Edit3, Grid, BarChart2, MessageSquare, Download, Link2,
-  Home, User, Clock, Users, Palette, Zap, RotateCcw, BookOpen, FolderOpen,
+  FileText, Download, LayoutDashboard, Grid, Clock, Users,
+  BookOpen, Settings, Sun, Moon, MessageSquare, BarChart2,
+  Layers, Home
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
-import { useHistory } from '@/contexts/HistoryContext'
-import { useLibrary } from '@/contexts/LibraryContext'
 import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { getInitials } from '@/lib/utils'
 
-interface Props { showToast: (msg: string, type?: 'ok' | 'err' | 'default') => void }
+const EDITOR_TABS = [
+  { id: 'editor',    icon: <Layers size={16} />,       label: 'Blocs',       tip: 'Bibliothèque de blocs' },
+  { id: 'templates', icon: <Grid size={16} />,         label: 'Templates',   tip: 'Templates de document' },
+  { id: 'analytics', icon: <BarChart2 size={16} />,    label: 'Analyse',     tip: 'Analyse du document' },
+  { id: 'comments',  icon: <MessageSquare size={16} />, label: 'Notes',      tip: 'Annotations & commentaires' },
+]
 
-export function Sidebar({ showToast }: Props) {
-  const router = useRouter()
-  const { activeTab, setActiveTab, docId, setShowStyleModal, clearDraft, pages } = useDocument()
+interface Props {
+  onExport: () => void
+}
+
+export function Sidebar({ onExport }: Props) {
+  const { activeTab, setActiveTab, modified } = useDocument()
   const { profile } = useProfile()
-  const { entries } = useHistory()
-  const { documents } = useLibrary()
-  const { plan, planId, usage, getRemainingDocs, requestUpgrade } = usePlan()
-
-  function copyLink() {
-    const link = `${process.env.NEXT_PUBLIC_APP_URL || 'https://eetra.app'}/view/${docId}`
-    navigator.clipboard.writeText(link).then(() => showToast('Lien copié !', 'ok'))
-  }
-
-  function handleNewDoc() {
-    if (window.confirm('Créer un nouveau document ? Le document actuel est sauvegardé automatiquement.')) {
-      clearDraft()
-      window.location.reload()
-    }
-  }
-
-  const navItems = [
-    { id: 'editor',    icon: <Edit3 size={14} />,        label: 'Éditeur',       tourAttr: 'editor-nav' },
-    { id: 'templates', icon: <Grid size={14} />,          label: 'Smart Templates', tourAttr: 'templates-nav' },
-    { id: 'analytics', icon: <BarChart2 size={14} />,     label: 'Analytics',     tourAttr: undefined },
-    { id: 'comments',  icon: <MessageSquare size={14} />, label: 'Commentaires',  tourAttr: undefined },
-  ] as const
-
-  const btnBase = "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-[13px] transition-all duration-150 border-none cursor-pointer text-left mb-0.5"
-
-  const remaining = getRemainingDocs()
-  const showUsageMeter = planId === 'starter' && plan.maxDocsPerMonth !== Infinity
+  const { planId } = usePlan()
+  const router = useRouter()
 
   const PLAN_COLORS: Record<string, string> = {
-    starter: '#6B7280', pro: '#1B4FD8', business: '#059669',
+    starter: '#6B7280', pro: '#1B4FD8', business: '#059669'
   }
   const planColor = PLAN_COLORS[planId] || '#1B4FD8'
 
   return (
-    <aside className="w-[236px] min-w-[236px] flex flex-col border-r"
-      style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+    <div style={{
+      width: 60, flexShrink: 0, borderRight: '1px solid var(--border)',
+      background: 'var(--surface)', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', padding: '12px 0', gap: 4, height: '100vh',
+    }}>
+      {/* Logo / Home */}
+      <button
+        onClick={() => router.push('/dashboard')}
+        title="Tableau de bord"
+        style={{
+          width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+          background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 8,
+        }}
+      >
+        <FileText size={16} color="#fff" strokeWidth={2.5} />
+      </button>
 
-      {/* Logo */}
-      <div className="px-4 pt-4 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'var(--accent)' }}>
-            <FileText size={13} color="#fff" strokeWidth={2.5} />
-          </div>
-          <span className="text-[16px] font-black tracking-tight" style={{ color: 'var(--text)' }}>EETRA</span>
-        </div>
-        <ThemeToggle />
-      </div>
-
-      {/* Company badge */}
-      <div className="mx-3 mb-3 rounded-xl border px-3 py-2.5 flex items-center gap-2.5"
-        style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }} data-tour="company-badge">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
-          style={{ background: 'var(--accentS)' }}>
-          {profile.logoDataUrl
-            ? <img src={profile.logoDataUrl} alt="" className="w-full h-full object-contain p-1" />
-            : <span className="text-[11px] font-black" style={{ color: 'var(--accent)' }}>{getInitials(profile.name || 'EE')}</span>
-          }
-        </div>
-        <div className="overflow-hidden flex-1">
-          <div className="text-[12px] font-bold overflow-hidden text-ellipsis whitespace-nowrap" style={{ color: 'var(--text)' }}>
-            {profile.name || 'Entité non définie'}
-          </div>
-          <div className="text-[10px]" style={{ color: 'var(--text4)' }}>{profile.sector || '—'}</div>
-        </div>
-      </div>
-
-      {/* Plan badge */}
-      <div className="mx-3 mb-3 rounded-xl px-3 py-2 flex items-center justify-between"
-        style={{ background: `${planColor}12`, border: `1px solid ${planColor}30` }}>
-        <div className="flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full" style={{ background: planColor }} />
-          <span className="text-[11px] font-bold" style={{ color: planColor }}>{plan.label}</span>
-        </div>
-        {planId === 'starter' && (
+      {/* Editor tab switchers */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', padding: '0 8px', marginBottom: 'auto' }}>
+        {EDITOR_TABS.map(tab => (
           <button
-            onClick={() => requestUpgrade('Passez au plan Pro pour des fonctionnalités illimitées.')}
-            style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: planColor, background: 'transparent', border: 'none', cursor: 'pointer' }}
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            title={tab.tip}
+            style={{
+              width: '100%', height: 40, borderRadius: 10, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: activeTab === tab.id ? 'var(--accentS)' : 'transparent',
+              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text4)',
+              transition: 'all .12s',
+            }}
+            onMouseEnter={e => {
+              if (activeTab !== tab.id) {
+                (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'
+                ;(e.currentTarget as HTMLElement).style.color = 'var(--text2)'
+              }
+            }}
+            onMouseLeave={e => {
+              if (activeTab !== tab.id) {
+                (e.currentTarget as HTMLElement).style.background = 'transparent'
+                ;(e.currentTarget as HTMLElement).style.color = 'var(--text4)'
+              }
+            }}
           >
-            Upgrade →
-          </button>
-        )}
-      </div>
-
-      <div className="h-px mx-3 mb-2" style={{ background: 'var(--border)' }} />
-
-      {/* Nav */}
-      <nav className="flex-1 px-2 py-1 overflow-y-auto hide-scroll">
-        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Workspace</div>
-
-        {navItems.map(item => (
-          <button key={item.id} onClick={() => setActiveTab(item.id)}
-            className={btnBase}
-            {...(item.tourAttr ? { 'data-tour': item.tourAttr } : {})}
-            style={activeTab === item.id
-              ? { background: 'var(--accentS)', color: 'var(--accent)', fontWeight: 700 }
-              : { background: 'transparent', color: 'var(--text3)', fontWeight: 500 }
-            }
-            onMouseEnter={e => { if (activeTab !== item.id) { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; } }}
-            onMouseLeave={e => { if (activeTab !== item.id) { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; } }}
-          >
-            {item.icon}
-            {item.label}
+            {tab.icon}
           </button>
         ))}
-
-        <div className="h-px mx-1 my-3" style={{ background: 'var(--border)' }} />
-
-        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Document</div>
-
-        <button onClick={handleNewDoc}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <RotateCcw size={14} /> Nouveau Document
-        </button>
-
-        <button onClick={() => router.push('/documents')}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <FolderOpen size={14} /> Mes Documents
-          {documents.length > 0 && (
-            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-              style={{ background: 'var(--bg3)', color: 'var(--text4)' }}>
-              {documents.length}
-            </span>
-          )}
-        </button>
-
-        <div className="h-px mx-1 my-3" style={{ background: 'var(--border)' }} />
-
-        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Export</div>
-
-        <button
-          data-tour="export-btn"
-          onClick={() => window.dispatchEvent(new CustomEvent('eetra:export-pdf'))}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <Download size={14} /> Exporter PDF
-        </button>
-
-        <button onClick={copyLink}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <Link2 size={14} /> Lien Sécurisé
-        </button>
-
-        <div className="h-px mx-1 my-3" style={{ background: 'var(--border)' }} />
-        <div className="text-[9px] font-bold uppercase tracking-widest px-3 mb-2" style={{ color: 'var(--text4)' }}>Outils & Ressources</div>
-
-        <button onClick={() => setShowStyleModal(true)}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <Palette size={14} /> Style du Document
-        </button>
-
-        <button onClick={() => router.push('/history')}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <Clock size={14} /> Historique
-          {entries.length > 0 && (
-            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-              style={{ background: 'var(--accentS2)', color: 'var(--accent)' }}>
-              {entries.length}
-            </span>
-          )}
-        </button>
-
-        {/* NEW: Ebooks */}
-        <button onClick={() => router.push('/ebooks')}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <BookOpen size={14} /> Bibliothèque
-          <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-            style={{ background: 'rgba(5,150,105,.1)', color: '#059669' }}>
-            NEW
-          </span>
-        </button>
-
-        <button onClick={() => router.push('/team')}
-          className={btnBase}
-          style={{ background: 'transparent', color: 'var(--text3)', fontWeight: 500 }}
-          onMouseEnter={e => { (e.currentTarget).style.background = 'var(--bg3)'; (e.currentTarget).style.color = 'var(--text)'; }}
-          onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text3)'; }}
-        >
-          <Users size={14} /> Équipe
-        </button>
-
-        {/* Usage meter */}
-        {showUsageMeter && (
-          <div className="mx-1 mt-3 rounded-xl p-3 border" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text4)' }}>Utilisation</span>
-              <span className="text-[10px] font-bold" style={{ color: remaining <= 1 ? 'var(--danger)' : 'var(--text3)' }}>
-                {usage.docsThisMonth} / {plan.maxDocsPerMonth}
-              </span>
-            </div>
-            <div style={{ height: 4, background: 'var(--bg3)', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', borderRadius: 2, transition: 'width .4s',
-                background: remaining <= 1 ? 'var(--danger)' : 'var(--accent)',
-                width: `${Math.min(100, (usage.docsThisMonth / plan.maxDocsPerMonth) * 100)}%`,
-              }} />
-            </div>
-            {remaining <= 2 && (
-              <button
-                onClick={() => requestUpgrade('Vous approchez de la limite mensuelle du plan Starter.')}
-                className="mt-2 w-full py-1.5 rounded-lg text-[10px] font-bold cursor-pointer border"
-                style={{ background: 'var(--accentS)', borderColor: 'var(--accent)', color: 'var(--accent)' }}
-              >
-                <Zap size={10} style={{ display: 'inline', marginRight: 4 }} />
-                Upgrade →
-              </button>
-            )}
-          </div>
-        )}
-      </nav>
-
-      {/* Bottom */}
-      <div className="border-t" style={{ borderColor: 'var(--border)' }}>
-        <div className="p-2">
-          <button onClick={() => router.push('/onboarding')}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] border-none cursor-pointer"
-            style={{ background: 'transparent', color: 'var(--text4)' }}
-            onMouseEnter={e => { (e.currentTarget).style.color = 'var(--text)'; (e.currentTarget).style.background = 'var(--bg3)'; }}
-            onMouseLeave={e => { (e.currentTarget).style.color = 'var(--text4)'; (e.currentTarget).style.background = 'transparent'; }}
-          >
-            <User size={12} /> Modifier le profil
-          </button>
-          <button onClick={() => router.push('/')}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] border-none cursor-pointer"
-            style={{ background: 'transparent', color: 'var(--text4)' }}
-            onMouseEnter={e => { (e.currentTarget).style.color = 'var(--text)'; (e.currentTarget).style.background = 'var(--bg3)'; }}
-            onMouseLeave={e => { (e.currentTarget).style.color = 'var(--text4)'; (e.currentTarget).style.background = 'transparent'; }}
-          >
-            <Home size={12} /> Accueil
-          </button>
-        </div>
-        <div className="px-3 pb-3 flex gap-3 flex-wrap">
-          <button onClick={() => router.push('/legal')}
-            className="text-[10px] border-none bg-transparent cursor-pointer"
-            style={{ color: 'var(--text4)' }}>CGU</button>
-          <button onClick={() => router.push('/legal#privacy')}
-            className="text-[10px] border-none bg-transparent cursor-pointer"
-            style={{ color: 'var(--text4)' }}>Confidentialité</button>
-          <span className="text-[10px] ml-auto" style={{ color: 'var(--text4)' }}>v2.2</span>
-        </div>
       </div>
-    </aside>
+
+      {/* Bottom actions */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%', padding: '0 8px', marginTop: 'auto' }}>
+        {/* Navigate to templates page */}
+        <button
+          onClick={() => router.push('/templates')}
+          title="Galerie Templates"
+          style={{
+            width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', color: 'var(--text4)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
+        >
+          <BookOpen size={16} />
+        </button>
+
+        {/* Documents */}
+        <button
+          onClick={() => router.push('/documents')}
+          title="Mes documents"
+          style={{
+            width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', color: 'var(--text4)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
+        >
+          <Clock size={16} />
+        </button>
+
+        {/* Export */}
+        <button
+          onClick={onExport}
+          title="Exporter en PDF"
+          style={{
+            width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--accent)', color: '#fff',
+          }}
+        >
+          <Download size={16} />
+        </button>
+
+        <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+
+        {/* Theme */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
+          <ThemeToggle iconOnly />
+        </div>
+
+        {/* Settings */}
+        <button
+          onClick={() => router.push('/settings')}
+          title="Paramètres"
+          style={{
+            width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', color: 'var(--text4)',
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
+        >
+          <Settings size={16} />
+        </button>
+
+        {/* Avatar / Profile */}
+        <button
+          onClick={() => router.push('/onboarding')}
+          title={profile.name || 'Profil'}
+          style={{
+            width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent',
+          }}
+        >
+          <div style={{
+            width: 28, height: 28, borderRadius: 8, background: 'var(--accentS)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+            border: `1px solid ${planColor}40`,
+          }}>
+            {profile.logoDataUrl
+              ? <img src={profile.logoDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
+              : <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)' }}>{getInitials(profile.name || 'EE')}</span>
+            }
+          </div>
+        </button>
+      </div>
+    </div>
   )
 }

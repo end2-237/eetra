@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -9,6 +10,7 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Toast } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { useProfile } from '@/contexts/ProfileContext'
+
 
 export default function LoginPage() {
   const router = useRouter()

@@ -1,5 +1,7 @@
 'use client'
+export const dynamic = 'force-dynamic';
 
+import { Suspense } from 'react'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -103,7 +105,6 @@ const PRESET_INFO: Record<string, { label: string; icon: string }> = {
 }
 
 const TEMPLATE_CATEGORIES = ['Stratégie', 'Finance', 'Juridique', 'Commercial', 'Interne', 'Autre']
-
 const EMOJI_OPTIONS = ['📊', '📄', '🔍', '📝', '✍️', '💰', '📋', '📈', '🏛️', '⚡', '🎯', '🌟', '💼', '🔧', '📦', '🤝']
 
 interface BlockItem {
@@ -114,7 +115,7 @@ interface BlockItem {
   defaultContent?: string
 }
 
-export default function TemplateCreatorPage() {
+function TemplateCreatorContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const editId = searchParams.get('edit')
@@ -144,7 +145,6 @@ export default function TemplateCreatorPage() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
-  // Load existing template for edit
   useEffect(() => {
     if (editId) {
       const tpl = getTemplate(editId)
@@ -293,7 +293,6 @@ export default function TemplateCreatorPage() {
         {/* Settings panel */}
         <div className="w-[300px] border-r overflow-y-auto" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
           <div className="p-4">
-
             {/* BLOCKS TAB */}
             {activeTab === 'blocks' && (
               <div>
@@ -328,7 +327,6 @@ export default function TemplateCreatorPage() {
                 <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
                   Style Typographique
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Preset</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -348,7 +346,6 @@ export default function TemplateCreatorPage() {
                     ))}
                   </div>
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Police Titres</label>
                   <div className="flex flex-col gap-1.5">
@@ -368,33 +365,12 @@ export default function TemplateCreatorPage() {
                     ))}
                   </div>
                 </div>
-
                 <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Police Corps</label>
-                  <div className="flex flex-col gap-1.5">
-                    {FONT_BODY_OPTIONS.map(f => (
-                      <button
-                        key={f.value}
-                        onClick={() => setDocStyle(d => ({ ...d, fontBody: f.value }))}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-left"
-                        style={{
-                          background: docStyle.fontBody === f.value ? 'var(--accentS)' : 'var(--surface)',
-                          borderColor: docStyle.fontBody === f.value ? 'var(--accent)' : 'var(--border)',
-                        }}
-                      >
-                        <span style={{ fontFamily: `'${f.value}', sans-serif`, fontSize: 12 }}>{f.preview}</span>
-                        <span className="text-[10px]" style={{ color: 'var(--text4)' }}>{f.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Couleur d'Accent</label>
                   <div className="flex gap-2 flex-wrap mb-3">
                     {PALETTE.map(c => (
                       <button key={c} onClick={() => setDocStyle(d => ({ ...d, accentColor: c }))}
-                        style={{ width: 28, height: 28, borderRadius: 6, background: c, cursor: 'pointer', border: `2px solid ${docStyle.accentColor === c ? 'var(--text)' : 'transparent'}`, transition: 'all .15s' }} />
+                        style={{ width: 28, height: 28, borderRadius: 6, background: c, cursor: 'pointer', border: `2px solid ${docStyle.accentColor === c ? 'var(--text)' : 'transparent'}` }} />
                     ))}
                   </div>
                   <input type="color" value={docStyle.accentColor} onChange={e => setDocStyle(d => ({ ...d, accentColor: e.target.value }))}
@@ -409,7 +385,6 @@ export default function TemplateCreatorPage() {
                 <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
                   Page de Couverture
                 </div>
-
                 <div className="mb-5">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Mise en Page</label>
                   <div className="grid grid-cols-2 gap-2">
@@ -425,42 +400,11 @@ export default function TemplateCreatorPage() {
                         </div>
                         <div className="px-2 py-1.5 text-center">
                           <div className="text-[11px] font-bold" style={{ color: 'var(--text)' }}>{layout.label}</div>
-                          <div className="text-[9px]" style={{ color: 'var(--text4)' }}>{layout.desc}</div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Couleur de Couverture</label>
-                  <div className="flex gap-2 flex-wrap mb-2">
-                    {PALETTE.map(c => (
-                      <button key={c} onClick={() => setCoverStyle(s => ({ ...s, accentColor: c }))}
-                        style={{ width: 28, height: 28, borderRadius: 6, background: c, cursor: 'pointer', border: `2px solid ${coverStyle.accentColor === c ? 'var(--text)' : 'transparent'}` }} />
-                    ))}
-                  </div>
-                  <input type="color" value={coverStyle.accentColor} onChange={e => setCoverStyle(s => ({ ...s, accentColor: e.target.value }))}
-                    className="w-8 h-8 rounded-lg border cursor-pointer p-0.5" style={{ borderColor: 'var(--border)' }} />
-                </div>
-
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Taille du Titre</label>
-                  <div className="flex gap-2">
-                    {(['sm', 'md', 'lg', 'xl'] as const).map(sz => (
-                      <button key={sz} onClick={() => setCoverStyle(s => ({ ...s, titleSize: sz }))}
-                        className="flex-1 py-1.5 rounded-lg border text-[11px] font-bold cursor-pointer transition-all"
-                        style={{
-                          background: coverStyle.titleSize === sz ? 'var(--accentS)' : 'var(--surface)',
-                          borderColor: coverStyle.titleSize === sz ? 'var(--accent)' : 'var(--border)',
-                          color: coverStyle.titleSize === sz ? 'var(--accent)' : 'var(--text3)',
-                        }}>
-                        {sz.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="flex flex-col gap-3">
                   {[
                     { key: 'showLogo', label: 'Afficher le logo' },
@@ -490,23 +434,21 @@ export default function TemplateCreatorPage() {
                 <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
                   Informations Template
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Icône</label>
                   <div className="flex items-center gap-3 mb-2">
                     <div
                       onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl cursor-pointer transition-all"
+                      className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl cursor-pointer"
                       style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                       {templateIcon}
                     </div>
-                    <span className="text-[11px]" style={{ color: 'var(--text4)' }}>Cliquer pour changer</span>
                   </div>
                   {showEmojiPicker && (
                     <div className="flex flex-wrap gap-2 p-3 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                       {EMOJI_OPTIONS.map(e => (
                         <button key={e} onClick={() => { setTemplateIcon(e); setShowEmojiPicker(false) }}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer border-none text-xl transition-all"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer border-none text-xl"
                           style={{ background: e === templateIcon ? 'var(--accentS)' : 'transparent' }}>
                           {e}
                         </button>
@@ -514,7 +456,6 @@ export default function TemplateCreatorPage() {
                     </div>
                   )}
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Nom du Template</label>
                   <input className={inputClass} style={inputStyle} value={templateName}
@@ -522,7 +463,6 @@ export default function TemplateCreatorPage() {
                     onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = 'var(--surface)'; }}
                     onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)'; }} />
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Description</label>
                   <textarea
@@ -535,7 +475,6 @@ export default function TemplateCreatorPage() {
                     onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)'; }}
                   />
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Catégorie</label>
                   <select className={inputClass} style={inputStyle} value={templateCategory}
@@ -543,7 +482,6 @@ export default function TemplateCreatorPage() {
                     {TEMPLATE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-
                 <div className="mb-4">
                   <label className={lbl} style={{ color: 'var(--text3)' }}>Tags</label>
                   <div className="flex gap-2 mb-2">
@@ -564,7 +502,6 @@ export default function TemplateCreatorPage() {
                     ))}
                   </div>
                 </div>
-
                 <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   <div>
                     <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>Template public</div>
@@ -591,43 +528,8 @@ export default function TemplateCreatorPage() {
                   {blocks.length} bloc{blocks.length > 1 ? 's' : ''}
                 </span>
               </h2>
-              <div className="flex items-center gap-2">
-                <div className="text-[11px] px-2.5 py-1 rounded-xl font-bold" style={{ background: coverStyle.accentColor, color: '#fff' }}>
-                  {templateIcon} {templateName}
-                </div>
-              </div>
             </div>
 
-            {/* Cover preview mini */}
-            <div className="rounded-2xl border overflow-hidden mb-5" style={{ background: '#fff', borderColor: 'var(--border)' }}>
-              <div style={{
-                height: 80,
-                background: coverStyle.layout === 'bold' ? coverStyle.accentColor : '#fff',
-                borderLeft: coverStyle.layout === 'classic' ? `4px solid ${coverStyle.accentColor}` : 'none',
-                borderBottom: coverStyle.layout === 'minimal' ? `2px solid ${coverStyle.accentColor}` : 'none',
-                display: 'flex',
-                alignItems: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-              }}>
-                {coverStyle.layout === 'split' && (
-                  <div style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', background: coverStyle.accentColor }} />
-                )}
-                <div style={{ padding: '0 20px', position: 'relative' }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.15em', textTransform: 'uppercase', opacity: .6, marginBottom: 4,
-                    color: coverStyle.layout === 'bold' ? '#fff' : '#aaa' }}>
-                    Aperçu Couverture
-                  </div>
-                  <div style={{ fontFamily: `'${docStyle.fontTitle}', sans-serif`, fontWeight: 900,
-                    fontSize: { sm: 16, md: 20, lg: 24, xl: 28 }[coverStyle.titleSize],
-                    color: coverStyle.layout === 'bold' ? '#fff' : '#111' }}>
-                    {templateName.toUpperCase()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Block list */}
             {blocks.length === 0 ? (
               <div className="text-center py-16 rounded-2xl border-2 border-dashed" style={{ borderColor: 'var(--border2)' }}>
                 <Layers size={32} style={{ color: 'var(--text4)', margin: '0 auto 12px' }} />
@@ -655,32 +557,22 @@ export default function TemplateCreatorPage() {
                     <span className="w-6 text-center text-[16px]">{block.icon}</span>
                     <div className="flex-1">
                       <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{block.label}</div>
-                      {block.defaultContent && (
-                        <div className="text-[10px] truncate max-w-[300px]" style={{ color: 'var(--text4)' }}>
-                          {block.defaultContent}
-                        </div>
-                      )}
                     </div>
                     <span className="text-[9px] px-2 py-0.5 rounded" style={{ background: 'var(--bg3)', color: 'var(--text4)' }}>
                       {idx + 1}
                     </span>
                     <div className="flex gap-1">
-                      <button
-                        onClick={() => idx > 0 && moveBlock(idx, idx - 1)}
-                        disabled={idx === 0}
+                      <button onClick={() => idx > 0 && moveBlock(idx, idx - 1)} disabled={idx === 0}
                         className="w-6 h-6 flex items-center justify-center rounded border cursor-pointer border-none"
                         style={{ background: 'transparent', color: idx === 0 ? 'var(--border2)' : 'var(--text4)' }}>
                         <ChevronUp size={11} />
                       </button>
-                      <button
-                        onClick={() => idx < blocks.length - 1 && moveBlock(idx, idx + 1)}
-                        disabled={idx === blocks.length - 1}
+                      <button onClick={() => idx < blocks.length - 1 && moveBlock(idx, idx + 1)} disabled={idx === blocks.length - 1}
                         className="w-6 h-6 flex items-center justify-center rounded border cursor-pointer border-none"
                         style={{ background: 'transparent', color: idx === blocks.length - 1 ? 'var(--border2)' : 'var(--text4)' }}>
                         <ChevronDown size={11} />
                       </button>
-                      <button
-                        onClick={() => removeBlock(block.id)}
+                      <button onClick={() => removeBlock(block.id)}
                         className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-all"
                         style={{ background: 'transparent', color: 'var(--text4)' }}
                         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#DC2626'; (e.currentTarget as HTMLElement).style.background = '#FEE2E2'; }}
@@ -692,34 +584,23 @@ export default function TemplateCreatorPage() {
                 ))}
               </div>
             )}
-
-            {/* Style preview */}
-            {blocks.length > 0 && (
-              <div className="mt-6 rounded-2xl overflow-hidden border" style={{ background: '#fff', borderColor: 'var(--border)' }}>
-                <div className="px-5 py-3 border-b" style={{ borderColor: '#f0f0f0' }}>
-                  <div style={{ fontFamily: `'${docStyle.fontTitle}', sans-serif`, fontWeight: 900, fontSize: 11, letterSpacing: '.18em', textTransform: 'uppercase', color: '#111' }}>
-                    Aperçu Typographie
-                  </div>
-                </div>
-                <div className="p-5">
-                  <div style={{ fontFamily: `'${docStyle.fontTitle}', sans-serif`, fontWeight: 900, fontSize: 22, color: '#111', letterSpacing: '-.02em', marginBottom: 4 }}>
-                    Titre du Document
-                  </div>
-                  <div style={{ fontFamily: `'${docStyle.fontBody}', sans-serif`, fontSize: 13, color: '#555', lineHeight: 1.7 }}>
-                    Corps de texte — Ce document a été créé avec EETRA. La mise en page utilise les polices {docStyle.fontTitle} pour les titres et {docStyle.fontBody} pour le texte.
-                  </div>
-                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 3, height: 14, background: docStyle.accentColor, borderRadius: 2 }} />
-                    <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: '#aaa' }}>Section titre exemple</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
 
       <Toast {...toast} />
     </div>
+  )
+}
+
+export default function TemplateCreatorPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+      </div>
+    }>
+      <TemplateCreatorContent />
+    </Suspense>
   )
 }

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Button } from '@/components/ui/Button'
 import { FileText } from 'lucide-react'
-
 interface NavbarProps {
   onScrollTo?: (id: string) => void
 }
@@ -66,7 +65,6 @@ export function Navbar({ onScrollTo }: NavbarProps) {
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: 'var(--accent)' }}
           >
-            <FileText size={18} color="#fff" strokeWidth={2.5} />
           </div>
           <div>
             <div

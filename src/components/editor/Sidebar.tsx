@@ -134,7 +134,7 @@ export function Sidebar({ onExport }: Props) {
 
         {/* Theme */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2px 0' }}>
-          <ThemeToggle iconOnly />
+          <ThemeToggle />
         </div>
 
         {/* Settings */}

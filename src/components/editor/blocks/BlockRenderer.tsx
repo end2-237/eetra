@@ -23,8 +23,10 @@ interface Props {
 function useEditableRef(initialContent: string, blockId: string) {
   const ref = useRef<any>(null)
   useLayoutEffect(() => {
-    if (ref.current) ref.current.textContent = initialContent
-  }, [blockId])
+    if (ref.current && document.activeElement !== ref.current) {
+      ref.current.textContent = initialContent
+    }
+  }, [blockId, initialContent])
   return ref
 }
 
@@ -256,7 +258,7 @@ export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpda
       initialCaption={block.imageData?.caption || ''}
       initialAlign={block.imageData?.align || 'center'}
       initialSize={block.imageData?.size || 'lg'}
-      onUpdate={data => onUpdateImage?.(block.id, data)}
+      onUpdate={data => onUpdateImage?.(block.id, data as ImageBlockData)}
     />, 'Image'
   )
 

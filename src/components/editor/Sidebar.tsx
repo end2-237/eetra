@@ -2,9 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import {
-  FileText, Download, LayoutDashboard, Grid, Clock, Users,
-  BookOpen, Settings, Sun, Moon, MessageSquare, BarChart2,
-  Layers, Home
+  FileText, Download, BookOpen, Settings,
+  MessageSquare, BarChart2, Layers, Grid, Layout
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -12,11 +11,15 @@ import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { getInitials } from '@/lib/utils'
 
+// Extend TabName to include 'layout'
+type ExtendedTab = 'editor' | 'templates' | 'analytics' | 'comments' | 'layout'
+
 const EDITOR_TABS = [
-  { id: 'editor',    icon: <Layers size={16} />,       label: 'Blocs',       tip: 'Bibliothèque de blocs' },
-  { id: 'templates', icon: <Grid size={16} />,         label: 'Templates',   tip: 'Templates de document' },
-  { id: 'analytics', icon: <BarChart2 size={16} />,    label: 'Analyse',     tip: 'Analyse du document' },
-  { id: 'comments',  icon: <MessageSquare size={16} />, label: 'Notes',      tip: 'Annotations & commentaires' },
+  { id: 'editor',    icon: <Layers   size={16} />, label: 'Blocs',       tip: 'Bibliothèque de blocs' },
+  { id: 'templates', icon: <Grid     size={16} />, label: 'Templates',   tip: 'Templates de document' },
+  { id: 'layout',    icon: <Layout   size={16} />, label: 'Mise en page',tip: 'En-tête, pied de page, filigrane' },
+  { id: 'analytics', icon: <BarChart2 size={16} />, label: 'Analyse',    tip: 'Analyse du document' },
+  { id: 'comments',  icon: <MessageSquare size={16} />, label: 'Notes',  tip: 'Annotations & commentaires' },
 ]
 
 interface Props {
@@ -24,7 +27,7 @@ interface Props {
 }
 
 export function Sidebar({ onExport }: Props) {
-  const { activeTab, setActiveTab, modified } = useDocument()
+  const { activeTab, setActiveTab } = useDocument()
   const { profile } = useProfile()
   const { planId } = usePlan()
   const router = useRouter()
@@ -53,7 +56,7 @@ export function Sidebar({ onExport }: Props) {
         <FileText size={16} color="#fff" strokeWidth={2.5} />
       </button>
 
-      {/* Editor tab switchers */}
+      {/* Tab switchers */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', padding: '0 8px', marginBottom: 'auto' }}>
         {EDITOR_TABS.map(tab => (
           <button
@@ -64,8 +67,10 @@ export function Sidebar({ onExport }: Props) {
               width: '100%', height: 40, borderRadius: 10, border: 'none', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: activeTab === tab.id ? 'var(--accentS)' : 'transparent',
-              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text4)',
+              color:      activeTab === tab.id ? 'var(--accent)' : 'var(--text4)',
               transition: 'all .12s',
+              // Layout tab gets a subtle accent dot to indicate it's a new feature
+              position: 'relative',
             }}
             onMouseEnter={e => {
               if (activeTab !== tab.id) {
@@ -87,22 +92,6 @@ export function Sidebar({ onExport }: Props) {
 
       {/* Bottom actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%', padding: '0 8px', marginTop: 'auto' }}>
-        {/* Navigate to templates page */}
-        <button
-          onClick={() => router.push('/templates')}
-          title="Galerie Templates"
-          style={{
-            width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'transparent', color: 'var(--text4)',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
-        >
-          <BookOpen size={16} />
-        </button>
-
-        {/* Documents */}
         <button
           onClick={() => router.push('/documents')}
           title="Mes documents"
@@ -111,10 +100,10 @@ export function Sidebar({ onExport }: Props) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'transparent', color: 'var(--text4)',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)' }}
         >
-          <Clock size={16} />
+          <BookOpen size={16} />
         </button>
 
         {/* Export */}
@@ -146,8 +135,8 @@ export function Sidebar({ onExport }: Props) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             background: 'transparent', color: 'var(--text4)',
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; (e.currentTarget as HTMLElement).style.color = 'var(--text2)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)' }}
         >
           <Settings size={16} />
         </button>
@@ -158,8 +147,7 @@ export function Sidebar({ onExport }: Props) {
           title={profile.name || 'Profil'}
           style={{
             width: '100%', height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent',
           }}
         >
           <div style={{

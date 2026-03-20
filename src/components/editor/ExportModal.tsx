@@ -36,87 +36,122 @@ export function ExportModal({ onClose }: Props) {
     setStep('loading')
     setProgress(10)
 
-    // Référence au wrapper de capture (pour nettoyage d'urgence)
     let captureWrapper: HTMLDivElement | null = null
 
     try {
       const html2pdf = (await import('html2pdf.js')).default
       setProgress(20)
 
-      // ──────────────────────────────────────────────────────────────
-      // Stratégie : cloner les inner divs déjà rendus dans le viewer.
-      //
-      // Structure dans le viewer pour chaque page :
-      //   div#eetra-page-cover   (outer, taille zoomée)
-      //     div                  (inner ← firstElementChild, 794×1123, transform:scale(zoom))
-      //       <CoverPage />
-      //
-      // On clone le firstElementChild (contenu déjà rendu + texte des refs),
-      // on retire le transform:scale pour obtenir le contenu à 100%.
-      // ──────────────────────────────────────────────────────────────
-
+      // ── Build off-screen capture wrapper ──────────────────────────────────
+      // IMPORTANT: use position:absolute + left:-9999px (NOT position:fixed)
+      // Fixed elements are composited with the rest of the page by html2canvas,
+      // causing the modal backdrop to occlude the content → white PDF.
+      // Absolute + off-screen keeps the element in the document flow but
+      // invisible, so html2canvas captures only the wrapper's own content.
       captureWrapper = document.createElement('div')
       captureWrapper.id = 'eetra-pdf-capture'
-      captureWrapper.style.cssText = [
-        'position:fixed',
-        'top:0',
-        'left:0',
-        'width:794px',
-        'background:#ffffff',
-        'z-index:8998',      // sous le backdrop modal (9000) → invisible pour l'utilisateur
-        'pointer-events:none',
-      ].join(';')
+      Object.assign(captureWrapper.style, {
+        position: 'absolute',
+        left: '-9999px',
+        top: '0',
+        width: '794px',
+        background: '#ffffff',
+        zIndex: '-1',
+        pointerEvents: 'none',
+      })
 
-      // ── Couverture ──
+      // ── Clone cover page ──────────────────────────────────────────────────
       const coverOuter = document.getElementById('eetra-page-cover')
       const coverInner = coverOuter?.firstElementChild as HTMLElement | null
       if (coverInner) {
         const pageWrap = document.createElement('div')
+        // Exact A4 pixel dimensions — no min-height, no overflow
+        Object.assign(pageWrap.style, {
+          width: '794px',
+          height: '1123px',
+          background: '#ffffff',
+          position: 'relative',
+          overflow: 'hidden',
+          pageBreakAfter: 'always',
+          breakAfter: 'page',
+        })
         pageWrap.className = 'eetra-pdf-page'
-        pageWrap.style.cssText = 'width:794px;height:1123px;background:#ffffff;position:relative;overflow:hidden;page-break-after:always'
+
         const clone = coverInner.cloneNode(true) as HTMLElement
-        // Retirer le zoom transform — on veut le contenu à taille naturelle
+        // Strip any zoom transform from the viewer
         clone.style.transform = 'none'
         clone.style.transformOrigin = 'top left'
         clone.style.width = '794px'
         clone.style.height = '1123px'
+        clone.style.position = 'absolute'
+        clone.style.top = '0'
+        clone.style.left = '0'
+
         pageWrap.appendChild(clone)
         captureWrapper.appendChild(pageWrap)
       }
 
-      // ── Pages de contenu ──
+      // ── Clone content pages ───────────────────────────────────────────────
       pages.forEach((_, idx) => {
         const pageOuter = document.getElementById(`eetra-page-${idx}`)
         const pageInner = pageOuter?.firstElementChild as HTMLElement | null
         if (pageInner) {
           const pageWrap = document.createElement('div')
+          Object.assign(pageWrap.style, {
+            width: '794px',
+            height: '1123px',
+            background: '#ffffff',
+            position: 'relative',
+            overflow: 'hidden',
+            pageBreakAfter: 'always',
+            breakAfter: 'page',
+          })
           pageWrap.className = 'eetra-pdf-page'
-          pageWrap.style.cssText = 'width:794px;min-height:1123px;background:#ffffff;position:relative;overflow:hidden;page-break-after:always'
+
           const clone = pageInner.cloneNode(true) as HTMLElement
           clone.style.transform = 'none'
           clone.style.transformOrigin = 'top left'
           clone.style.width = '794px'
+          clone.style.position = 'absolute'
+          clone.style.top = '0'
+          clone.style.left = '0'
+
           pageWrap.appendChild(clone)
           captureWrapper.appendChild(pageWrap)
         }
       })
 
-      // Injecter dans le DOM (le backdrop modal le cache à l'utilisateur)
+      // ── Inject into DOM & apply pdf-exporting class ───────────────────────
       document.body.appendChild(captureWrapper)
-
-      // Masquer les boutons/contrôles interactifs dans les clones
       document.body.classList.add('pdf-exporting')
       setProgress(35)
 
-      // Attendre que le browser applique les styles sur les clones
+      // Wait for browser to render the cloned DOM (fonts, images, CSS vars)
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
-      await new Promise(r => setTimeout(r, 400))
+      await new Promise(r => setTimeout(r, 600))
       setProgress(55)
+
+      // ── Wait for all images inside the capture wrapper to load ────────────
+      const images = Array.from(captureWrapper.querySelectorAll('img'))
+      await Promise.allSettled(
+        images.map(img =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise(res => {
+                img.onload = res
+                img.onerror = res
+                // Safety timeout
+                setTimeout(res, 3000)
+              })
+        )
+      )
+      setProgress(65)
 
       const docName = (title || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase()
       const filename = `EETRA_${docName}_${new Date().toISOString().slice(0, 10)}.pdf`
       const scale = quality === 'high' ? 2 : 1.5
 
+      // ── html2pdf capture ─────────────────────────────────────────────────
       await html2pdf()
         .set({
           margin: 0,
@@ -129,11 +164,8 @@ export function ExportModal({ onClose }: Props) {
             allowTaint: true,
             backgroundColor: '#ffffff',
             width: 794,
-            windowWidth: 794,
-            // Le captureWrapper est en position:fixed top:0 left:0
-            // → pas de décalage scroll à compenser
-            scrollX: 0,
-            scrollY: 0,
+            // Do NOT set windowWidth — it triggers CSS breakpoints that can
+            // hide content. Do NOT set scrollX/scrollY for absolute elements.
           },
           jsPDF: {
             unit: 'px',
@@ -141,7 +173,6 @@ export function ExportModal({ onClose }: Props) {
             orientation: 'portrait',
             compress: true,
           },
-          // Saut de page avant chaque div.eetra-pdf-page
           pagebreak: {
             mode: ['css'],
             before: '.eetra-pdf-page',
@@ -152,13 +183,13 @@ export function ExportModal({ onClose }: Props) {
 
       setProgress(95)
 
-      // ── Nettoyage ──
+      // ── Cleanup ───────────────────────────────────────────────────────────
       document.body.removeChild(captureWrapper)
       captureWrapper = null
       document.body.classList.remove('pdf-exporting')
       setProgress(100)
 
-      // Historique & notification
+      // Log to history
       addEntry({
         id: generateId(),
         docId,
@@ -181,12 +212,12 @@ export function ExportModal({ onClose }: Props) {
       setStep('done')
 
     } catch (err: any) {
-      // Nettoyage d'urgence
+      // Cleanup on error
       document.body.classList.remove('pdf-exporting')
-      if (captureWrapper && captureWrapper.parentNode) {
+      if (captureWrapper?.parentNode) {
         document.body.removeChild(captureWrapper)
       }
-      // Fallback: chercher par id si la ref a été perdue
+      // Fallback cleanup in case ref was lost
       const orphan = document.getElementById('eetra-pdf-capture')
       if (orphan) document.body.removeChild(orphan)
 
@@ -253,7 +284,7 @@ export function ExportModal({ onClose }: Props) {
           {/* ── OPTIONS ── */}
           {step === 'options' && (
             <>
-              {/* Résumé document */}
+              {/* Document summary */}
               <div style={{
                 padding: '14px 16px', borderRadius: 12,
                 background: 'var(--bg2)', border: '1px solid var(--border)',
@@ -275,7 +306,7 @@ export function ExportModal({ onClose }: Props) {
                 </div>
               </div>
 
-              {/* Qualité */}
+              {/* Quality selector */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{
                   fontSize: 10, fontWeight: 800, letterSpacing: '.15em',
@@ -326,7 +357,7 @@ export function ExportModal({ onClose }: Props) {
                 </div>
               </div>
 
-              {/* Filigrane */}
+              {/* Watermark toggle */}
               <div style={{ marginBottom: 20 }}>
                 <div
                   onClick={() => { if (planId !== 'starter') setIncludeWatermark(!includeWatermark) }}
@@ -386,7 +417,7 @@ export function ExportModal({ onClose }: Props) {
                 Génération du PDF…
               </div>
               <div style={{ fontSize: 12, color: 'var(--text4)', marginBottom: 20 }}>
-                {progress < 40 ? 'Rendu des pages…' : progress < 80 ? 'Conversion en PDF…' : 'Finalisation…'}
+                {progress < 40 ? 'Rendu des pages…' : progress < 70 ? 'Chargement images…' : progress < 90 ? 'Conversion en PDF…' : 'Finalisation…'}
               </div>
               <div style={{ height: 6, borderRadius: 10, background: 'var(--bg3)', overflow: 'hidden' }}>
                 <div style={{

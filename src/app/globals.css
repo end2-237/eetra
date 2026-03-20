@@ -20,7 +20,13 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; font-family: 'Bricolage Grotesque', sans-serif; background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+html, body { 
+  height: 100%; 
+  font-family: 'Bricolage Grotesque', sans-serif; 
+  background: var(--bg); 
+  color: var(--text); 
+  -webkit-font-smoothing: antialiased; 
+}
 body { overflow-x: hidden; }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }

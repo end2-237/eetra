@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useRef } from 'react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { CoverPage } from './CoverPage'
@@ -15,6 +15,10 @@ interface Props {
   onExport: () => void
 }
 
+// True A4 pixel dimensions at 96 dpi
+const PAGE_W = 794
+const PAGE_H = 1123
+
 export function DocumentViewer({ onExport }: Props) {
   const {
     pages, currentPageIndex, setCurrentPageIndex,
@@ -25,25 +29,43 @@ export function DocumentViewer({ onExport }: Props) {
   const { profile } = useProfile()
   const viewerRef = useRef<HTMLDivElement>(null)
 
-  const PAGE_W = 794
-  const PAGE_H = 1123
+  const handleZoomIn  = () => setZoom(Math.min(zoom + 0.1, 1.5))
+  const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.35))
 
-  const handleZoomIn = () => setZoom(Math.min(zoom + 0.1, 1.5))
-  const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.4))
+  // The outer "frame" is exactly PAGE dimensions scaled by zoom.
+  // overflow:hidden clips the inner scaled content perfectly.
+  // The inner div is always PAGE_W × PAGE_H; transform:scale(zoom) shrinks/grows it visually.
+  const frameStyle = (minH = false): React.CSSProperties => ({
+    width:    PAGE_W * zoom,
+    height:   minH ? undefined : PAGE_H * zoom,
+    minHeight: minH ? PAGE_H * zoom : undefined,
+    flexShrink: 0,
+    overflow: 'hidden',
+    borderRadius: 4,
+    background: '#fff',
+  })
+
+  const innerStyle: React.CSSProperties = {
+    width:           PAGE_W,
+    height:          PAGE_H,
+    transform:       `scale(${zoom})`,
+    transformOrigin: 'top left',
+    // Scale collapses layout space — restore it so the frame doesn't collapse
+    marginBottom:    -(PAGE_H - PAGE_H * zoom),
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* Barre d'outils */}
+      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       <div style={{
         height: 48, flexShrink: 0,
         borderBottom: '1px solid var(--border)',
         background: 'var(--surface)',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', gap: 12,
       }}>
-        {/* Gauche — titre */}
+        {/* Left — title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <span style={{
             fontSize: 13, fontWeight: 700, color: 'var(--text2)',
@@ -61,9 +83,9 @@ export function DocumentViewer({ onExport }: Props) {
           )}
         </div>
 
-        {/* Centre — undo/redo + zoom + compteur */}
+        {/* Centre — undo / redo / zoom / page count */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button onClick={undo} disabled={!canUndo} title="Annuler"
+          <button onClick={undo} disabled={!canUndo} title="Annuler (Ctrl+Z)"
             style={{
               width: 32, height: 32, borderRadius: 8, border: 'none',
               cursor: canUndo ? 'pointer' : 'not-allowed', background: 'transparent',
@@ -72,7 +94,7 @@ export function DocumentViewer({ onExport }: Props) {
             }}>
             <RotateCcw size={13} />
           </button>
-          <button onClick={redo} disabled={!canRedo} title="Rétablir"
+          <button onClick={redo} disabled={!canRedo} title="Rétablir (Ctrl+Y)"
             style={{
               width: 32, height: 32, borderRadius: 8, border: 'none',
               cursor: canRedo ? 'pointer' : 'not-allowed', background: 'transparent',
@@ -114,7 +136,7 @@ export function DocumentViewer({ onExport }: Props) {
           </span>
         </div>
 
-        {/* Droite — export */}
+        {/* Right — export */}
         <div style={{ display: 'flex', gap: 8 }}>
           <Button variant="ghost" size="sm" onClick={onExport}>
             <Download size={13} /> Exporter PDF
@@ -122,7 +144,7 @@ export function DocumentViewer({ onExport }: Props) {
         </div>
       </div>
 
-      {/* Canvas d'aperçu */}
+      {/* ── Canvas ───────────────────────────────────────────────────────── */}
       <div
         ref={viewerRef}
         style={{
@@ -131,68 +153,42 @@ export function DocumentViewer({ onExport }: Props) {
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
         }}
       >
-        {/* ── Couverture ──
-            id="eetra-page-cover" sur l'outer div.
-            firstElementChild = inner div avec le vrai contenu à 794×1123 (+ transform:scale).
-            ExportModal clone ce firstElementChild et retire le transform pour la capture.
-        */}
+        {/* Cover — fixed A4 frame, never stretches */}
         <div
           id="eetra-page-cover"
           style={{
-            width: PAGE_W * zoom,
-            height: PAGE_H * zoom,
-            flexShrink: 0,
+            ...frameStyle(),
             boxShadow: '0 4px 32px rgba(0,0,0,.12)',
-            borderRadius: 4,
-            overflow: 'hidden',
-            background: '#fff',
           }}
         >
-          <div style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
-            width: PAGE_W,
-            height: PAGE_H,
-          }}>
+          <div style={innerStyle}>
             <CoverPage />
           </div>
         </div>
 
-        {/* ── Pages de contenu ──
-            id="eetra-page-{idx}" sur chaque outer div.
-            Même structure : firstElementChild = inner div sans zoom.
-        */}
+        {/* Content pages — also fixed-height frames */}
         {pages.map((page, idx) => (
           <div
             key={page.id}
             id={`eetra-page-${idx}`}
             onClick={() => setCurrentPageIndex(idx)}
             style={{
-              width: PAGE_W * zoom,
-              minHeight: PAGE_H * zoom,
-              flexShrink: 0,
+              ...frameStyle(),
               boxShadow: currentPageIndex === idx
                 ? `0 0 0 2px ${profile.color || '#1B4FD8'}, 0 4px 32px rgba(0,0,0,.12)`
                 : '0 4px 32px rgba(0,0,0,.10)',
-              borderRadius: 4,
-              overflow: 'hidden',
               cursor: 'pointer',
-              background: '#fff',
               transition: 'box-shadow .15s',
             }}
           >
-            <div style={{
-              transform: `scale(${zoom})`,
-              transformOrigin: 'top left',
-              width: PAGE_W,
-              minHeight: PAGE_H,
-            }}>
+            {/* Inner is always true A4 size; transform:scale shrinks/grows it */}
+            <div style={innerStyle}>
               <ContentPage page={page} pageIndex={idx} totalPages={pages.length} />
             </div>
           </div>
         ))}
 
-        {/* Bouton ajout page */}
+        {/* Add page button */}
         <button
           onClick={addPage}
           style={{
@@ -204,21 +200,21 @@ export function DocumentViewer({ onExport }: Props) {
           onMouseEnter={e => {
             const el = e.currentTarget as HTMLElement
             el.style.borderColor = 'var(--accent)'
-            el.style.color = 'var(--accent)'
-            el.style.background = 'var(--accentS)'
+            el.style.color       = 'var(--accent)'
+            el.style.background  = 'var(--accentS)'
           }}
           onMouseLeave={e => {
             const el = e.currentTarget as HTMLElement
             el.style.borderColor = 'var(--border2)'
-            el.style.color = 'var(--text4)'
-            el.style.background = 'transparent'
+            el.style.color       = 'var(--text4)'
+            el.style.background  = 'transparent'
           }}
         >
           <Plus size={14} /> Ajouter une page
         </button>
       </div>
 
-      {/* Navigation bas */}
+      {/* ── Bottom page navigation ────────────────────────────────────────── */}
       {pages.length > 1 && (
         <div style={{
           height: 40, flexShrink: 0,

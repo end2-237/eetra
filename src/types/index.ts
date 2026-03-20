@@ -52,7 +52,7 @@ export interface Template {
   blocks: Array<{ type: BlockType; content?: string; tableData?: TableData }>
 }
 
-export type TabName = 'editor' | 'templates' | 'analytics' | 'comments'
+export type TabName = 'editor' | 'templates' | 'analytics' | 'comments' | 'layout'
 
 export interface DocumentStyle {
   fontTitle: string; fontBody: string; fontMono: string
@@ -95,3 +95,56 @@ export interface TeamMember {
   id: string; name: string; email: string
   role: 'admin' | 'editor' | 'viewer'; addedAt: Date; avatar: string
 }
+
+// ─── ADD THESE TO YOUR EXISTING src/types/index.ts ───────────────────────────
+// Add after the existing exports, before the closing of the file.
+
+export interface HeaderConfig {
+  show: boolean
+  showLogo: boolean
+  showCompanyName: boolean
+  showDocTitle: boolean
+  showConfidentiality: boolean
+  showSeparator: boolean
+  height: 44 | 52 | 64
+  align: 'left' | 'center' | 'split'
+}
+
+export interface FooterConfig {
+  show: boolean
+  showPageNumber: boolean
+  showDocRef: boolean
+  showCompanyName: boolean
+  showDate: boolean
+  showSeparator: boolean
+  pageNumberFormat: 'simple' | 'total' | 'dash'
+  pageNumberAlign: 'left' | 'center' | 'right'
+  height: 36 | 44 | 52
+}
+
+export interface WatermarkConfig {
+  show: boolean
+  text: string
+  preset: 'confidential' | 'draft' | 'sample' | 'custom'
+  opacity: number      // 0–100
+  fontSize: number     // 40–120
+  angle: number        // -75 to 0
+  color: string
+}
+
+export interface HierarchyConfig {
+  autoNumberSections: boolean
+  numberStyle: 'numeric' | 'roman' | 'alpha'
+  showOutlineInHeader: boolean
+  indentSubSections: boolean
+}
+
+export interface PageLayoutConfig {
+  header: HeaderConfig
+  footer: FooterConfig
+  watermark: WatermarkConfig
+  hierarchy: HierarchyConfig
+}
+
+// Also extend TabName to include 'layout':
+// export type TabName = 'editor' | 'templates' | 'analytics' | 'comments' | 'layout'

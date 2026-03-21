@@ -1,6 +1,6 @@
 'use client'
 
-import { Grid } from 'lucide-react'
+import { Grid, Layout } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { Button } from '@/components/ui/Button'
@@ -57,15 +57,21 @@ const TEMPLATE_ICONS: Record<string, React.ReactNode> = {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
       <rect x="2" y="4" width="20" height="4" rx="1" fill="currentColor" opacity=".15"/>
-      <path d="M6 13h6M6 16h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <path d="M15 12h3v4h-3z" fill="currentColor" opacity=".2"/>
-      <path d="M15 12h3v4h-3z" stroke="currentColor" strokeWidth="1.2"/>
+      <path d="M6 13h4M14 13h4M6 16h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
 }
 
+// Layout preview mini icons
+const LAYOUT_ICONS: Record<string, string> = {
+  classic:  '▎',
+  bold:     '■',
+  minimal:  '—',
+  split:    '▌',
+}
+
 export function TemplatesPanel({ showToast }: Props) {
-  const { selectedTemplate, setSelectedTemplate, pages, currentPageIndex, setPageBlocks } = useDocument()
+  const { selectedTemplate, setSelectedTemplate, pages, currentPageIndex, setPageBlocks, setCoverStyle } = useDocument()
   const { profile } = useProfile()
 
   function applyTemplate() {
@@ -73,6 +79,13 @@ export function TemplatesPanel({ showToast }: Props) {
     if (!tpl) return
     const page = pages[currentPageIndex]
     if (!page) { showToast('Ajoutez d\'abord une page', 'err'); return }
+
+    // Apply cover style from template
+    if (tpl.coverStyle) {
+      setCoverStyle(tpl.coverStyle)
+    }
+
+    // Apply blocks
     const en = profile.name || '[Entité]'
     const newBlocks: DocBlock[] = tpl.blocks.map(b => ({
       id: generateId(),
@@ -81,7 +94,7 @@ export function TemplatesPanel({ showToast }: Props) {
       tableData: b.tableData,
     }))
     setPageBlocks(page.id, newBlocks)
-    showToast(`"${tpl.name}" appliqué — ${newBlocks.length} blocs`, 'ok')
+    showToast(`"${tpl.name}" appliqué — ${newBlocks.length} blocs + couverture ${tpl.coverStyle?.layout || 'classic'}`, 'ok')
   }
 
   return (
@@ -124,6 +137,23 @@ export function TemplatesPanel({ showToast }: Props) {
                 </span>
               </div>
               <p className="text-[11px] pl-10" style={{ color: 'var(--text4)' }}>{tpl.desc}</p>
+
+              {/* Cover layout indicator */}
+              {tpl.coverStyle && (
+                <div className="flex items-center gap-1.5 mt-2 pl-10">
+                  <Layout size={10} color="var(--text4)" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text4)' }}>
+                    Couverture {tpl.coverStyle.layout}
+                  </span>
+                  {tpl.coverStyle.accentColor && (
+                    <div style={{
+                      width: 10, height: 10, borderRadius: '50%',
+                      background: tpl.coverStyle.accentColor, flexShrink: 0,
+                    }} />
+                  )}
+                </div>
+              )}
+
               <div className="flex gap-1 flex-wrap mt-2 pl-10">
                 {tpl.tags.map(tag => (
                   <span key={tag} className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
@@ -140,6 +170,14 @@ export function TemplatesPanel({ showToast }: Props) {
         <Button variant="primary" fullWidth disabled={!selectedTemplate} onClick={applyTemplate}>
           Appliquer le template →
         </Button>
+        {selectedTemplate && (() => {
+          const tpl = TEMPLATES.find(t => t.id === selectedTemplate)
+          return tpl?.coverStyle ? (
+            <p className="text-[10px] text-center mt-2" style={{ color: 'var(--text4)' }}>
+              Applique aussi la couverture <strong>{tpl.coverStyle.layout}</strong>
+            </p>
+          ) : null
+        })()}
       </div>
     </div>
   )

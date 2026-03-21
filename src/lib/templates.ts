@@ -1,4 +1,5 @@
 import { Template, TableData } from '@/types'
+import type { CoverStyle } from '@/contexts/CustomTemplateContext'
 
 const KPI_TABLE: TableData = {
   headers: ['Indicateur', 'Réf. 2025', 'Cible 2026', 'Var.', 'Statut'],
@@ -46,6 +47,70 @@ const PLANNING_TABLE: TableData = {
   ],
 }
 
+// ─── Cover styles par template ────────────────────────────────────────────────
+
+const COVER_BP: CoverStyle = {
+  layout: 'classic',
+  accentColor: '#1B4FD8',
+  showLogo: true,
+  showQr: true,
+  showGrid: false,
+  backgroundStyle: 'solid',
+  titleSize: 'xl',
+}
+
+const COVER_AO: CoverStyle = {
+  layout: 'split',
+  accentColor: '#059669',
+  showLogo: true,
+  showQr: true,
+  showGrid: false,
+  backgroundStyle: 'solid',
+  titleSize: 'lg',
+}
+
+const COVER_AUDIT: CoverStyle = {
+  layout: 'bold',
+  accentColor: '#7C3AED',
+  showLogo: true,
+  showQr: true,
+  showGrid: true,
+  backgroundStyle: 'solid',
+  titleSize: 'lg',
+}
+
+const COVER_MEMO: CoverStyle = {
+  layout: 'minimal',
+  accentColor: '#0E7490',
+  showLogo: true,
+  showQr: false,
+  showGrid: false,
+  backgroundStyle: 'solid',
+  titleSize: 'md',
+}
+
+const COVER_CONTRAT: CoverStyle = {
+  layout: 'minimal',
+  accentColor: '#DC2626',
+  showLogo: true,
+  showQr: true,
+  showGrid: false,
+  backgroundStyle: 'solid',
+  titleSize: 'lg',
+}
+
+const COVER_DEVIS: CoverStyle = {
+  layout: 'classic',
+  accentColor: '#DC2626',
+  showLogo: true,
+  showQr: false,
+  showGrid: false,
+  backgroundStyle: 'solid',
+  titleSize: 'md',
+}
+
+// ─── Templates ────────────────────────────────────────────────────────────────
+
 export const TEMPLATES: Template[] = [
   {
     id: 'bp',
@@ -53,6 +118,7 @@ export const TEMPLATES: Template[] = [
     name: 'Business Plan',
     desc: 'Plan stratégique complet 5 ans avec projections financières',
     tags: ['Finances', 'Vision', 'Stratégie'],
+    coverStyle: COVER_BP,
     blocks: [
       { type: 'section', content: 'SECTION 01 // RÉSUMÉ EXÉCUTIF' },
       { type: 'text', content: 'Ce résumé présente les points saillants du plan stratégique. Notre vision est de devenir le leader de notre segment sur les marchés d\'Afrique de l\'Ouest d\'ici 2028, avec une croissance annuelle soutenue de 30%.' },
@@ -95,6 +161,7 @@ export const TEMPLATES: Template[] = [
     name: "Appel d'Offre",
     desc: 'Réponse structurée avec méthodologie et proposition commerciale',
     tags: ['Proposition', 'Planning', 'Contrat'],
+    coverStyle: COVER_AO,
     blocks: [
       { type: 'section', content: "SECTION 01 // LETTRE DE COUVERTURE" },
       { type: 'text', content: "Madame, Monsieur,\n\nNous avons l'honneur de vous soumettre notre réponse à l'appel d'offres réf. [N°AO] lancé le [date]. Après analyse approfondie du cahier des charges, nous sommes convaincus de disposer des compétences, de l'expérience et des ressources nécessaires pour répondre à vos attentes avec le niveau d'excellence que votre organisation exige." },
@@ -114,7 +181,7 @@ export const TEMPLATES: Template[] = [
       { type: 'table', tableData: PLANNING_TABLE },
       { type: 'divider' },
       { type: 'section', content: 'SECTION 06 // ÉQUIPE PROJET DÉDIÉE' },
-      { type: 'text', content: 'L\'équipe dédiée à votre projet est constituée de professionnels sélectionnés pour leur expertise spécifique au contexte de votre appel d\'offre. Chaque membre dispose d\'une expérience de 5 ans minimum sur des missions comparables.' },
+      { type: 'text', content: 'L\'équipe dédiée à votre projet est constituée de professionnels sélectionnés pour leur expertise spécifique au contexte de votre appel d\'offre.' },
       { type: 'table', tableData: {
         headers: ['Poste', 'Nom', 'Expérience', 'Certification', 'Taux occupation'],
         rows: [
@@ -126,7 +193,6 @@ export const TEMPLATES: Template[] = [
       }},
       { type: 'divider' },
       { type: 'section', content: 'SECTION 07 // PROPOSITION COMMERCIALE (FCFA HT)' },
-      { type: 'text', content: "Notre proposition tarifaire s'établit dans le respect des contraintes budgétaires indiquées, avec une décomposition transparente des postes de coûts." },
       { type: 'clause', content: "Article 1. — Conditions de Paiement\nLes paiements s'effectueront selon l'échéancier suivant : 40% à la signature de l'ordre de service, 40% à la livraison du rapport intermédiaire, et le solde de 20% à l'acceptation du livrable final." },
       { type: 'sign' },
     ],
@@ -137,6 +203,7 @@ export const TEMPLATES: Template[] = [
     name: "Rapport d'Audit",
     desc: 'Constatations, analyse des risques & recommandations',
     tags: ['Risques', 'Constatations', 'KPIs'],
+    coverStyle: COVER_AUDIT,
     blocks: [
       { type: 'section', content: 'SECTION 01 // SYNTHÈSE EXÉCUTIVE' },
       { type: 'quote', content: '"Le présent rapport constitue une évaluation exhaustive et indépendante des processus organisationnels et financiers sur la période de référence 2025."' },
@@ -144,10 +211,8 @@ export const TEMPLATES: Template[] = [
       { type: 'divider' },
       { type: 'section', content: 'SECTION 02 // PÉRIMÈTRE & MÉTHODOLOGIE' },
       { type: 'text', content: "L'audit a été conduit conformément aux normes ISA et aux référentiels COSO sur la période du 1er janvier au 31 décembre 2025. Le périmètre couvre les fonctions Finances, RH, Achats et Systèmes d'Information." },
-      { type: 'text', content: "Nos travaux ont inclus des entretiens avec 18 collaborateurs, l'analyse de 340 documents contractuels et opérationnels, des tests sur 85 transactions financières et une revue complète des politiques internes." },
       { type: 'divider' },
       { type: 'section', content: 'SECTION 03 // CONSTATATIONS PRINCIPALES' },
-      { type: 'text', content: "L'audit révèle un niveau de contrôle globalement satisfaisant avec 3 points d'attention majeurs et 7 recommandations d'amélioration. Le système de contrôle interne est fonctionnel mais présente des lacunes dans les domaines identifiés ci-après." },
       { type: 'table', tableData: {
         headers: ['N°', 'Constatation', 'Impact', 'Catégorie', 'Priorité'],
         rows: [
@@ -163,7 +228,6 @@ export const TEMPLATES: Template[] = [
       { type: 'table', tableData: AUDIT_TABLE },
       { type: 'divider' },
       { type: 'section', content: 'SECTION 05 // RECOMMANDATIONS STRATÉGIQUES' },
-      { type: 'text', content: 'Nos recommandations s\'organisent en trois horizons temporels : actions immédiates (0-30 jours), améliorations à court terme (1-3 mois) et transformations structurelles (3-12 mois). Un suivi trimestriel est préconisé pour mesurer l\'avancement.' },
       { type: 'table', tableData: {
         headers: ['Recommandation', 'Priorité', 'Délai', 'Coût estimé', 'Responsable'],
         rows: [
@@ -176,7 +240,7 @@ export const TEMPLATES: Template[] = [
       }},
       { type: 'divider' },
       { type: 'section', content: 'SECTION 06 // CONCLUSION & OPINION' },
-      { type: 'text', content: "Sur la base de nos travaux, nous émettons une opinion avec réserves sur l'efficacité du contrôle interne de l'entité pour l'exercice 2025. Les réserves portent sur les points C-01 et C-02 identifiés supra. La mise en œuvre diligente de nos recommandations permettra d'atteindre un niveau de contrôle satisfaisant d'ici la fin du premier semestre 2026." },
+      { type: 'text', content: "Sur la base de nos travaux, nous émettons une opinion avec réserves sur l'efficacité du contrôle interne de l'entité pour l'exercice 2025." },
       { type: 'sign' },
     ],
   },
@@ -186,9 +250,10 @@ export const TEMPLATES: Template[] = [
     name: 'Note de Direction',
     desc: 'Communication interne formelle avec décisions et plan d\'actions',
     tags: ['Mémo', 'Décision', 'Interne'],
+    coverStyle: COVER_MEMO,
     blocks: [
       { type: 'section', content: 'OBJET // NOTE DE SERVICE N°[X]/2026' },
-      { type: 'text', content: `La présente note a pour objet de porter à la connaissance de l'ensemble du personnel de Direction les décisions prises en Comité Exécutif. Ces dispositions entrent en vigueur à compter de la date de diffusion du présent document.` },
+      { type: 'text', content: `La présente note a pour objet de porter à la connaissance de l'ensemble du personnel de Direction les décisions prises en Comité Exécutif.` },
       { type: 'table', tableData: {
         headers: ['Émetteur', 'Destinataires', 'Date', 'Priorité', 'Diffusion'],
         rows: [
@@ -197,11 +262,10 @@ export const TEMPLATES: Template[] = [
       }},
       { type: 'divider' },
       { type: 'section', content: 'CONTEXTE & MOTIVATION' },
-      { type: 'text', content: 'La présente note fait suite à l\'examen des indicateurs de performance du trimestre écoulé et aux orientations stratégiques définies par le Conseil d\'Administration en séance du [date]. Elle vise à aligner l\'ensemble des équipes sur les priorités opérationnelles du prochain semestre.' },
+      { type: 'text', content: 'La présente note fait suite à l\'examen des indicateurs de performance du trimestre écoulé et aux orientations stratégiques définies par le Conseil d\'Administration.' },
       { type: 'quote', content: '"La cohérence de nos décisions opérationnelles est le socle de notre performance collective."' },
       { type: 'divider' },
       { type: 'section', content: 'DÉCISIONS & DISPOSITIONS' },
-      { type: 'text', content: 'Le Comité Exécutif a arrêté les décisions suivantes, dont la mise en œuvre est placée sous la responsabilité des directeurs de pôle concernés :' },
       { type: 'table', tableData: {
         headers: ['N°', 'Décision', 'Responsable', 'Échéance', 'Statut'],
         rows: [
@@ -214,10 +278,8 @@ export const TEMPLATES: Template[] = [
       { type: 'divider' },
       { type: 'section', content: 'MISE EN ŒUVRE & CALENDRIER' },
       { type: 'table', tableData: PLANNING_TABLE },
-      { type: 'text', content: 'Chaque directeur de pôle est tenu de communiquer un point d\'avancement mensuel au Secrétariat Général, selon le format standardisé disponible sur l\'intranet. Les difficultés majeures seront remontées en COMEX sans délai.' },
       { type: 'divider' },
-      { type: 'section', content: 'DISPOSITIONS FINALES' },
-      { type: 'clause', content: "Disposition finale\nLa présente note annule et remplace toute communication antérieure portant sur les sujets traités. Elle est valable jusqu'à publication d'une note subséquente. Toute interprétation ou question relative à son application doit être adressée au Secrétariat Général." },
+      { type: 'clause', content: "Disposition finale\nLa présente note annule et remplace toute communication antérieure portant sur les sujets traités. Elle est valable jusqu'à publication d'une note subséquente." },
       { type: 'sign' },
     ],
   },
@@ -227,14 +289,15 @@ export const TEMPLATES: Template[] = [
     name: 'Contrat / Convention',
     desc: 'Cadre contractuel complet avec clauses OHADA',
     tags: ['Clauses', 'OHADA', 'Signature'],
+    coverStyle: COVER_CONTRAT,
     blocks: [
       { type: 'section', content: 'ENTRE LES SOUSSIGNÉS' },
-      { type: 'text', content: "D'une part, [Entité], société [forme juridique] au capital de [capital] FCFA, immatriculée au RCCM sous le numéro [RCCM], dont le siège social est sis à [adresse], représentée par [signataire], agissant en qualité de Directeur Général, ci-après désignée « le Prestataire ».\n\nD'autre part, [Nom Client], [forme juridique], immatriculée sous le numéro [N°], sise à [adresse client], représentée par [nom], ci-après désignée « le Client ».\n\nIl a été convenu et arrêté ce qui suit :" },
+      { type: 'text', content: "D'une part, [Entité], société [forme juridique] au capital de [capital] FCFA, immatriculée au RCCM sous le numéro [RCCM], dont le siège social est sis à [adresse], représentée par [signataire], agissant en qualité de Directeur Général, ci-après désignée « le Prestataire ».\n\nD'autre part, [Nom Client], [forme juridique], immatriculée sous le numéro [N°], sise à [adresse client], représentée par [nom], ci-après désignée « le Client »." },
       { type: 'divider' },
       { type: 'section', content: 'ARTICLE 1 — OBJET DU CONTRAT' },
-      { type: 'clause', content: "Article 1. — Objet\nLe présent contrat a pour objet de définir les conditions et modalités dans lesquelles le Prestataire s'engage à fournir au Client les prestations de services définies à l'Annexe I, et ce pour la durée stipulée à l'article 3." },
+      { type: 'clause', content: "Article 1. — Objet\nLe présent contrat a pour objet de définir les conditions et modalités dans lesquelles le Prestataire s'engage à fournir au Client les prestations de services définies à l'Annexe I." },
       { type: 'section', content: 'ARTICLE 2 — CONDITIONS FINANCIÈRES (FCFA)' },
-      { type: 'clause', content: "Article 2. — Rémunération\nEn contrepartie des prestations réalisées, le Client versera au Prestataire la somme forfaitaire définie dans le devis annexé, payable selon les modalités suivantes : 40% à la signature, 40% à mi-parcours, 20% à la livraison finale. Tout retard de paiement supérieur à 15 jours entraînera des pénalités au taux légal en vigueur." },
+      { type: 'clause', content: "Article 2. — Rémunération\nEn contrepartie des prestations réalisées, le Client versera au Prestataire la somme forfaitaire définie dans le devis annexé." },
       { type: 'table', tableData: {
         headers: ['Tranche', 'Événement déclencheur', 'Montant (FCFA)', 'Délai paiement'],
         rows: [
@@ -244,13 +307,11 @@ export const TEMPLATES: Template[] = [
         ],
       }},
       { type: 'divider' },
-      { type: 'section', content: 'ARTICLE 3 — DURÉE & RÉSILIATION' },
-      { type: 'clause', content: "Article 3. — Durée & Résiliation\nLe présent contrat prend effet à compter de sa signature par les deux parties pour une durée déterminée de [durée]. Il peut être résilié par l'une ou l'autre des parties moyennant un préavis de 30 jours, adressé par lettre recommandée avec accusé de réception." },
-      { type: 'divider' },
-      { type: 'section', content: 'ARTICLES 4 À 6 — CLAUSES GÉNÉRALES' },
+      { type: 'section', content: 'ARTICLES 3 À 6 — CLAUSES GÉNÉRALES' },
+      { type: 'clause', content: "Article 3. — Durée & Résiliation\nLe présent contrat prend effet à compter de sa signature par les deux parties pour une durée déterminée de [durée]." },
       { type: 'clause', content: "Article 4. — Confidentialité\nLes parties s'engagent à maintenir strictement confidentielle toute information dont elles pourraient avoir connaissance dans le cadre du présent contrat, et ce pendant une durée de 5 ans après son expiration." },
-      { type: 'clause', content: "Article 5. — Propriété Intellectuelle\nL'ensemble des livrables produits dans le cadre du présent contrat devient la propriété exclusive du Client à compter du paiement intégral du prix convenu. Le Prestataire conserve la propriété de ses outils, méthodes et savoir-faire préexistants." },
-      { type: 'clause', content: "Article 6. — Droit Applicable & Juridiction\nLe présent contrat est régi par le droit OHADA et la législation nationale applicable. En cas de différend, les parties s'engagent à rechercher une solution amiable. À défaut, le litige sera soumis au Tribunal de Commerce compétent." },
+      { type: 'clause', content: "Article 5. — Propriété Intellectuelle\nL'ensemble des livrables produits dans le cadre du présent contrat devient la propriété exclusive du Client à compter du paiement intégral du prix convenu." },
+      { type: 'clause', content: "Article 6. — Droit Applicable & Juridiction\nLe présent contrat est régi par le droit OHADA et la législation nationale applicable." },
       { type: 'divider' },
       { type: 'sign' },
     ],
@@ -261,6 +322,7 @@ export const TEMPLATES: Template[] = [
     name: 'Devis / Facture Pro',
     desc: 'Devis professionnel avec tableau détaillé et conditions',
     tags: ['Devis', 'Facturation', 'FCFA'],
+    coverStyle: COVER_DEVIS,
     blocks: [
       { type: 'section', content: 'DEVIS N° [DEV-2026-001]' },
       { type: 'table', tableData: {
@@ -271,19 +333,16 @@ export const TEMPLATES: Template[] = [
       }},
       { type: 'divider' },
       { type: 'section', content: 'DÉSIGNATION DES PRESTATIONS' },
-      { type: 'text', content: 'Conformément à votre demande du [date], nous avons l\'honneur de vous soumettre le présent devis détaillant l\'ensemble des prestations proposées et les conditions tarifaires associées.' },
       { type: 'table', tableData: DEVIS_TABLE },
       { type: 'divider' },
       { type: 'section', content: 'RÉCAPITULATIF FINANCIER' },
       { type: 'kpi' },
       { type: 'divider' },
       { type: 'section', content: 'CONDITIONS GÉNÉRALES DE VENTE' },
-      { type: 'clause', content: "Conditions de paiement\nLe règlement s'effectue par virement bancaire ou Mobile Money (Orange Money / MTN MoMo / Wave) aux coordonnées figurant en pied de document. Un acompte de 40% est requis à la validation du devis. Le solde est exigible à la livraison des prestations." },
-      { type: 'clause', content: "Validité & Acceptation\nLe présent devis est valable 30 jours à compter de sa date d'émission. Son acceptation formelle (signature + retour du bon de commande ou virement de l'acompte) vaut accord sur l'ensemble des conditions tarifaires et commerciales décrites." },
-      { type: 'clause', content: "Annulation & Remboursement\nEn cas d'annulation par le Client après versement de l'acompte, celui-ci reste acquis au Prestataire à titre d'indemnité de dédit. En cas d'annulation par le Prestataire, l'acompte est intégralement remboursé dans un délai de 15 jours ouvrés." },
+      { type: 'clause', content: "Conditions de paiement\nLe règlement s'effectue par virement bancaire ou Mobile Money. Un acompte de 40% est requis à la validation du devis." },
+      { type: 'clause', content: "Validité & Acceptation\nLe présent devis est valable 30 jours à compter de sa date d'émission." },
+      { type: 'clause', content: "Annulation & Remboursement\nEn cas d'annulation par le Client après versement de l'acompte, celui-ci reste acquis au Prestataire à titre d'indemnité de dédit." },
       { type: 'divider' },
-      { type: 'section', content: 'BON POUR ACCORD' },
-      { type: 'text', content: 'Je soussigné(e), [Nom & Prénom], agissant en qualité de [Titre] pour le compte de [Société Cliente], déclare accepter le présent devis dans son intégralité, y compris les conditions générales de vente annexées.' },
       { type: 'sign' },
     ],
   },

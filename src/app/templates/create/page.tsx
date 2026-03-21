@@ -5,115 +5,88 @@ import { Suspense } from 'react'
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
-  ArrowLeft, Save, Eye, Plus, Trash2, GripVertical, FileText,
+  ArrowLeft, Save, Plus, Trash2, GripVertical,
   Palette, Layout, Type, Layers, Settings, ChevronDown, ChevronUp,
-  Check, X, Tag, Sparkles, Move
+  Check, X, Sparkles, PenTool,
 } from 'lucide-react'
-import { useCustomTemplates, type CustomTemplate, type CoverLayout, type CoverStyle, DEFAULT_COVER_STYLE } from '@/contexts/CustomTemplateContext'
+import { useCustomTemplates, type CoverLayout, type CoverStyle, DEFAULT_COVER_STYLE } from '@/contexts/CustomTemplateContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Button } from '@/components/ui/Button'
 import { Toast } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
-import { STYLE_PRESETS, FONT_TITLE_OPTIONS, FONT_BODY_OPTIONS, type DocumentStyle, type BlockType } from '@/types'
+import { STYLE_PRESETS, FONT_TITLE_OPTIONS, type DocumentStyle, type BlockType } from '@/types'
 import { PALETTE, TEMPLATES } from '@/lib/templates'
+import { CoverPageEditor, type CoverBlock } from '@/components/editor/cover/CoverPageEditor'
 
-type StudioTab = 'blocks' | 'style' | 'cover' | 'meta'
+type StudioTab = 'blocks' | 'style' | 'cover' | 'cover-editor' | 'meta'
 
 const BLOCK_TYPES: { type: BlockType; label: string; icon: string; desc: string }[] = [
-  { type: 'section',   label: 'Titre de Section',    icon: '§',  desc: 'Titre de section avec barre colorée' },
+  { type: 'section',   label: 'Titre de Section',    icon: '§',  desc: 'Titre avec barre colorée' },
   { type: 'text',      label: 'Paragraphe',           icon: '¶',  desc: 'Bloc de texte éditorial' },
-  { type: 'quote',     label: 'Citation Exécutive',   icon: '"',  desc: 'Citation stylisée avec bordure' },
-  { type: 'table',     label: 'Tableau de Données',   icon: '⊞',  desc: 'Tableau avec entêtes et lignes' },
-  { type: 'kpi',       label: 'KPIs / Chiffres Clés', icon: '◈',  desc: 'Grille de métriques visuelles' },
+  { type: 'quote',     label: 'Citation Exécutive',   icon: '"',  desc: 'Citation avec bordure' },
+  { type: 'table',     label: 'Tableau de Données',   icon: '⊞',  desc: 'Tableau avec entêtes' },
+  { type: 'kpi',       label: 'KPIs / Chiffres Clés', icon: '◈',  desc: 'Grille de métriques' },
   { type: 'clause',    label: 'Clause Juridique',     icon: '⚖',  desc: 'Clause avec titre et corps' },
-  { type: 'sign',      label: 'Zone Signature',       icon: '✒',  desc: 'Zones de signature émetteur/dest.' },
-  { type: 'divider',   label: 'Séparateur',           icon: '—',  desc: 'Ligne de séparation décorative' },
-  { type: 'checklist', label: 'Liste de Contrôle',    icon: '☑',  desc: 'Liste de vérification interactive' },
-  { type: 'image',     label: 'Image / Illustration', icon: '🖼',  desc: 'Espace pour image ou logo' },
+  { type: 'sign',      label: 'Zone Signature',       icon: '✒',  desc: 'Zones de signature' },
+  { type: 'divider',   label: 'Séparateur',           icon: '—',  desc: 'Ligne décorative' },
+  { type: 'checklist', label: 'Liste de Contrôle',    icon: '☑',  desc: 'Liste de vérification' },
+  { type: 'image',     label: 'Image / Illustration', icon: '🖼',  desc: 'Espace pour image' },
 ]
 
-const COVER_LAYOUTS: { id: CoverLayout; label: string; desc: string; preview: React.ReactNode }[] = [
-  {
-    id: 'classic',
-    label: 'Classic',
-    desc: 'Bande latérale + titre centré',
-    preview: (
-      <div style={{ width: '100%', height: 80, background: '#fff', position: 'relative', border: '1px solid #e8e8e8', borderRadius: 6, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: 4, height: '100%', background: 'var(--accent)' }} />
-        <div style={{ padding: '12px 10px 12px 14px' }}>
-          <div style={{ height: 4, background: '#e8e8e8', borderRadius: 2, marginBottom: 6, width: '70%' }} />
-          <div style={{ height: 3, background: '#f0f0f0', borderRadius: 2, marginBottom: 4, width: '45%' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 3, marginTop: 8 }}>
-            {[1,2,3].map(i => <div key={i} style={{ height: 10, background: '#f5f7fa', borderRadius: 2 }} />)}
-          </div>
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 'bold',
-    label: 'Bold',
-    desc: 'Fond coloré + texte blanc inversé',
-    preview: (
-      <div style={{ width: '100%', height: 80, background: 'var(--accent)', position: 'relative', border: '1px solid #e8e8e8', borderRadius: 6, overflow: 'hidden' }}>
-        <div style={{ padding: '12px 10px' }}>
-          <div style={{ height: 5, background: 'rgba(255,255,255,.4)', borderRadius: 2, marginBottom: 6, width: '60%' }} />
-          <div style={{ height: 3, background: 'rgba(255,255,255,.25)', borderRadius: 2, width: '40%' }} />
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 'minimal',
-    label: 'Minimal',
-    desc: 'Épuré avec fine bordure basse',
-    preview: (
-      <div style={{ width: '100%', height: 80, background: '#fff', position: 'relative', border: '1px solid #e8e8e8', borderRadius: 6, overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: 'var(--accent)' }} />
-        <div style={{ padding: '16px 12px' }}>
-          <div style={{ height: 5, background: '#0D1117', borderRadius: 2, marginBottom: 8, width: '80%' }} />
-          <div style={{ height: 2, background: '#e8e8e8', borderRadius: 2, width: '50%' }} />
-        </div>
-      </div>
-    ),
-  },
-  {
-    id: 'split',
-    label: 'Split',
-    desc: 'Moitié colorée / moitié blanche',
-    preview: (
-      <div style={{ width: '100%', height: 80, position: 'relative', border: '1px solid #e8e8e8', borderRadius: 6, overflow: 'hidden', display: 'flex' }}>
-        <div style={{ flex: 1, background: 'var(--accent)', padding: '12px 8px' }}>
-          <div style={{ height: 4, background: 'rgba(255,255,255,.4)', borderRadius: 2, marginBottom: 5 }} />
-          <div style={{ height: 3, background: 'rgba(255,255,255,.25)', borderRadius: 2 }} />
-        </div>
-        <div style={{ flex: 1, background: '#fff', padding: '12px 8px' }}>
-          <div style={{ height: 3, background: '#e8e8e8', borderRadius: 2, marginBottom: 5 }} />
-          <div style={{ height: 2, background: '#f0f0f0', borderRadius: 2 }} />
-        </div>
-      </div>
-    ),
-  },
+const COVER_LAYOUTS: { id: CoverLayout; label: string; desc: string }[] = [
+  { id: 'classic',  label: 'Classic',  desc: 'Bande latérale + titre' },
+  { id: 'bold',     label: 'Bold',     desc: 'Fond coloré + texte blanc' },
+  { id: 'minimal',  label: 'Minimal',  desc: 'Épuré, ligne de bas' },
+  { id: 'split',    label: 'Split',    desc: 'Moitié colorée / blanche' },
 ]
-
-const PRESET_INFO: Record<string, { label: string; icon: string }> = {
-  classic:   { label: 'Classic',    icon: '🏛️' },
-  modern:    { label: 'Modern',     icon: '⬡' },
-  editorial: { label: 'Éditorial',  icon: '📰' },
-  minimal:   { label: 'Minimal',    icon: '◻' },
-}
 
 const TEMPLATE_CATEGORIES = ['Stratégie', 'Finance', 'Juridique', 'Commercial', 'Interne', 'Autre']
 const EMOJI_OPTIONS = ['📊', '📄', '🔍', '📝', '✍️', '💰', '📋', '📈', '🏛️', '⚡', '🎯', '🌟', '💼', '🔧', '📦', '🤝']
 
 interface BlockItem {
-  id: string
-  type: BlockType
-  label: string
-  icon: string
-  defaultContent?: string
+  id: string; type: BlockType; label: string; icon: string; defaultContent?: string
 }
+
+// ── Sidebar tabs config ───────────────────────────────────────────────────────
+
+const TABS: { id: StudioTab; icon: React.ReactNode; label: string; highlight?: boolean }[] = [
+  { id: 'blocks',       icon: <Layers size={16} />,   label: 'Blocs' },
+  { id: 'style',        icon: <Type size={16} />,     label: 'Style typo' },
+  { id: 'cover',        icon: <Layout size={16} />,   label: 'Couverture' },
+  { id: 'cover-editor', icon: <PenTool size={16} />,  label: 'Éditeur Couv.', highlight: true },
+  { id: 'meta',         icon: <Settings size={16} />, label: 'Infos template' },
+]
+
+// ── Pure cover background (no context hooks) ─────────────────────────────────
+
+function CoverBg({ layout, accent }: { layout: string; accent: string }) {
+  if (layout === 'bold') return (
+    <div style={{ position: 'absolute', inset: 0, background: accent }}>
+      <div style={{ position: 'absolute', right: -80, top: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
+      <div style={{ position: 'absolute', right: 40, bottom: -60, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
+    </div>
+  )
+  if (layout === 'minimal') return (
+    <div style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: accent }} />
+    </div>
+  )
+  if (layout === 'split') return (
+    <div style={{ position: 'absolute', inset: 0, display: 'flex' }}>
+      <div style={{ width: '45%', background: accent }} />
+      <div style={{ flex: 1, background: '#fff' }} />
+    </div>
+  )
+  // classic
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: '#fff' }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 4, height: '100%', background: accent }} />
+    </div>
+  )
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 function TemplateCreatorContent() {
   const router = useRouter()
@@ -133,17 +106,20 @@ function TemplateCreatorContent() {
   const [templateTags, setTemplateTags] = useState<string[]>([])
   const [newTag, setNewTag] = useState('')
   const [isPublic, setIsPublic] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
   const [coverStyle, setCoverStyle] = useState<CoverStyle>(DEFAULT_COVER_STYLE)
+  const [coverBlocks, setCoverBlocks] = useState<CoverBlock[]>([])
 
   const [blocks, setBlocks] = useState<BlockItem[]>([
     { id: '1', type: 'section', label: 'Titre de Section', icon: '§', defaultContent: 'SECTION 01 // TITRE' },
-    { id: '2', type: 'text', label: 'Paragraphe', icon: '¶', defaultContent: 'Insérez votre contenu ici.' },
+    { id: '2', type: 'text',    label: 'Paragraphe',       icon: '¶', defaultContent: 'Insérez votre contenu ici.' },
   ])
 
   const [dragId, setDragId] = useState<string | null>(null)
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+
+  // ── Load existing template ─────────────────────────────────────────────────
 
   useEffect(() => {
     if (editId) {
@@ -156,12 +132,13 @@ function TemplateCreatorContent() {
         setTemplateTags(tpl.tags)
         setIsPublic(tpl.isPublic)
         setDocStyle(tpl.docStyle)
-        setCoverStyle(tpl.coverStyle)
+        const cs = tpl.coverStyle
+        setCoverStyle(cs)
+        setCoverBlocks(cs.coverBlocks || [])
         setBlocks(tpl.blocks.map((b, i) => ({
-          id: String(i + 1),
-          type: b.type,
+          id: String(i + 1), type: b.type,
           label: BLOCK_TYPES.find(bt => bt.type === b.type)?.label || b.type,
-          icon: BLOCK_TYPES.find(bt => bt.type === b.type)?.icon || '?',
+          icon:  BLOCK_TYPES.find(bt => bt.type === b.type)?.icon  || '?',
           defaultContent: b.content,
         })))
       }
@@ -169,11 +146,11 @@ function TemplateCreatorContent() {
       const src = TEMPLATES.find(t => t.id === fromId)
       if (src) {
         setTemplateName(`${src.name} (copie)`)
+        if (src.coverStyle) { setCoverStyle(src.coverStyle); setCoverBlocks(src.coverStyle.coverBlocks || []) }
         setBlocks(src.blocks.map((b, i) => ({
-          id: String(i + 1),
-          type: b.type,
+          id: String(i + 1), type: b.type,
           label: BLOCK_TYPES.find(bt => bt.type === b.type)?.label || b.type,
-          icon: BLOCK_TYPES.find(bt => bt.type === b.type)?.icon || '?',
+          icon:  BLOCK_TYPES.find(bt => bt.type === b.type)?.icon  || '?',
           defaultContent: b.content,
         })))
       }
@@ -183,13 +160,10 @@ function TemplateCreatorContent() {
   const addBlock = useCallback((type: BlockType) => {
     const meta = BLOCK_TYPES.find(b => b.type === type)
     if (!meta) return
-    const id = Date.now().toString()
-    setBlocks(prev => [...prev, { id, type, label: meta.label, icon: meta.icon }])
+    setBlocks(prev => [...prev, { id: Date.now().toString(), type, label: meta.label, icon: meta.icon }])
   }, [])
 
-  const removeBlock = useCallback((id: string) => {
-    setBlocks(prev => prev.filter(b => b.id !== id))
-  }, [])
+  const removeBlock = useCallback((id: string) => setBlocks(prev => prev.filter(b => b.id !== id)), [])
 
   const moveBlock = useCallback((fromIdx: number, toIdx: number) => {
     setBlocks(prev => {
@@ -200,47 +174,35 @@ function TemplateCreatorContent() {
     })
   }, [])
 
-  const addTag = () => {
-    if (newTag.trim() && !templateTags.includes(newTag.trim())) {
-      setTemplateTags(prev => [...prev, newTag.trim()])
-      setNewTag('')
-    }
-  }
-
-  const removeTag = (tag: string) => setTemplateTags(prev => prev.filter(t => t !== tag))
-
   const handleSave = () => {
     if (!templateName.trim()) { showToast('Le nom du template est requis', 'err'); return }
-    if (blocks.length === 0) { showToast('Ajoutez au moins un bloc', 'err'); return }
+    if (blocks.length === 0) { showToast('Ajoutez au moins un bloc de contenu', 'err'); return }
+
+    const finalCoverStyle: CoverStyle = { ...coverStyle, coverBlocks }
 
     const payload = {
-      name: templateName,
-      description: templateDesc,
-      category: templateCategory,
-      icon: templateIcon,
-      tags: templateTags,
+      name: templateName, description: templateDesc, category: templateCategory,
+      icon: templateIcon, tags: templateTags,
       blocks: blocks.map(b => ({ type: b.type, content: b.defaultContent })),
-      docStyle,
-      coverStyle,
-      isPublic,
+      docStyle, coverStyle: finalCoverStyle, isPublic,
     }
 
-    if (editId) {
-      updateTemplate(editId, payload)
-      showToast('Template mis à jour', 'ok')
-    } else {
-      createTemplate(payload)
-      showToast('Template créé avec succès', 'ok')
-    }
+    if (editId) { updateTemplate(editId, payload); showToast('Template mis à jour', 'ok') }
+    else        { createTemplate(payload);           showToast('Template créé avec succès', 'ok') }
     setTimeout(() => router.push('/templates'), 800)
   }
 
-  const lbl = "block text-[10px] font-bold uppercase tracking-widest mb-2"
-  const inputStyle = { background: 'var(--bg2)', borderColor: 'var(--border)', color: 'var(--text)' }
-  const inputClass = "w-full rounded-xl px-3.5 py-2.5 text-[13px] border outline-none font-sans"
+  const inp  = { className: "w-full rounded-xl px-3.5 py-2.5 text-[13px] border outline-none font-sans", style: { background: 'var(--bg2)', borderColor: 'var(--border)', color: 'var(--text)' } as React.CSSProperties }
+  const lbl  = "block text-[10px] font-bold uppercase tracking-widest mb-2"
+
+  // Active accent from cover style
+  const accent = coverStyle.accentColor || profile.color || '#1B4FD8'
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
+
       {/* Header */}
       <div className="h-14 border-b flex items-center justify-between px-6 flex-shrink-0"
         style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
@@ -251,341 +213,375 @@ function TemplateCreatorContent() {
             <ArrowLeft size={14} /> Templates
           </button>
           <div className="w-px h-4" style={{ background: 'var(--border)' }} />
-          <div className="flex items-center gap-2">
-            <Sparkles size={14} color="var(--accent)" />
-            <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>
-              {editId ? 'Modifier le template' : 'Créer un template'}
+          <Sparkles size={14} color="var(--accent)" />
+          <span className="text-[14px] font-bold" style={{ color: 'var(--text)' }}>
+            {editId ? 'Modifier le template' : 'Créer un template'}
+          </span>
+          {/* Indicators */}
+          <span className="text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-widest"
+            style={{ background: 'var(--accentS)', color: 'var(--accent)' }}>
+            {blocks.length} bloc{blocks.length > 1 ? 's' : ''} • couv. {coverStyle.layout}
+          </span>
+          {coverBlocks.length > 0 && (
+            <span className="text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-widest"
+              style={{ background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>
+              ✏️ {coverBlocks.length} élément{coverBlocks.length > 1 ? 's' : ''} sur couverture
             </span>
-          </div>
+          )}
         </div>
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Button variant="primary" size="sm" onClick={handleSave}>
-            <Save size={12} /> {editId ? 'Mettre à jour' : 'Enregistrer le template'}
+            <Save size={12} /> {editId ? 'Mettre à jour' : 'Enregistrer'}
           </Button>
         </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left tabs */}
-        <div className="w-12 border-r flex flex-col items-center py-4 gap-3" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          {([
-            { id: 'blocks', icon: <Layers size={16} />, label: 'Blocs' },
-            { id: 'style', icon: <Type size={16} />, label: 'Style' },
-            { id: 'cover', icon: <Layout size={16} />, label: 'Couverture' },
-            { id: 'meta', icon: <Settings size={16} />, label: 'Infos' },
-          ] as { id: StudioTab; icon: React.ReactNode; label: string }[]).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              title={tab.label}
+
+        {/* Left tab rail */}
+        <div className="w-12 border-r flex flex-col items-center py-4 gap-2" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+          {TABS.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} title={tab.label}
               className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border-none transition-all"
               style={activeTab === tab.id
-                ? { background: 'var(--accentS)', color: 'var(--accent)' }
-                : { background: 'transparent', color: 'var(--text4)' }
-              }
-            >
+                ? { background: tab.highlight ? 'rgba(124,58,237,.15)' : 'var(--accentS)', color: tab.highlight ? '#7C3AED' : 'var(--accent)' }
+                : { background: 'transparent', color: tab.highlight ? '#9066e0' : 'var(--text4)' }
+              }>
               {tab.icon}
             </button>
           ))}
         </div>
 
-        {/* Settings panel */}
-        <div className="w-[300px] border-r overflow-y-auto" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-          <div className="p-4">
-            {/* BLOCKS TAB */}
-            {activeTab === 'blocks' && (
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
-                  Ajouter des Blocs
-                </div>
-                <div className="flex flex-col gap-1.5 mb-6">
-                  {BLOCK_TYPES.map(bt => (
-                    <button
-                      key={bt.type}
-                      onClick={() => addBlock(bt.type)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer text-left transition-all"
-                      style={{ background: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text2)' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accentS)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.background = 'var(--surface)'; }}
-                    >
-                      <span className="w-6 text-center text-[14px] flex-shrink-0" style={{ opacity: .7 }}>{bt.icon}</span>
-                      <div className="flex-1">
-                        <div className="text-[12px] font-bold">{bt.label}</div>
-                        <div className="text-[10px]" style={{ color: 'var(--text4)' }}>{bt.desc}</div>
-                      </div>
-                      <Plus size={12} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                    </button>
-                  ))}
-                </div>
+        {/* When cover-editor is active — full width canvas, no side panel */}
+        {activeTab === 'cover-editor' ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* Cover editor toolbar */}
+            <div style={{ height: 40, flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>
+                Éditeur de couverture
+              </span>
+              <span style={{ fontSize: 10, color: 'var(--text4)' }}>
+                Ajoutez librement textes, formes et images sur votre page de garde
+              </span>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                {/* Layout selector quick-access */}
+                <span style={{ fontSize: 10, color: 'var(--text4)' }}>Fond :</span>
+                {COVER_LAYOUTS.map(l => (
+                  <button key={l.id} onClick={() => setCoverStyle(s => ({ ...s, layout: l.id }))}
+                    style={{ padding: '3px 9px', borderRadius: 6, border: '1px solid', fontSize: 10, fontWeight: 700, cursor: 'pointer', transition: 'all .12s',
+                      borderColor: coverStyle.layout === l.id ? accent : 'var(--border)',
+                      background: coverStyle.layout === l.id ? `${accent}18` : 'var(--bg2)',
+                      color: coverStyle.layout === l.id ? accent : 'var(--text4)',
+                    }}>
+                    {l.label}
+                  </button>
+                ))}
+                <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
+                <span style={{ fontSize: 10, color: 'var(--text4)' }}>Couleur :</span>
+                {PALETTE.slice(0, 6).map(c => (
+                  <button key={c} onClick={() => setCoverStyle(s => ({ ...s, accentColor: c }))}
+                    style={{ width: 18, height: 18, borderRadius: 4, background: c, border: `2px solid ${coverStyle.accentColor === c ? '#fff' : 'transparent'}`, cursor: 'pointer', outline: coverStyle.accentColor === c ? `2px solid ${c}` : 'none', outlineOffset: 1 }} />
+                ))}
+                <input type="color" value={coverStyle.accentColor || '#1B4FD8'}
+                  onChange={e => setCoverStyle(s => ({ ...s, accentColor: e.target.value }))}
+                  style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid var(--border)', padding: 1, cursor: 'pointer' }} />
               </div>
-            )}
+            </div>
 
-            {/* STYLE TAB */}
-            {activeTab === 'style' && (
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
-                  Style Typographique
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Preset</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(PRESET_INFO).map(([key, info]) => (
-                      <button
-                        key={key}
-                        onClick={() => setDocStyle(STYLE_PRESETS[key])}
-                        className="p-3 rounded-xl border cursor-pointer text-left transition-all"
-                        style={{
-                          background: docStyle.preset === key ? 'var(--accentS)' : 'var(--surface)',
-                          borderColor: docStyle.preset === key ? 'var(--accent)' : 'var(--border)',
-                        }}
-                      >
-                        <div className="text-xl mb-1">{info.icon}</div>
-                        <div className="text-[11px] font-bold" style={{ color: 'var(--text)' }}>{info.label}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Police Titres</label>
-                  <div className="flex flex-col gap-1.5">
-                    {FONT_TITLE_OPTIONS.map(f => (
-                      <button
-                        key={f.value}
-                        onClick={() => setDocStyle(d => ({ ...d, fontTitle: f.value }))}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-left"
-                        style={{
-                          background: docStyle.fontTitle === f.value ? 'var(--accentS)' : 'var(--surface)',
-                          borderColor: docStyle.fontTitle === f.value ? 'var(--accent)' : 'var(--border)',
-                        }}
-                      >
-                        <span style={{ fontFamily: `'${f.value}', sans-serif`, fontSize: 18, fontWeight: 700 }}>Aa</span>
-                        <span className="text-[11px] font-bold" style={{ color: 'var(--text3)' }}>{f.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Couleur d'Accent</label>
-                  <div className="flex gap-2 flex-wrap mb-3">
-                    {PALETTE.map(c => (
-                      <button key={c} onClick={() => setDocStyle(d => ({ ...d, accentColor: c }))}
-                        style={{ width: 28, height: 28, borderRadius: 6, background: c, cursor: 'pointer', border: `2px solid ${docStyle.accentColor === c ? 'var(--text)' : 'transparent'}` }} />
-                    ))}
-                  </div>
-                  <input type="color" value={docStyle.accentColor} onChange={e => setDocStyle(d => ({ ...d, accentColor: e.target.value }))}
-                    className="w-8 h-8 rounded-lg border cursor-pointer p-0.5" style={{ borderColor: 'var(--border)' }} />
-                </div>
-              </div>
-            )}
+            {/* CoverPageEditor fills remaining space */}
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <CoverPageEditor
+                blocks={coverBlocks}
+                onChange={setCoverBlocks}
+                accentColor={accent}
+                baseLayoutBg={
+                  <CoverBg layout={coverStyle.layout} accent={accent} />
+                }
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Settings panel (left) */}
+            <div className="w-[280px] border-r overflow-y-auto" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+              <div className="p-4">
 
-            {/* COVER TAB */}
-            {activeTab === 'cover' && (
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
-                  Page de Couverture
-                </div>
-                <div className="mb-5">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Mise en Page</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {COVER_LAYOUTS.map(layout => (
-                      <div
-                        key={layout.id}
-                        onClick={() => setCoverStyle(s => ({ ...s, layout: layout.id }))}
-                        className="cursor-pointer rounded-xl border-2 overflow-hidden transition-all"
-                        style={{ borderColor: coverStyle.layout === layout.id ? 'var(--accent)' : 'var(--border)' }}
-                      >
-                        <div className="p-1.5" style={{ background: 'var(--bg3)' }}>
-                          {layout.preview}
-                        </div>
-                        <div className="px-2 py-1.5 text-center">
-                          <div className="text-[11px] font-bold" style={{ color: 'var(--text)' }}>{layout.label}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                  {[
-                    { key: 'showLogo', label: 'Afficher le logo' },
-                    { key: 'showQr', label: 'QR code d\'authenticité' },
-                    { key: 'showGrid', label: 'Fond avec grille subtile' },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="flex items-center justify-between">
-                      <span className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{label}</span>
-                      <div
-                        onClick={() => setCoverStyle(s => ({ ...s, [key]: !s[key as keyof CoverStyle] }))}
-                        className="w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all"
-                        style={coverStyle[key as keyof CoverStyle]
-                          ? { background: 'var(--accent)', borderColor: 'var(--accent)' }
-                          : { background: 'transparent', borderColor: 'var(--border2)' }
-                        }>
-                        {coverStyle[key as keyof CoverStyle] && <Check size={11} color="#fff" strokeWidth={3} />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* META TAB */}
-            {activeTab === 'meta' && (
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>
-                  Informations Template
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Icône</label>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div
-                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                      className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl cursor-pointer"
-                      style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                      {templateIcon}
-                    </div>
-                  </div>
-                  {showEmojiPicker && (
-                    <div className="flex flex-wrap gap-2 p-3 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                      {EMOJI_OPTIONS.map(e => (
-                        <button key={e} onClick={() => { setTemplateIcon(e); setShowEmojiPicker(false) }}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer border-none text-xl"
-                          style={{ background: e === templateIcon ? 'var(--accentS)' : 'transparent' }}>
-                          {e}
+                {/* BLOCKS TAB */}
+                {activeTab === 'blocks' && (
+                  <>
+                    <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>Ajouter des Blocs</div>
+                    <div className="flex flex-col gap-1.5">
+                      {BLOCK_TYPES.map(bt => (
+                        <button key={bt.type} onClick={() => addBlock(bt.type)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer text-left transition-all"
+                          style={{ background: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text2)' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = accent; (e.currentTarget as HTMLElement).style.background = `${accent}12` }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.background = 'var(--surface)' }}>
+                          <span className="w-6 text-center text-[14px] flex-shrink-0" style={{ opacity: .7 }}>{bt.icon}</span>
+                          <div className="flex-1">
+                            <div className="text-[12px] font-bold">{bt.label}</div>
+                            <div className="text-[10px]" style={{ color: 'var(--text4)' }}>{bt.desc}</div>
+                          </div>
+                          <Plus size={12} style={{ color: accent, flexShrink: 0 }} />
                         </button>
                       ))}
                     </div>
-                  )}
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Nom du Template</label>
-                  <input className={inputClass} style={inputStyle} value={templateName}
-                    onChange={e => setTemplateName(e.target.value)} placeholder="Nom du template"
-                    onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = 'var(--surface)'; }}
-                    onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)'; }} />
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Description</label>
-                  <textarea
-                    className={`${inputClass} resize-none`}
-                    style={{ ...inputStyle, height: 72 }}
-                    value={templateDesc}
-                    onChange={e => setTemplateDesc(e.target.value)}
-                    placeholder="Description courte du template"
-                    onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = 'var(--surface)'; }}
-                    onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)'; }}
-                  />
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Catégorie</label>
-                  <select className={inputClass} style={inputStyle} value={templateCategory}
-                    onChange={e => setTemplateCategory(e.target.value)}>
-                    {TEMPLATE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <label className={lbl} style={{ color: 'var(--text3)' }}>Tags</label>
-                  <div className="flex gap-2 mb-2">
-                    <input className={`${inputClass} flex-1`} style={inputStyle} value={newTag}
-                      onChange={e => setNewTag(e.target.value)} placeholder="Ajouter un tag..."
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
-                      onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = 'var(--surface)'; }}
-                      onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)'; }} />
-                    <Button variant="ghost" size="sm" onClick={addTag}><Plus size={12} /></Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {templateTags.map(tag => (
-                      <span key={tag} className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full cursor-pointer"
-                        style={{ background: 'var(--accentS2)', color: 'var(--accent)' }}
-                        onClick={() => removeTag(tag)}>
-                        {tag} <X size={9} />
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-                  <div>
-                    <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>Template public</div>
-                    <div className="text-[10px]" style={{ color: 'var(--text4)' }}>Visible par l'équipe</div>
-                  </div>
-                  <div onClick={() => setIsPublic(!isPublic)}
-                    className="w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer"
-                    style={isPublic ? { background: 'var(--accent)', borderColor: 'var(--accent)' } : { background: 'transparent', borderColor: 'var(--border2)' }}>
-                    {isPublic && <Check size={11} color="#fff" strokeWidth={3} />}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+                  </>
+                )}
 
-        {/* Main area - block list */}
-        <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg3)' }}>
-          <div className="max-w-[680px] mx-auto px-6 py-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>
-                Structure du Template
-                <span className="ml-2 text-[12px] font-normal" style={{ color: 'var(--text4)' }}>
-                  {blocks.length} bloc{blocks.length > 1 ? 's' : ''}
-                </span>
-              </h2>
+                {/* STYLE TAB */}
+                {activeTab === 'style' && (
+                  <>
+                    <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>Style Typographique</div>
+                    <label className={lbl} style={{ color: 'var(--text3)' }}>Preset</label>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {[{ k:'classic',label:'Classic',icon:'🏛️'},{k:'modern',label:'Modern',icon:'⬡'},{k:'editorial',label:'Éditorial',icon:'📰'},{k:'minimal',label:'Minimal',icon:'◻'}].map(({k,label,icon}) => (
+                        <button key={k} onClick={() => setDocStyle(STYLE_PRESETS[k])}
+                          className="p-3 rounded-xl border cursor-pointer text-left transition-all"
+                          style={{ background: docStyle.preset === k ? `${accent}18` : 'var(--surface)', borderColor: docStyle.preset === k ? accent : 'var(--border)' }}>
+                          <div className="text-xl mb-1">{icon}</div>
+                          <div className="text-[11px] font-bold" style={{ color: 'var(--text)' }}>{label}</div>
+                        </button>
+                      ))}
+                    </div>
+                    <label className={lbl} style={{ color: 'var(--text3)' }}>Police Titres</label>
+                    <div className="flex flex-col gap-1.5 mb-4">
+                      {FONT_TITLE_OPTIONS.map(f => (
+                        <button key={f.value} onClick={() => setDocStyle(d => ({ ...d, fontTitle: f.value }))}
+                          className="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer text-left"
+                          style={{ background: docStyle.fontTitle === f.value ? `${accent}18` : 'var(--surface)', borderColor: docStyle.fontTitle === f.value ? accent : 'var(--border)' }}>
+                          <span style={{ fontFamily: `'${f.value}', sans-serif`, fontSize: 18, fontWeight: 700 }}>Aa</span>
+                          <span className="text-[11px] font-bold" style={{ color: 'var(--text3)' }}>{f.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* COVER TAB */}
+                {activeTab === 'cover' && (
+                  <>
+                    <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>Design de la Couverture</div>
+
+                    {/* CTA toward cover editor */}
+                    <div className="p-3 rounded-xl border mb-4 flex items-center gap-3 cursor-pointer"
+                      style={{ background: 'rgba(124,58,237,.08)', borderColor: 'rgba(124,58,237,.3)' }}
+                      onClick={() => setActiveTab('cover-editor')}>
+                      <PenTool size={16} color="#7C3AED" />
+                      <div>
+                        <div className="text-[12px] font-bold" style={{ color: '#7C3AED' }}>Éditeur de couverture</div>
+                        <div className="text-[10px]" style={{ color: '#9066e0' }}>Ajoutez textes, formes, images librement</div>
+                      </div>
+                      {coverBlocks.length > 0 && (
+                        <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#7C3AED', color: '#fff' }}>
+                          {coverBlocks.length}
+                        </span>
+                      )}
+                    </div>
+
+                    <label className={lbl} style={{ color: 'var(--text3)' }}>Mise en Page de Base</label>
+                    <div className="grid grid-cols-2 gap-2 mb-4">
+                      {COVER_LAYOUTS.map(layout => (
+                        <button key={layout.id} onClick={() => setCoverStyle(s => ({ ...s, layout: layout.id }))}
+                          className="p-3 rounded-xl border-2 cursor-pointer text-left transition-all"
+                          style={{ borderColor: coverStyle.layout === layout.id ? accent : 'var(--border)', background: coverStyle.layout === layout.id ? `${accent}18` : 'var(--surface)' }}>
+                          <div className="text-[11px] font-bold" style={{ color: coverStyle.layout === layout.id ? accent : 'var(--text)' }}>{layout.label}</div>
+                          <div className="text-[9px]" style={{ color: 'var(--text4)', marginTop: 2 }}>{layout.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <label className={lbl} style={{ color: 'var(--text3)' }}>Couleur de la Couverture</label>
+                    <div className="flex gap-2 flex-wrap mb-3">
+                      {PALETTE.map(c => (
+                        <button key={c} onClick={() => setCoverStyle(s => ({ ...s, accentColor: c }))}
+                          style={{ width: 26, height: 26, borderRadius: 6, background: c, cursor: 'pointer', border: `2px solid ${coverStyle.accentColor === c ? 'var(--text)' : 'transparent'}` }} />
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <input type="color" value={coverStyle.accentColor || '#1B4FD8'}
+                        onChange={e => setCoverStyle(s => ({ ...s, accentColor: e.target.value }))}
+                        className="w-8 h-8 rounded-lg border cursor-pointer p-0.5" style={{ borderColor: 'var(--border)' }} />
+                      <span className="text-[11px] font-mono" style={{ color: accent }}>{coverStyle.accentColor || '#1B4FD8'}</span>
+                    </div>
+
+                    <label className={lbl} style={{ color: 'var(--text3)' }}>Taille du Titre</label>
+                    <div className="flex gap-2 mb-5">
+                      {(['sm','md','lg','xl'] as const).map(s => (
+                        <button key={s} onClick={() => setCoverStyle(cs => ({ ...cs, titleSize: s }))}
+                          className="flex-1 py-2 rounded-lg border text-[10px] font-bold uppercase cursor-pointer transition-all"
+                          style={{ borderColor: coverStyle.titleSize === s ? accent : 'var(--border)', background: coverStyle.titleSize === s ? `${accent}18` : 'transparent', color: coverStyle.titleSize === s ? accent : 'var(--text4)' }}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {[{ k:'showLogo', l:'Afficher le logo' }, { k:'showQr', l:"QR code d'authenticité" }, { k:'showGrid', l:'Grille de fond' }].map(({ k, l }) => (
+                        <div key={k} className="flex items-center justify-between">
+                          <span className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{l}</span>
+                          <div onClick={() => setCoverStyle(s => ({ ...s, [k]: !s[k as keyof CoverStyle] }))}
+                            className="w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all"
+                            style={coverStyle[k as keyof CoverStyle] ? { background: accent, borderColor: accent } : { background: 'transparent', borderColor: 'var(--border2)' }}>
+                            {coverStyle[k as keyof CoverStyle] && <Check size={11} color="#fff" strokeWidth={3} />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* META TAB */}
+                {activeTab === 'meta' && (
+                  <>
+                    <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>Informations Template</div>
+                    <div className="mb-4">
+                      <label className={lbl} style={{ color: 'var(--text3)' }}>Icône</label>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="w-12 h-12 rounded-xl border flex items-center justify-center text-2xl cursor-pointer"
+                          style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+                          {templateIcon}
+                        </div>
+                      </div>
+                      {showEmojiPicker && (
+                        <div className="flex flex-wrap gap-2 p-3 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+                          {EMOJI_OPTIONS.map(e => (
+                            <button key={e} onClick={() => { setTemplateIcon(e); setShowEmojiPicker(false) }}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer border-none text-xl"
+                              style={{ background: e === templateIcon ? `${accent}18` : 'transparent' }}>
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mb-4">
+                      <label className={lbl} style={{ color: 'var(--text3)' }}>Nom</label>
+                      <input value={templateName} onChange={e => setTemplateName(e.target.value)} placeholder="Nom du template" {...inp}
+                        onFocus={e => { e.target.style.borderColor = accent; e.target.style.background = 'var(--surface)' }}
+                        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)' }} />
+                    </div>
+                    <div className="mb-4">
+                      <label className={lbl} style={{ color: 'var(--text3)' }}>Description</label>
+                      <textarea className={inp.className} style={{ ...inp.style, height: 72, resize: 'vertical' }}
+                        value={templateDesc} onChange={e => setTemplateDesc(e.target.value)}
+                        onFocus={e => { e.target.style.borderColor = accent; e.target.style.background = 'var(--surface)' }}
+                        onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)' }} />
+                    </div>
+                    <div className="mb-4">
+                      <label className={lbl} style={{ color: 'var(--text3)' }}>Catégorie</label>
+                      <select className={inp.className} style={inp.style} value={templateCategory} onChange={e => setTemplateCategory(e.target.value)}>
+                        {TEMPLATE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div className="mb-4">
+                      <label className={lbl} style={{ color: 'var(--text3)' }}>Tags</label>
+                      <div className="flex gap-2 mb-2">
+                        <input className={`${inp.className} flex-1`} style={inp.style} value={newTag}
+                          onChange={e => setNewTag(e.target.value)} placeholder="Ajouter un tag..."
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (newTag.trim()) { setTemplateTags(p => [...p, newTag.trim()]); setNewTag('') } } }}
+                          onFocus={e => { e.target.style.borderColor = accent; e.target.style.background = 'var(--surface)' }}
+                          onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg2)' }} />
+                        <Button variant="ghost" size="sm" onClick={() => { if (newTag.trim()) { setTemplateTags(p => [...p, newTag.trim()]); setNewTag('') } }}><Plus size={12} /></Button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {templateTags.map(tag => (
+                          <span key={tag} className="flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full cursor-pointer"
+                            style={{ background: `${accent}18`, color: accent }}
+                            onClick={() => setTemplateTags(p => p.filter(t => t !== tag))}>
+                            {tag} <X size={9} />
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 rounded-xl"
+                      style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+                      <div>
+                        <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>Template public</div>
+                        <div className="text-[10px]" style={{ color: 'var(--text4)' }}>Visible par l'équipe</div>
+                      </div>
+                      <div onClick={() => setIsPublic(!isPublic)}
+                        className="w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer"
+                        style={isPublic ? { background: accent, borderColor: accent } : { background: 'transparent', borderColor: 'var(--border2)' }}>
+                        {isPublic && <Check size={11} color="#fff" strokeWidth={3} />}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
-            {blocks.length === 0 ? (
-              <div className="text-center py-16 rounded-2xl border-2 border-dashed" style={{ borderColor: 'var(--border2)' }}>
-                <Layers size={32} style={{ color: 'var(--text4)', margin: '0 auto 12px' }} />
-                <p className="text-[13px]" style={{ color: 'var(--text4)' }}>Ajoutez des blocs depuis le panneau gauche</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {blocks.map((block, idx) => (
-                  <div
-                    key={block.id}
-                    className="flex items-center gap-3 rounded-xl border px-4 py-3 transition-all"
-                    style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
-                    draggable
-                    onDragStart={() => setDragId(block.id)}
-                    onDragOver={e => { e.preventDefault() }}
-                    onDrop={() => {
-                      if (!dragId || dragId === block.id) return
-                      const fromIdx = blocks.findIndex(b => b.id === dragId)
-                      moveBlock(fromIdx, idx)
-                      setDragId(null)
-                    }}
-                    onDragEnd={() => setDragId(null)}
-                  >
-                    <div style={{ cursor: 'grab', color: 'var(--text4)' }}><GripVertical size={14} /></div>
-                    <span className="w-6 text-center text-[16px]">{block.icon}</span>
-                    <div className="flex-1">
-                      <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{block.label}</div>
-                    </div>
-                    <span className="text-[9px] px-2 py-0.5 rounded" style={{ background: 'var(--bg3)', color: 'var(--text4)' }}>
-                      {idx + 1}
+            {/* Main content area — block list */}
+            <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg3)' }}>
+              <div className="max-w-[560px] mx-auto px-6 py-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>
+                    Blocs de contenu
+                    <span className="ml-2 text-[12px] font-normal" style={{ color: 'var(--text4)' }}>
+                      {blocks.length} bloc{blocks.length > 1 ? 's' : ''}
                     </span>
-                    <div className="flex gap-1">
-                      <button onClick={() => idx > 0 && moveBlock(idx, idx - 1)} disabled={idx === 0}
-                        className="w-6 h-6 flex items-center justify-center rounded border cursor-pointer border-none"
-                        style={{ background: 'transparent', color: idx === 0 ? 'var(--border2)' : 'var(--text4)' }}>
-                        <ChevronUp size={11} />
-                      </button>
-                      <button onClick={() => idx < blocks.length - 1 && moveBlock(idx, idx + 1)} disabled={idx === blocks.length - 1}
-                        className="w-6 h-6 flex items-center justify-center rounded border cursor-pointer border-none"
-                        style={{ background: 'transparent', color: idx === blocks.length - 1 ? 'var(--border2)' : 'var(--text4)' }}>
-                        <ChevronDown size={11} />
-                      </button>
-                      <button onClick={() => removeBlock(block.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-all"
-                        style={{ background: 'transparent', color: 'var(--text4)' }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#DC2626'; (e.currentTarget as HTMLElement).style.background = '#FEE2E2'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
-                        <Trash2 size={11} />
-                      </button>
-                    </div>
+                  </h2>
+                  {coverBlocks.length > 0 && (
+                    <button onClick={() => setActiveTab('cover-editor')}
+                      className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg cursor-pointer border"
+                      style={{ borderColor: 'rgba(124,58,237,.3)', background: 'rgba(124,58,237,.08)', color: '#7C3AED' }}>
+                      <PenTool size={11} /> Voir couverture ({coverBlocks.length})
+                    </button>
+                  )}
+                </div>
+
+                {blocks.length === 0 ? (
+                  <div className="text-center py-16 rounded-2xl border-2 border-dashed" style={{ borderColor: 'var(--border2)' }}>
+                    <Layers size={32} style={{ color: 'var(--text4)', margin: '0 auto 12px' }} />
+                    <p className="text-[13px]" style={{ color: 'var(--text4)' }}>Ajoutez des blocs depuis le panneau gauche</p>
                   </div>
-                ))}
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {blocks.map((block, idx) => (
+                      <div key={block.id}
+                        className="flex items-center gap-3 rounded-xl border px-4 py-3 transition-all"
+                        style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+                        draggable
+                        onDragStart={() => setDragId(block.id)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={() => { if (!dragId || dragId === block.id) return; moveBlock(blocks.findIndex(b => b.id === dragId), idx); setDragId(null) }}
+                        onDragEnd={() => setDragId(null)}
+                      >
+                        <div style={{ cursor: 'grab', color: 'var(--text4)' }}><GripVertical size={14} /></div>
+                        <span className="w-6 text-center text-[16px]">{block.icon}</span>
+                        <div className="flex-1">
+                          <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{block.label}</div>
+                        </div>
+                        <span className="text-[9px] px-2 py-0.5 rounded" style={{ background: 'var(--bg3)', color: 'var(--text4)' }}>{idx + 1}</span>
+                        <div className="flex gap-1">
+                          <button onClick={() => idx > 0 && moveBlock(idx, idx - 1)} disabled={idx === 0}
+                            className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none"
+                            style={{ background: 'transparent', color: idx === 0 ? 'var(--border2)' : 'var(--text4)' }}>
+                            <ChevronUp size={11} />
+                          </button>
+                          <button onClick={() => idx < blocks.length - 1 && moveBlock(idx, idx + 1)} disabled={idx === blocks.length - 1}
+                            className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none"
+                            style={{ background: 'transparent', color: idx === blocks.length - 1 ? 'var(--border2)' : 'var(--text4)' }}>
+                            <ChevronDown size={11} />
+                          </button>
+                          <button onClick={() => removeBlock(block.id)}
+                            className="w-6 h-6 flex items-center justify-center rounded cursor-pointer border-none transition-all"
+                            style={{ background: 'transparent', color: 'var(--text4)' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#DC2626'; (e.currentTarget as HTMLElement).style.background = '#FEE2E2' }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
 
       <Toast {...toast} />

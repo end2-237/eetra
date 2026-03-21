@@ -1,6 +1,7 @@
 'use client'
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { BlockType, DocumentStyle, TableData, STYLE_PRESETS } from '@/types'
+import type { CoverBlock } from '@/components/editor/cover/CoverPageEditor'
 
 export interface CustomTemplateBlock {
   type: BlockType
@@ -18,6 +19,8 @@ export interface CoverStyle {
   showGrid: boolean
   backgroundStyle: 'solid' | 'gradient' | 'dots' | 'lines'
   titleSize: 'sm' | 'md' | 'lg' | 'xl'
+  // Custom cover blocks (free-form canvas elements)
+  coverBlocks?: CoverBlock[]
 }
 
 export interface CustomTemplate {
@@ -68,6 +71,7 @@ const DEFAULT_COVER_STYLE: CoverStyle = {
   showGrid: false,
   backgroundStyle: 'solid',
   titleSize: 'lg',
+  coverBlocks: [],
 }
 
 export { DEFAULT_COVER_STYLE }

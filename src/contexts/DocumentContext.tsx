@@ -3,18 +3,31 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS, ChartBlockData, ImageBlockData } from '@/types'
 import { generateId, generateDocId } from '@/lib/utils'
 import { sanitizeContent } from '@/lib/sanitize'
+import type { CoverStyle } from '@/contexts/CustomTemplateContext'
 
 export const STORAGE_DRAFT = 'eetra-document-draft'
+
+export const DEFAULT_COVER_STYLE: CoverStyle = {
+  layout: 'classic',
+  accentColor: '',
+  showLogo: true,
+  showQr: true,
+  showGrid: false,
+  backgroundStyle: 'solid',
+  titleSize: 'lg',
+}
 
 interface DocumentContextType {
   docId: string; title: string; subtitle: string; ref: string; destination: string; confidentiality: string
   pages: DocPage[]; currentPageIndex: number; comments: Comment[]; activeTab: TabName
-  zoom: number; modified: boolean; selectedTemplate: string | null; docStyle: DocumentStyle; showStyleModal: boolean
+  zoom: number; modified: boolean; selectedTemplate: string | null; docStyle: DocumentStyle
+  coverStyle: CoverStyle; showStyleModal: boolean
   canUndo: boolean; canRedo: boolean
   setTitle: (v: string) => void; setSubtitle: (v: string) => void; setRef: (v: string) => void
   setDestination: (v: string) => void; setConfidentiality: (v: string) => void
   setCurrentPageIndex: (i: number) => void; setActiveTab: (t: TabName) => void; setZoom: (z: number) => void
-  setSelectedTemplate: (id: string | null) => void; setDocStyle: (s: DocumentStyle) => void; setShowStyleModal: (v: boolean) => void
+  setSelectedTemplate: (id: string | null) => void; setDocStyle: (s: DocumentStyle) => void
+  setCoverStyle: (s: CoverStyle) => void; setShowStyleModal: (v: boolean) => void
   addPage: () => void; removePage: (id: string) => void; addBlock: (type: DocBlock['type'], content?: string) => void
   removeBlock: (pageId: string, blockId: string) => void; updateBlock: (pageId: string, blockId: string, content: string) => void
   updateBlockTable: (pageId: string, blockId: string, tableData: NonNullable<DocBlock['tableData']>) => void
@@ -44,6 +57,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const [modified, setModified] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null)
   const [docStyle, setDocStyleState] = useState<DocumentStyle>(STYLE_PRESETS.classic)
+  const [coverStyle, setCoverStyleState] = useState<CoverStyle>(DEFAULT_COVER_STYLE)
   const [showStyleModal, setShowStyleModal] = useState(false)
 
   const pageHistoryRef = useRef<string[]>([])
@@ -98,6 +112,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
           historyIdxRef.current = 0
         }
         if (draft.docStyle) setDocStyleState(draft.docStyle)
+        if (draft.coverStyle) setCoverStyleState(draft.coverStyle)
       }
     } catch {}
   }, [])
@@ -108,20 +123,22 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
   const setDestination = useCallback((v: string) => { setDestinationState(sanitizeContent(v).slice(0, 200)); setModified(true) }, [])
   const setConfidentiality = useCallback((v: string) => { setConfidentialityState(v); setModified(true) }, [])
   const setDocStyle = useCallback((s: DocumentStyle) => { setDocStyleState(s); setModified(true) }, [])
+  const setCoverStyle = useCallback((s: CoverStyle) => { setCoverStyleState(s); setModified(true) }, [])
 
   useEffect(() => {
     if (!modified && pages.length === 0) return
     try {
-      const draft = { title, subtitle, ref, destination, confidentiality, pages, docStyle }
+      const draft = { title, subtitle, ref, destination, confidentiality, pages, docStyle, coverStyle }
       localStorage.setItem(STORAGE_DRAFT, JSON.stringify(draft))
     } catch {}
-  }, [pages, title, subtitle, ref, destination, confidentiality, docStyle, modified])
+  }, [pages, title, subtitle, ref, destination, confidentiality, docStyle, coverStyle, modified])
 
   const markSaved = () => setModified(false)
 
   const clearDraft = useCallback(() => {
     try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
-    setPages([]); setTitleState(''); setSubtitleState(''); setRefState(''); setDestinationState(''); setModified(false)
+    setPages([]); setTitleState(''); setSubtitleState(''); setRefState(''); setDestinationState('')
+    setCoverStyleState(DEFAULT_COVER_STYLE); setModified(false)
     pageHistoryRef.current = []; historyIdxRef.current = -1; syncUndoRedoFlags()
   }, [])
 
@@ -213,9 +230,12 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <DocumentContext.Provider value={{
-      docId, title, subtitle, ref, destination, confidentiality, pages, currentPageIndex, comments, activeTab, zoom, modified, selectedTemplate, docStyle, showStyleModal, canUndo, canRedo,
-      setTitle, setSubtitle, setRef, setDestination, setConfidentiality, setCurrentPageIndex, setActiveTab, setZoom, setSelectedTemplate, setDocStyle, setShowStyleModal,
-      addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable, updateBlockChart, updateBlockImage, setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
+      docId, title, subtitle, ref, destination, confidentiality, pages, currentPageIndex, comments,
+      activeTab, zoom, modified, selectedTemplate, docStyle, coverStyle, showStyleModal, canUndo, canRedo,
+      setTitle, setSubtitle, setRef, setDestination, setConfidentiality, setCurrentPageIndex,
+      setActiveTab, setZoom, setSelectedTemplate, setDocStyle, setCoverStyle, setShowStyleModal,
+      addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable, updateBlockChart,
+      updateBlockImage, setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
       addComment, removeComment, resolveComment, addReply, markSaved, resetDocument,
     }}>
       {children}

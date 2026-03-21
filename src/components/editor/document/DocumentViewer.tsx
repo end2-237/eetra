@@ -15,7 +15,6 @@ interface Props {
   onExport: () => void
 }
 
-// True A4 pixel dimensions at 96 dpi
 const PAGE_W = 794
 const PAGE_H = 1123
 
@@ -24,7 +23,7 @@ export function DocumentViewer({ onExport }: Props) {
     pages, currentPageIndex, setCurrentPageIndex,
     addPage, zoom, setZoom,
     undo, redo, canUndo, canRedo,
-    modified, title,
+    modified, title, coverStyle,
   } = useDocument()
   const { profile } = useProfile()
   const viewerRef = useRef<HTMLDivElement>(null)
@@ -32,9 +31,6 @@ export function DocumentViewer({ onExport }: Props) {
   const handleZoomIn  = () => setZoom(Math.min(zoom + 0.1, 1.5))
   const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.35))
 
-  // The outer "frame" is exactly PAGE dimensions scaled by zoom.
-  // overflow:hidden clips the inner scaled content perfectly.
-  // The inner div is always PAGE_W × PAGE_H; transform:scale(zoom) shrinks/grows it visually.
   const frameStyle = (minH = false): React.CSSProperties => ({
     width:    PAGE_W * zoom,
     height:   minH ? undefined : PAGE_H * zoom,
@@ -50,14 +46,13 @@ export function DocumentViewer({ onExport }: Props) {
     height:          PAGE_H,
     transform:       `scale(${zoom})`,
     transformOrigin: 'top left',
-    // Scale collapses layout space — restore it so the frame doesn't collapse
     marginBottom:    -(PAGE_H - PAGE_H * zoom),
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* ── Toolbar ──────────────────────────────────────────────────────── */}
+      {/* ── Toolbar ── */}
       <div style={{
         height: 48, flexShrink: 0,
         borderBottom: '1px solid var(--border)',
@@ -81,6 +76,14 @@ export function DocumentViewer({ onExport }: Props) {
               Non sauvegardé
             </span>
           )}
+          {/* Cover layout badge */}
+          <span style={{
+            fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20,
+            background: 'var(--accentS)', color: 'var(--accent)', letterSpacing: '.06em',
+            textTransform: 'uppercase',
+          }}>
+            {coverStyle.layout}
+          </span>
         </div>
 
         {/* Centre — undo / redo / zoom / page count */}
@@ -144,7 +147,7 @@ export function DocumentViewer({ onExport }: Props) {
         </div>
       </div>
 
-      {/* ── Canvas ───────────────────────────────────────────────────────── */}
+      {/* ── Canvas ── */}
       <div
         ref={viewerRef}
         style={{
@@ -153,7 +156,7 @@ export function DocumentViewer({ onExport }: Props) {
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
         }}
       >
-        {/* Cover — fixed A4 frame, never stretches */}
+        {/* Cover — with dynamic coverStyle from context */}
         <div
           id="eetra-page-cover"
           style={{
@@ -162,11 +165,12 @@ export function DocumentViewer({ onExport }: Props) {
           }}
         >
           <div style={innerStyle}>
-            <CoverPage />
+            {/* Pass coverStyle from DocumentContext */}
+            <CoverPage coverStyle={coverStyle} />
           </div>
         </div>
 
-        {/* Content pages — also fixed-height frames */}
+        {/* Content pages */}
         {pages.map((page, idx) => (
           <div
             key={page.id}
@@ -181,7 +185,6 @@ export function DocumentViewer({ onExport }: Props) {
               transition: 'box-shadow .15s',
             }}
           >
-            {/* Inner is always true A4 size; transform:scale shrinks/grows it */}
             <div style={innerStyle}>
               <ContentPage page={page} pageIndex={idx} totalPages={pages.length} />
             </div>
@@ -214,7 +217,7 @@ export function DocumentViewer({ onExport }: Props) {
         </button>
       </div>
 
-      {/* ── Bottom page navigation ────────────────────────────────────────── */}
+      {/* ── Bottom page navigation ── */}
       {pages.length > 1 && (
         <div style={{
           height: 40, flexShrink: 0,

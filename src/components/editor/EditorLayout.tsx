@@ -19,7 +19,7 @@ export function EditorLayout() {
   const {
     pages, addPage, addBlock, setSelectedTemplate, docStyle,
     title, subtitle, ref: docRef, destination, confidentiality,
-    setPageBlocks, setDocStyle, currentPageIndex,
+    setPageBlocks, setDocStyle, setCoverStyle, currentPageIndex,
   } = useDocument()
 
   const { profile }         = useProfile()
@@ -43,13 +43,15 @@ export function EditorLayout() {
       const customTpl = getTemplate(pendingCustomId)
       if (customTpl) {
         if (customTpl.docStyle) setDocStyle(customTpl.docStyle)
+        // Apply custom template's coverStyle
+        if (customTpl.coverStyle) setCoverStyle(customTpl.coverStyle)
         setSelectedTemplate(pendingCustomId)
         addNotification({ type:'success', title:'Template appliqué', message:`"${customTpl.name}" chargé.` })
         return
       }
     }
 
-    // 2. Built-in template — inject blocks with proper DocBlock shape
+    // 2. Built-in template — inject blocks + apply coverStyle
     const pendingId = sessionStorage.getItem('eetra-pending-template')
     if (pendingId) {
       sessionStorage.removeItem('eetra-pending-template')
@@ -57,21 +59,27 @@ export function EditorLayout() {
       if (tpl) {
         setSelectedTemplate(tpl.id)
 
+        // Apply the template's cover style immediately
+        if (tpl.coverStyle) setCoverStyle(tpl.coverStyle)
+
+        // Apply the template's accent color to docStyle too
+        if (tpl.coverStyle?.accentColor) {
+          setDocStyle({ ...docStyle, accentColor: tpl.coverStyle.accentColor })
+        }
+
         if (pages.length === 0) {
           addPage()
-          // Wait one tick for the page to be registered, then hydrate blocks
           setTimeout(() => {
             const blocks: DocBlock[] = tpl.blocks.map(b => ({
               id:      generateId(),
               type:    b.type,
               content: typeof b.content === 'string' ? b.content : JSON.stringify(b.content ?? {}),
             }))
-            // Inject all blocks into page 0 at once (avoids N re-renders)
             setPageBlocks('current', blocks)
           }, 50)
         }
 
-        addNotification({ type:'success', title:'Template chargé', message:`"${tpl.name}" prêt.` })
+        addNotification({ type:'success', title:'Template chargé', message:`"${tpl.name}" prêt — couverture appliquée.` })
       }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

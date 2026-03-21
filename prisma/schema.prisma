@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile        Profile?
+  documents      Document[]
+  exports        Export[]
+  templates      CustomTemplate[]
+  teamMembers    TeamMember[]
+  notifications  Notification[]
+  layoutConfig   LayoutConfig?
+  accounts       Account[]
+  sessions       Session[]
+}
+
+// NextAuth — requis pour PrismaAdapter
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+  @@unique([identifier, token])
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   @default("")
+  sector    String   @default("")
+  legal     String   @default("")
+  color     String   @default("#1B4FD8")
+  address   String   @default("")
+  city      String   @default("")
+  email     String   @default("")
+  web       String   @default("")
+  siret     String   @default("")
+  capital   String   @default("")
+  tagline   String   @default("")
+  signer    String   @default("")
+  logoUrl   String?
+  watermark Boolean  @default(true)
+  planId    String   @default("starter")
+  updatedAt DateTime @updatedAt
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String   @default("")
+  subtitle        String   @default("")
+  ref             String   @default("")
+  destination     String   @default("")
+  confidentiality String   @default("CONFIDENTIEL")
+  entityName      String   @default("")
+  pages           Json     @default("[]")
+  docStyle        Json     @default("{}")
+  coverStyle      Json     @default("{}")
+  pageCount       Int      @default(0)
+  blockCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Export {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  docId      String
+  title      String
+  entityName String   @default("")
+  type       String   @default("pdf")
+  pageCount  Int      @default(0)
+  blockCount Int      @default(0)
+  signature  String
+  qrData     String
+  exportedAt DateTime @default(now())
+}
+
+model CustomTemplate {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  category    String   @default("")
+  icon        String   @default("📊")
+  tags        String[]
+  blocks      Json     @default("[]")
+  docStyle    Json     @default("{}")
+  coverStyle  Json     @default("{}")
+  isPublic    Boolean  @default(false)
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TeamMember {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name    String
+  email   String
+  role    String   @default("editor")
+  avatar  String   @default("👤")
+  addedAt DateTime @default(now())
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        String   @default("info")
+  title       String
+  message     String
+  read        Boolean  @default(false)
+  actionUrl   String?
+  createdAt   DateTime @default(now())
+}
+
+model LayoutConfig {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  config    Json     @default("{}")
+  updatedAt DateTime @updatedAt
+}

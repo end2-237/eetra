@@ -22,6 +22,9 @@ import { HistoryProvider } from '@/contexts/HistoryContext'
 import { TeamProvider } from '@/contexts/TeamContext'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import { CustomTemplateProvider } from '@/contexts/CustomTemplateContext'
+// Importer en haut
+import { NextAuthProvider } from '@/components/providers/NextAuthProvider'
+
 
 const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-bricolage', display: 'swap' })
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair', display: 'swap' })
@@ -50,6 +53,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={fontVars}>
+        <NextAuthProvider>
         <ThemeProvider>
           <ProfileProvider>
             <PlanProvider>
@@ -67,6 +71,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </PlanProvider>
           </ProfileProvider>
         </ThemeProvider>
+        </NextAuthProvider>
       </body>
     </html>
   )

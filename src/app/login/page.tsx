@@ -13,6 +13,7 @@ import { ThemeToggle }  from '@/components/ui/ThemeToggle'
 import { Toast }        from '@/components/ui/Toast'
 import { useToast }     from '@/hooks/useToast'
 import { useProfile }   from '@/contexts/ProfileContext'
+import { signIn }       from 'next-auth/react'
 
 // ── CSS ───────────────────────────────────────────────────────────────────────
 
@@ -138,15 +139,41 @@ function LoginContent() {
     setTimeout(() => router.push('/editor'), 600)
   }
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
-    if (tab === 'signup' && company) updateProfile({ name: company })
-    setTimeout(() => {
-      setLoading(false)
-      showToast(tab === 'signin' ? 'Connexion réussie' : 'Compte créé', 'ok')
-      setTimeout(() => router.push('/onboarding'), 500)
-    }, 800)
+  
+    if (tab === 'signup') {
+      // Inscription
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: suEmail,
+          password: suPw,
+          name: `${firstName} ${lastName}`.trim(),
+          company,
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        showToast(err.error || 'Erreur lors de l\'inscription', 'err')
+        setLoading(false)
+        return
+      }
+      // Connexion automatique après inscription
+      const result = await signIn('credentials', { email: suEmail, password: suPw, redirect: false })
+      if (result?.error) { showToast('Erreur de connexion', 'err'); setLoading(false); return }
+      showToast('Compte créé !', 'ok')
+      router.push('/onboarding')
+    } else {
+      // Connexion
+      const result = await signIn('credentials', { email, password, redirect: false })
+      if (result?.error) { showToast('Email ou mot de passe incorrect', 'err'); setLoading(false); return }
+      showToast('Connexion réussie', 'ok')
+      router.push('/dashboard')
+    }
+    setLoading(false)
   }
 
   return (

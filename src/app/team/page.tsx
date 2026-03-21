@@ -2,214 +2,396 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Users, Plus, Trash2, ArrowLeft, FileText, Crown, Edit3, Eye } from 'lucide-react'
+import {
+  Users, Plus, Trash2, ArrowLeft, Crown, Edit3, Eye,
+  Shield, Mail, ChevronDown, X, Check, AlertCircle,
+  UserCheck, UserX, MoreHorizontal, RefreshCw,
+} from 'lucide-react'
 import { useTeam } from '@/contexts/TeamContext'
 import { TeamMember } from '@/types'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
-import { Button } from '@/components/ui/Button'
 
-const ROLE_CONFIG: Record<TeamMember['role'], { label: string; color: string; icon: React.ReactNode; desc: string }> = {
-  admin: { label: 'Admin', color: '#1B4FD8', icon: <Crown size={11} />, desc: 'Accès complet, gestion des membres' },
-  editor: { label: 'Rédacteur', color: '#059669', icon: <Edit3 size={11} />, desc: 'Création et édition de documents' },
-  viewer: { label: 'Lecteur', color: '#D97706', icon: <Eye size={11} />, desc: 'Consultation uniquement' },
+// ── Role config ───────────────────────────────────────────────────────────────
+
+const ROLES: Record<TeamMember['role'], { label:string; color:string; desc:string; Icon: any }> = {
+  admin:  { label:'Admin',      color:'#1B4FD8', desc:'Accès complet, gestion des membres et paramètres', Icon:Crown  },
+  editor: { label:'Rédacteur',  color:'#059669', desc:'Création et édition de documents',                  Icon:Edit3  },
+  viewer: { label:'Lecteur',    color:'#D97706', desc:'Consultation de documents uniquement',               Icon:Eye    },
 }
+
+// ── CSS ───────────────────────────────────────────────────────────────────────
+
+const CSS = `
+  .team-page { min-height:100vh; background:var(--bg); color:var(--text); font-size:13px; font-family:var(--font-bricolage,sans-serif); }
+
+  /* Topbar */
+  .team-top { position:sticky; top:0; z-index:10; height:52px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 20px; }
+  .team-back { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text4); background:none; border:none; cursor:pointer; padding:0; }
+  .team-back:hover { color:var(--text); }
+  .team-sep { font-size:14px; color:var(--border2); }
+  .team-page-title { font-size:14px; font-weight:700; color:var(--text); }
+
+  /* Layout */
+  .team-body { max-width:1100px; margin:0 auto; padding:24px 20px 48px; }
+  .team-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start; }
+
+  /* Page header */
+  .team-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .team-h1  { font-size:18px; font-weight:700; letter-spacing:-.02em; color:var(--text); margin:0 0 3px; }
+  .team-sub { font-size:12px; color:var(--text4); margin:0; }
+
+  /* Table */
+  .team-table { border:1px solid var(--border); border-radius:7px; background:var(--surface); overflow:hidden; }
+  .team-th { display:grid; gap:10px; padding:7px 16px; background:var(--bg2); border-bottom:1px solid var(--border); align-items:center; }
+  .team-th span { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text4); }
+  .team-tr { display:grid; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); align-items:center; transition:background .1s; }
+  .team-tr:last-child { border-bottom:none; }
+  .team-tr:hover { background:var(--bg2); }
+  .team-tr:hover .team-row-actions { opacity:1; }
+  .team-row-actions { opacity:0; transition:opacity .15s; display:flex; gap:5px; }
+
+  /* Avatar */
+  .team-avatar { width:32px; height:32px; border-radius:50%; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; border:1px solid var(--border); }
+  .team-name-col { display:flex; align-items:center; gap:10px; min-width:0; }
+  .team-name { font-size:13px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .team-email { font-size:11px; color:var(--text4); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:1px; }
+
+  /* Role badge */
+  .role-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:4px; font-size:11px; font-weight:600; }
+
+  /* Role select */
+  .role-select { padding:4px 8px; border-radius:5px; border:1px solid var(--border); background:var(--bg2); font-size:11px; font-weight:600; color:var(--text); cursor:pointer; outline:none; transition:border-color .12s; }
+  .role-select:focus { border-color:var(--accent); }
+
+  /* Status badge */
+  .status-badge { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:4px; font-size:10px; font-weight:600; }
+
+  /* Action buttons */
+  .act-btn { width:26px; height:26px; border-radius:5px; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s; color:var(--text4); }
+  .act-btn:hover { border-color:var(--border2); background:var(--bg3); color:var(--text); }
+  .act-btn.danger:hover { background:#FEE2E2; border-color:#FCA5A5; color:#DC2626; }
+
+  /* Right panel — Invite + Info */
+  .team-panel { display:flex; flex-direction:column; gap:14px; }
+  .panel-block { border:1px solid var(--border); border-radius:7px; background:var(--surface); overflow:hidden; }
+  .panel-head { padding:11px 14px; border-bottom:1px solid var(--border); background:var(--bg2); }
+  .panel-head-title { font-size:12px; font-weight:600; color:var(--text); }
+  .panel-body { padding:14px; }
+
+  /* Form */
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); margin-bottom:5px; }
+  .field input, .field select {
+    width:100%; padding:7px 10px; border-radius:6px;
+    border:1px solid var(--border); background:var(--bg);
+    font-size:12px; color:var(--text); outline:none;
+    transition:border-color .15s; font-family:inherit;
+  }
+  .field input:focus, .field select:focus { border-color:var(--accent); }
+  .field input::placeholder { color:var(--text4); }
+
+  /* Role picker */
+  .role-picker { display:flex; flex-direction:column; gap:5px; }
+  .role-option { display:flex; align-items:flex-start; gap:8px; padding:8px 10px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all .12s; background:var(--bg); }
+  .role-option:hover { border-color:var(--border2); background:var(--bg2); }
+  .role-option.selected { border-color:var(--accent); background:var(--accentS); }
+  .role-option-check { width:14px; height:14px; border-radius:50%; border:1.5px solid var(--border); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; transition:all .12s; }
+  .role-option.selected .role-option-check { background:var(--accent); border-color:var(--accent); }
+
+  /* Stats row */
+  .team-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+  .team-stat { border:1px solid var(--border); border-radius:7px; background:var(--surface); padding:12px 14px; }
+  .team-stat-val { font-size:22px; font-weight:700; letter-spacing:-.02em; color:var(--text); line-height:1; }
+  .team-stat-label { font-size:11px; color:var(--text4); margin-top:3px; }
+
+  /* Buttons */
+  .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+  .btn-primary:hover { opacity:.88; }
+  .btn-full { width:100%; justify-content:center; }
+  .btn-ghost { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:6px; background:transparent; color:var(--text2); border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; transition:all .12s; }
+  .btn-ghost:hover { border-color:var(--border2); background:var(--bg3); }
+
+  /* Empty */
+  .team-empty { border:1px solid var(--border); border-radius:7px; background:var(--surface); padding:48px 24px; text-align:center; }
+`
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function TeamPage() {
   const router = useRouter()
   const { members, addMember, removeMember, updateRole } = useTeam()
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [role, setRole] = useState<TeamMember['role']>('editor')
-  const [adding, setAdding] = useState(false)
 
-  function handleAdd(e: React.FormEvent) {
+  const [name,     setName]     = useState('')
+  const [email,    setEmail]    = useState('')
+  const [role,     setRole]     = useState<TeamMember['role']>('editor')
+  const [loading,  setLoading]  = useState(false)
+  const [success,  setSuccess]  = useState(false)
+  const [filter,   setFilter]   = useState<'all' | TeamMember['role']>('all')
+
+  const filtered = members.filter(m => filter === 'all' || m.role === filter)
+
+  const adminCount  = members.filter(m => m.role === 'admin').length
+  const editorCount = members.filter(m => m.role === 'editor').length
+  const viewerCount = members.filter(m => m.role === 'viewer').length
+
+  function handleInvite(e: React.FormEvent) {
     e.preventDefault()
-    if (!name || !email) return
-    addMember(name, email, role)
-    setName(''); setEmail(''); setRole('editor')
-    setAdding(false)
+    if (!name.trim() || !email.trim()) return
+    setLoading(true)
+    setTimeout(() => {
+      addMember(name.trim(), email.trim(), role)
+      setName(''); setEmail(''); setRole('editor')
+      setLoading(false); setSuccess(true)
+      setTimeout(() => setSuccess(false), 2500)
+    }, 600)
   }
 
-  const inpClass = "w-full rounded-lg px-3.5 py-2.5 text-[13px] border outline-none font-sans"
-  const inpStyle = { background: 'var(--bg2)', borderColor: 'var(--border)', color: 'var(--text)' }
+  const cols = '1fr 160px 100px 90px 80px'
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 h-14 border-b flex items-center justify-between px-8"
-        style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-[12px] cursor-pointer border-none bg-transparent"
-            style={{ color: 'var(--text4)' }}>
-            <ArrowLeft size={14} /> Retour
-          </button>
-          <div className="w-px h-4" style={{ background: 'var(--border)' }} />
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)' }}>
-              <FileText size={13} color="#fff" strokeWidth={2.5} />
-            </div>
-            <span className="text-[16px] font-black tracking-tight" style={{ color: 'var(--text)' }}>EETRA</span>
-            <span className="text-[12px]" style={{ color: 'var(--text4)' }}>/ Équipe</span>
-          </div>
-        </div>
-        <ThemeToggle />
-      </div>
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }}/>
 
-      <div className="max-w-[760px] mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-[28px] font-black tracking-tight mb-1" style={{ color: 'var(--text)' }}>
-              Gestion de l'Équipe
-            </h1>
-            <p className="text-[13px]" style={{ color: 'var(--text3)' }}>
-              {members.length} membre{members.length > 1 ? 's' : ''} dans votre espace de travail
-            </p>
-          </div>
-          <Button variant="primary" size="sm" onClick={() => setAdding(!adding)}>
-            <Plus size={13} /> Inviter un membre
-          </Button>
-        </div>
+      <div className="team-page">
 
-        {/* Add form */}
-        {adding && (
-          <div className="rounded-2xl border p-6 mb-6" style={{ background: 'var(--surface)', borderColor: 'var(--accent)' }}>
-            <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--accent)' }}>
-              Nouvel Invité
-            </div>
-            <form onSubmit={handleAdd}>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--text3)' }}>Nom complet</label>
-                  <input className={inpClass} style={inpStyle} placeholder="Marie Dupont"
-                    value={name} onChange={e => setName(e.target.value)} required
-                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest mb-1.5" style={{ color: 'var(--text3)' }}>Adresse e-mail</label>
-                  <input type="email" className={inpClass} style={inpStyle} placeholder="marie@entreprise.com"
-                    value={email} onChange={e => setEmail(e.target.value)} required
-                    onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border)'}
-                  />
-                </div>
-              </div>
-              <div className="mb-5">
-                <label className="block text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--text3)' }}>Rôle</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(Object.entries(ROLE_CONFIG) as [TeamMember['role'], typeof ROLE_CONFIG[TeamMember['role']]][]).map(([r, cfg]) => (
-                    <button
-                      key={r} type="button"
-                      onClick={() => setRole(r)}
-                      className="p-3 rounded-xl border text-left cursor-pointer transition-all"
-                      style={{
-                        background: role === r ? `${cfg.color}14` : 'var(--bg2)',
-                        borderColor: role === r ? cfg.color : 'var(--border)',
-                      }}
-                    >
-                      <div className="flex items-center gap-1.5 mb-1" style={{ color: cfg.color }}>
-                        {cfg.icon}
-                        <span className="text-[12px] font-bold">{cfg.label}</span>
-                      </div>
-                      <div className="text-[10px]" style={{ color: 'var(--text4)' }}>{cfg.desc}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button type="button" variant="ghost" size="sm" onClick={() => setAdding(false)}>Annuler</Button>
-                <Button type="submit" variant="primary" size="sm">Inviter →</Button>
-              </div>
-            </form>
+        {/* Topbar */}
+        <header className="team-top">
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <button className="team-back" onClick={() => router.push('/dashboard')}>
+              <ArrowLeft size={13}/> Tableau de bord
+            </button>
+            <span className="team-sep">/</span>
+            <span className="team-page-title">Équipe</span>
           </div>
-        )}
+          <ThemeToggle/>
+        </header>
 
-        {/* Members list */}
-        <div className="rounded-2xl border overflow-hidden" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--border)', background: 'var(--bg2)' }}>
-            <div className="grid grid-cols-4 gap-3">
-              {['Membre', 'Email', 'Rôle', 'Actions'].map(h => (
-                <span key={h} className="text-[9px] font-bold uppercase tracking-widest" style={{ color: 'var(--text4)' }}>{h}</span>
-              ))}
+        <div className="team-body">
+
+          {/* Page header */}
+          <div className="team-header">
+            <div>
+              <h1 className="team-h1">Gestion de l'équipe</h1>
+              <p className="team-sub">{members.length} membre{members.length !== 1 ? 's' : ''} dans votre espace de travail</p>
             </div>
           </div>
 
-          {members.map((member, i) => {
-            const cfg = ROLE_CONFIG[member.role]
-            return (
-              <div key={member.id}
-                className="px-5 py-4 grid grid-cols-4 gap-3 items-center"
-                style={{ borderBottom: i < members.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] flex-shrink-0"
-                    style={{ background: 'var(--bg3)' }}>
-                    {member.avatar}
-                  </div>
-                  <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>{member.name}</span>
-                </div>
-
-                <span className="text-[12px] truncate" style={{ color: 'var(--text4)' }}>{member.email}</span>
-
-                <div>
-                  {member.role === 'admin' ? (
-                    <span className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full w-fit"
-                      style={{ background: `${cfg.color}14`, color: cfg.color }}>
-                      {cfg.icon} {cfg.label}
-                    </span>
-                  ) : (
-                    <select
-                      value={member.role}
-                      onChange={e => updateRole(member.id, e.target.value as TeamMember['role'])}
-                      className="rounded-lg px-2.5 py-1 text-[11px] font-bold border cursor-pointer outline-none"
-                      style={{ background: `${cfg.color}14`, borderColor: `${cfg.color}40`, color: cfg.color }}
-                    >
-                      <option value="editor">Rédacteur</option>
-                      <option value="viewer">Lecteur</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  )}
-                </div>
-
-                <div>
-                  {member.role !== 'admin' && (
-                    <button
-                      onClick={() => {
-                        if (window.confirm(`Retirer ${member.name} de l'équipe ?`)) removeMember(member.id)
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border transition-all"
-                      style={{ background: 'transparent', borderColor: 'var(--border)', color: 'var(--text4)' }}
-                      onMouseEnter={e => { (e.currentTarget).style.background = '#FEE2E2'; (e.currentTarget).style.color = '#DC2626'; }}
-                      onMouseLeave={e => { (e.currentTarget).style.background = 'transparent'; (e.currentTarget).style.color = 'var(--text4)'; }}
-                    >
-                      <Trash2 size={11} /> Retirer
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Role legend */}
-        <div className="mt-6 rounded-xl p-4 border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-          <div className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text4)' }}>
-            Niveaux d'Accès
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            {(Object.entries(ROLE_CONFIG) as [TeamMember['role'], typeof ROLE_CONFIG[TeamMember['role']]][]).map(([r, cfg]) => (
-              <div key={r}>
-                <div className="flex items-center gap-1.5 mb-1" style={{ color: cfg.color }}>
-                  {cfg.icon}
-                  <span className="text-[12px] font-bold">{cfg.label}</span>
-                </div>
-                <p className="text-[11px]" style={{ color: 'var(--text4)' }}>{cfg.desc}</p>
+          {/* Stats */}
+          <div className="team-stats">
+            {[
+              { label:'Total membres', value:members.length, color:'var(--text)' },
+              { label:'Admins',        value:adminCount,     color:'#1B4FD8'    },
+              { label:'Rédacteurs',    value:editorCount,    color:'#059669'    },
+            ].map(s => (
+              <div key={s.label} className="team-stat">
+                <div className="team-stat-val" style={{ color:s.color }}>{s.value}</div>
+                <div className="team-stat-label">{s.label}</div>
               </div>
             ))}
           </div>
+
+          {/* Two-column layout */}
+          <div className="team-layout">
+
+            {/* Left: members table */}
+            <div>
+              {/* Filter tabs */}
+              <div style={{ display:'flex', gap:2, marginBottom:12, borderBottom:'1px solid var(--border)', paddingBottom:0 }}>
+                {(['all','admin','editor','viewer'] as const).map(f => (
+                  <button key={f} onClick={() => setFilter(f)} style={{
+                    padding:'6px 14px', fontSize:12, fontWeight: filter === f ? 600 : 500,
+                    color: filter === f ? 'var(--accent)' : 'var(--text4)',
+                    background:'transparent', border:'none', cursor:'pointer',
+                    borderBottom: filter === f ? '2px solid var(--accent)' : '2px solid transparent',
+                    marginBottom:-1,
+                    transition:'color .12s, border-color .12s',
+                  }}>
+                    {f === 'all' ? 'Tous' : ROLES[f].label}
+                    <span style={{ marginLeft:5, fontSize:10, fontWeight:700, padding:'1px 5px', borderRadius:3, background: filter === f ? 'var(--accentS)' : 'var(--bg3)', color: filter === f ? 'var(--accent)' : 'var(--text4)' }}>
+                      {f === 'all' ? members.length : members.filter(m => m.role === f).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {filtered.length === 0 ? (
+                <div className="team-empty">
+                  <Users size={26} color="var(--text4)" style={{ margin:'0 auto 10px' }}/>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text2)', marginBottom:4 }}>
+                    {filter === 'all' ? 'Aucun membre' : `Aucun ${ROLES[filter].label.toLowerCase()}`}
+                  </div>
+                  <p style={{ fontSize:12, color:'var(--text4)', margin:0 }}>Invitez des membres via le formulaire.</p>
+                </div>
+              ) : (
+                <div className="team-table">
+                  <div className="team-th" style={{ gridTemplateColumns:cols }}>
+                    <span>Membre</span>
+                    <span>Email</span>
+                    <span>Rôle</span>
+                    <span>Statut</span>
+                    <span></span>
+                  </div>
+
+                  {filtered.map((member, i) => {
+                    const cfg = ROLES[member.role]
+                    const isAdmin = member.role === 'admin'
+                    return (
+                      <div key={member.id} className="team-tr" style={{ gridTemplateColumns:cols }}>
+
+                        {/* Name + avatar */}
+                        <div className="team-name-col">
+                          <div className="team-avatar">{member.avatar}</div>
+                          <div style={{ minWidth:0 }}>
+                            <div className="team-name">{member.name}</div>
+                          </div>
+                        </div>
+
+                        {/* Email */}
+                        <span style={{ fontSize:11, color:'var(--text4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                          {member.email}
+                        </span>
+
+                        {/* Role */}
+                        <div>
+                          {isAdmin ? (
+                            <span className="role-badge" style={{ background:`${cfg.color}10`, color:cfg.color }}>
+                              <cfg.Icon size={10}/> {cfg.label}
+                            </span>
+                          ) : (
+                            <select
+                              value={member.role}
+                              className="role-select"
+                              onChange={e => updateRole(member.id, e.target.value as TeamMember['role'])}
+                              style={{ color:cfg.color, borderColor:`${cfg.color}30`, background:`${cfg.color}08` }}
+                            >
+                              <option value="editor">Rédacteur</option>
+                              <option value="viewer">Lecteur</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                          )}
+                        </div>
+
+                        {/* Status */}
+                        <span className="status-badge" style={{ background:'rgba(5,150,105,.08)', color:'#059669' }}>
+                          <div style={{ width:5, height:5, borderRadius:'50%', background:'#059669', flexShrink:0 }}/>
+                          Actif
+                        </span>
+
+                        {/* Actions */}
+                        <div className="team-row-actions" onClick={e => e.stopPropagation()}>
+                          {!isAdmin && (
+                            <button className="act-btn danger" title="Retirer"
+                              onClick={() => { if (window.confirm(`Retirer ${member.name} de l'équipe ?`)) removeMember(member.id) }}>
+                              <UserX size={11}/>
+                            </button>
+                          )}
+                        </div>
+
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Right panel */}
+            <div className="team-panel">
+
+              {/* Invite form */}
+              <div className="panel-block">
+                <div className="panel-head" style={{ borderColor: success ? '#059669' : undefined }}>
+                  <div className="panel-head-title">
+                    {success
+                      ? <span style={{ color:'#059669', display:'flex', alignItems:'center', gap:6 }}><Check size={12}/> Membre invité</span>
+                      : 'Inviter un membre'
+                    }
+                  </div>
+                </div>
+                <div className="panel-body">
+                  <form onSubmit={handleInvite}>
+                    <div className="field">
+                      <label>Nom complet</label>
+                      <input placeholder="Marie Dupont" value={name} onChange={e => setName(e.target.value)} required/>
+                    </div>
+                    <div className="field">
+                      <label>Adresse e-mail</label>
+                      <input type="email" placeholder="marie@entreprise.com" value={email} onChange={e => setEmail(e.target.value)} required/>
+                    </div>
+                    <div className="field">
+                      <label>Rôle</label>
+                      <div className="role-picker">
+                        {(Object.entries(ROLES) as [TeamMember['role'], typeof ROLES[TeamMember['role']]][]).map(([r, cfg]) => (
+                          <div key={r} className={`role-option${role === r ? ' selected' : ''}`} onClick={() => setRole(r)}>
+                            <div className="role-option-check">
+                              {role === r && <Check size={8} color="#fff" strokeWidth={3}/>}
+                            </div>
+                            <div>
+                              <div style={{ fontSize:12, fontWeight:600, color: role === r ? 'var(--accent)' : 'var(--text)', display:'flex', alignItems:'center', gap:5 }}>
+                                <cfg.Icon size={11} color={role === r ? 'var(--accent)' : cfg.color}/> {cfg.label}
+                              </div>
+                              <div style={{ fontSize:10, color:'var(--text4)', marginTop:1 }}>{cfg.desc}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <button type="submit" className="btn-primary btn-full" disabled={loading} style={{ marginTop:4 }}>
+                      {loading ? <RefreshCw size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Plus size={12}/>}
+                      {loading ? 'Invitation en cours…' : 'Inviter'}
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Role legend */}
+              <div className="panel-block">
+                <div className="panel-head">
+                  <div className="panel-head-title">Niveaux d'accès</div>
+                </div>
+                <div className="panel-body" style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {(Object.entries(ROLES) as [TeamMember['role'], typeof ROLES[TeamMember['role']]][]).map(([r, cfg]) => (
+                    <div key={r} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+                      <div style={{ width:28, height:28, borderRadius:6, background:`${cfg.color}10`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <cfg.Icon size={13} color={cfg.color}/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:600, color:'var(--text)', marginBottom:1 }}>{cfg.label}</div>
+                        <div style={{ fontSize:11, color:'var(--text4)' }}>{cfg.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Danger zone */}
+              <div className="panel-block" style={{ borderColor:'rgba(220,38,38,.2)' }}>
+                <div className="panel-head" style={{ background:'rgba(220,38,38,.04)', borderColor:'rgba(220,38,38,.15)' }}>
+                  <div className="panel-head-title" style={{ color:'#DC2626' }}>Zone sensible</div>
+                </div>
+                <div className="panel-body">
+                  <p style={{ fontSize:11, color:'var(--text4)', marginBottom:12 }}>
+                    Retirer tous les membres non-admin de l'espace de travail. Cette action est irréversible.
+                  </p>
+                  <button
+                    className="btn-ghost btn-full"
+                    style={{ borderColor:'rgba(220,38,38,.25)', color:'#DC2626', fontSize:11 }}
+                    onClick={() => {
+                      if (window.confirm('Retirer tous les membres non-admin ?')) {
+                        members.filter(m => m.role !== 'admin').forEach(m => removeMember(m.id))
+                      }
+                    }}
+                  >
+                    <UserX size={12}/> Retirer tous les non-admin
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
+    </>
   )
 }

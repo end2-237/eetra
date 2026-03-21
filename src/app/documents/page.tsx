@@ -2,244 +2,274 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileText, Plus, Search, Trash2, Copy, ArrowLeft, Clock, Layers } from 'lucide-react'
+import {
+  FileText, Plus, Search, Trash2, Copy, ArrowLeft,
+  Clock, Layers, ArrowUpDown, ArrowUp, ArrowDown,
+} from 'lucide-react'
 import { useLibrary } from '@/contexts/LibraryContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
-import { Button } from '@/components/ui/Button'
 
 const STORAGE_DRAFT = 'eetra-document-draft'
 
 const CONF_COLORS: Record<string, string> = {
-  'CONFIDENTIEL': '#DC2626',
-  'STRICTEMENT CONFIDENTIEL': '#7C3AED',
-  'USAGE INTERNE': '#D97706',
-  'PUBLIC': '#059669',
+  'CONFIDENTIEL':            '#DC2626',
+  'STRICTEMENT CONFIDENTIEL':'#7C3AED',
+  'USAGE INTERNE':           '#D97706',
+  'PUBLIC':                  '#059669',
 }
+
+const CSS = `
+  .docs-page { min-height:100vh; background:var(--bg); color:var(--text); font-size:13px; font-family:var(--font-bricolage,sans-serif); }
+
+  .docs-top { position:sticky; top:0; z-index:10; height:52px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 20px; }
+  .docs-back { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text4); background:none; border:none; cursor:pointer; padding:0; }
+  .docs-back:hover { color:var(--text); }
+  .docs-sep { font-size:14px; color:var(--border2); }
+  .docs-page-title { font-size:14px; font-weight:700; color:var(--text); }
+
+  .docs-body { max-width:1100px; margin:0 auto; padding:24px 20px 48px; }
+
+  .docs-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .docs-h1  { font-size:18px; font-weight:700; letter-spacing:-.02em; color:var(--text); margin:0 0 3px; }
+  .docs-sub { font-size:12px; color:var(--text4); margin:0; }
+
+  .docs-controls { display:flex; gap:10px; margin-bottom:18px; align-items:center; }
+  .docs-search { display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:6px; padding:4px 10px; background:var(--surface); transition:border-color .15s; height:30px; flex:1; max-width:340px; }
+  .docs-search:focus-within { border-color:var(--accent); }
+  .docs-search input { border:none; outline:none; background:transparent; font-size:12px; color:var(--text); width:100%; }
+  .docs-search input::placeholder { color:var(--text4); }
+
+  .docs-sort-btn { display:flex; align-items:center; gap:5px; padding:4px 11px; height:30px; border-radius:6px; border:1px solid var(--border); background:transparent; font-size:11px; font-weight:500; color:var(--text4); cursor:pointer; transition:all .12s; }
+  .docs-sort-btn:hover { border-color:var(--border2); color:var(--text); background:var(--bg3); }
+  .docs-sort-btn.active { border-color:var(--accent); color:var(--accent); background:var(--accentS); font-weight:600; }
+
+  /* Table */
+  .docs-table { border:1px solid var(--border); border-radius:7px; background:var(--surface); overflow:hidden; }
+  .docs-th { display:grid; gap:10px; padding:7px 16px; background:var(--bg2); border-bottom:1px solid var(--border); }
+  .docs-th span { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text4); display:flex; align-items:center; gap:4px; cursor:pointer; user-select:none; }
+  .docs-th span:hover { color:var(--text3); }
+  .docs-tr { display:grid; gap:10px; padding:10px 16px; border-bottom:1px solid var(--border); align-items:center; cursor:pointer; transition:background .1s; }
+  .docs-tr:last-child { border-bottom:none; }
+  .docs-tr:hover { background:var(--bg2); }
+  .docs-tr:hover .docs-row-actions { opacity:1; }
+  .docs-row-actions { opacity:0; transition:opacity .15s; display:flex; gap:5px; }
+
+  .docs-name { display:flex; align-items:center; gap:10px; min-width:0; }
+  .docs-icon-box { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .docs-title { font-size:13px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .docs-entity { font-size:11px; color:var(--text4); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:1px; }
+
+  .docs-conf { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; }
+
+  .act-btn { width:26px; height:26px; border-radius:5px; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s; color:var(--text4); }
+  .act-btn:hover { border-color:var(--border2); background:var(--bg3); color:var(--text); }
+  .act-btn.danger:hover { background:#FEE2E2; border-color:#FCA5A5; color:#DC2626; }
+
+  /* Empty */
+  .docs-empty { border:1px solid var(--border); border-radius:7px; background:var(--surface); padding:52px 24px; text-align:center; }
+  .docs-empty-title { font-size:14px; font-weight:600; color:var(--text2); margin:12px 0 6px; }
+  .docs-empty-sub { font-size:12px; color:var(--text4); margin:0 0 18px; }
+
+  .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+  .btn-primary:hover { opacity:.88; }
+  .btn-sm { padding:4px 10px; font-size:11px; }
+`
+
+type SortKey = 'date' | 'title' | 'pages'
+type SortDir = 'asc' | 'desc'
 
 export default function DocumentsPage() {
   const router = useRouter()
   const { documents, deleteDocument, duplicateDocument } = useLibrary()
   const { profile } = useProfile()
-  const [search, setSearch] = useState('')
-  const [sortBy, setSortBy] = useState<'date' | 'title'>('date')
+
+  const [search,  setSearch]  = useState('')
+  const [sortKey, setSortKey] = useState<SortKey>('date')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('desc') }
+  }
 
   const filtered = documents
     .filter(d =>
       d.title.toLowerCase().includes(search.toLowerCase()) ||
-      d.entityName?.toLowerCase().includes(search.toLowerCase()) ||
-      d.ref?.toLowerCase().includes(search.toLowerCase())
+      (d.entityName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (d.ref || '').toLowerCase().includes(search.toLowerCase())
     )
-    .sort((a, b) => sortBy === 'date'
-      ? new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-      : a.title.localeCompare(b.title)
-    )
+    .sort((a, b) => {
+      let cmp = 0
+      if (sortKey === 'date')  cmp = new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      if (sortKey === 'title') cmp = a.title.localeCompare(b.title)
+      if (sortKey === 'pages') cmp = (a.pageCount || 0) - (b.pageCount || 0)
+      return sortDir === 'asc' ? -cmp : cmp
+    })
 
-  // FIX: Write document state to STORAGE_DRAFT before navigating.
-  // DocumentContext reads from STORAGE_DRAFT on mount, so this
-  // correctly loads all pages + blocks without the "setPageBlocks on
-  // non-existent page" bug that caused blank document reloads.
-  const handleOpenDocument = (docId: string) => {
-    const doc = documents.find(d => d.id === docId)
-    if (!doc) return
-
-    try {
-      const draftPayload = {
-        title: doc.title,
-        subtitle: doc.subtitle,
-        ref: doc.ref,
-        destination: doc.destination,
-        confidentiality: doc.confidentiality,
-        pages: doc.pages,
-        docStyle: doc.docStyle,
-      }
-      localStorage.setItem(STORAGE_DRAFT, JSON.stringify(draftPayload))
-    } catch (err) {
-      console.error('[EETRA] Failed to write draft for document load', err)
-    }
-
+  const newDoc = () => {
+    try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
     router.push('/editor')
   }
 
-  const handleNewDocument = () => {
+  const openDoc = (docId: string) => {
+    const doc = documents.find(d => d.id === docId)
+    if (!doc) return
     try {
-      localStorage.removeItem(STORAGE_DRAFT)
+      localStorage.setItem(STORAGE_DRAFT, JSON.stringify({
+        title: doc.title, subtitle: doc.subtitle, ref: doc.ref,
+        destination: doc.destination, confidentiality: doc.confidentiality,
+        pages: doc.pages, docStyle: doc.docStyle,
+      }))
     } catch {}
     router.push('/editor')
   }
 
-  const handleDuplicate = (id: string) => {
-    duplicateDocument(id)
+  function SortIcon({ col }: { col: SortKey }) {
+    if (sortKey !== col) return <ArrowUpDown size={10} style={{ opacity:.4 }}/>
+    return sortDir === 'asc' ? <ArrowUp size={10}/> : <ArrowDown size={10}/>
   }
 
+  const cols = '1fr 130px 110px 70px 100px 80px'
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 h-14 border-b flex items-center justify-between px-8"
-        style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-[12px] cursor-pointer border-none bg-transparent"
-            style={{ color: 'var(--text4)' }}>
-            <ArrowLeft size={14} /> Retour
-          </button>
-          <div className="w-px h-4" style={{ background: 'var(--border)' }} />
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)' }}>
-              <FileText size={13} color="#fff" strokeWidth={2.5} />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }}/>
+
+      <div className="docs-page">
+
+        {/* Topbar */}
+        <header className="docs-top">
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <button className="docs-back" onClick={() => router.push('/dashboard')}>
+              <ArrowLeft size={13}/> Tableau de bord
+            </button>
+            <span className="docs-sep">/</span>
+            <span className="docs-page-title">Documents</span>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <ThemeToggle/>
+            <button className="btn-primary btn-sm" onClick={newDoc}>
+              <Plus size={12}/> Nouveau document
+            </button>
+          </div>
+        </header>
+
+        <div className="docs-body">
+
+          {/* Page header */}
+          <div className="docs-header">
+            <div>
+              <h1 className="docs-h1">Documents</h1>
+              <p className="docs-sub">
+                {documents.length} document{documents.length !== 1 ? 's' : ''} sauvegardé{documents.length !== 1 ? 's' : ''}
+                {profile.name ? ` · ${profile.name}` : ''}
+              </p>
             </div>
-            <span className="text-[16px] font-black tracking-tight" style={{ color: 'var(--text)' }}>EETRA</span>
-            <span className="text-[12px]" style={{ color: 'var(--text4)' }}>/ Mes Documents</span>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Button variant="primary" size="sm" onClick={handleNewDocument}>
-            <Plus size={13} /> Nouveau Document
-          </Button>
-        </div>
-      </div>
-
-      <div className="max-w-[1000px] mx-auto w-full px-6 py-10">
-        {/* Title + stats */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-[28px] font-black tracking-tight mb-1" style={{ color: 'var(--text)' }}>
-              Bibliothèque de Documents
-            </h1>
-            <p className="text-[13px]" style={{ color: 'var(--text3)' }}>
-              {documents.length} document{documents.length > 1 ? 's' : ''} sauvegardé{documents.length > 1 ? 's' : ''}
-              {profile.name && ` · ${profile.name}`}
-            </p>
+            <button className="btn-primary" onClick={newDoc}>
+              <Plus size={13}/> Nouveau document
+            </button>
           </div>
 
-          <div className="flex gap-2 items-center">
-            <span className="text-[11px]" style={{ color: 'var(--text4)' }}>Trier :</span>
-            {(['date', 'title'] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setSortBy(s)}
-                className="px-3 py-1.5 rounded-lg text-[11px] font-bold cursor-pointer border transition-all"
-                style={sortBy === s
-                  ? { background: 'var(--accentS)', borderColor: 'var(--accent)', color: 'var(--accent)' }
-                  : { background: 'transparent', borderColor: 'var(--border)', color: 'var(--text4)' }
-                }
-              >
-                {s === 'date' ? 'Date' : 'Titre'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-6">
-          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text4)' }} />
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher par titre, entité, référence..."
-            className="w-full rounded-xl px-3.5 py-3 pl-10 text-[13px] border outline-none font-sans"
-            style={{ background: 'var(--surface)', borderColor: 'var(--border)', color: 'var(--text)' }}
-            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
-            onBlur={e => e.target.style.borderColor = 'var(--border)'}
-            maxLength={100}
-          />
-        </div>
-
-        {filtered.length === 0 ? (
-          <div className="text-center py-20 rounded-2xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-            <FileText size={40} style={{ color: 'var(--text4)', margin: '0 auto 16px' }} />
-            <div className="text-[16px] font-bold mb-2" style={{ color: 'var(--text2)' }}>
-              {search ? 'Aucun résultat' : 'Aucun document sauvegardé'}
+          {/* Controls */}
+          <div className="docs-controls">
+            <div className="docs-search">
+              <Search size={12} color="var(--text4)"/>
+              <input
+                placeholder="Rechercher par titre, entité, référence…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                maxLength={100}
+              />
             </div>
-            <p className="text-[13px] mb-4" style={{ color: 'var(--text4)' }}>
-              {search ? 'Modifiez votre recherche.' : 'Créez votre premier document professionnel.'}
-            </p>
-            {!search && (
-              <Button variant="primary" size="sm" onClick={handleNewDocument}>
-                <Plus size={12} /> Créer un document
-              </Button>
-            )}
           </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {/* New document card */}
-            <div
-              onClick={handleNewDocument}
-              className="rounded-2xl border-2 border-dashed p-5 flex flex-col items-center justify-center cursor-pointer transition-all"
-              style={{ borderColor: 'var(--border2)', minHeight: 160 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accentS)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: 'var(--accentS)' }}>
-                <Plus size={18} color="var(--accent)" />
+
+          {/* Table */}
+          {filtered.length === 0 ? (
+            <div className="docs-empty">
+              <FileText size={28} color="var(--text4)" style={{ margin:'0 auto' }}/>
+              <div className="docs-empty-title">
+                {search ? 'Aucun résultat' : 'Aucun document sauvegardé'}
               </div>
-              <span className="text-[13px] font-bold" style={{ color: 'var(--accent)' }}>Nouveau Document</span>
+              <p className="docs-empty-sub">
+                {search ? 'Modifiez votre recherche.' : 'Créez votre premier document professionnel.'}
+              </p>
+              {!search && (
+                <button className="btn-primary btn-sm" onClick={newDoc}>
+                  <Plus size={11}/> Créer un document
+                </button>
+              )}
             </div>
+          ) : (
+            <div className="docs-table">
 
-            {filtered.map(doc => {
-              const confColor = CONF_COLORS[doc.confidentiality] || '#6B7280'
-              const updatedAt = new Date(doc.updatedAt)
-              return (
-                <div
-                  key={doc.id}
-                  className="rounded-2xl border p-5 cursor-pointer transition-all group"
-                  style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.transform = ''; }}
-                  onClick={() => handleOpenDocument(doc.id)}
-                >
-                  <div className="w-full h-1 rounded-full mb-4" style={{ background: doc.docStyle?.accentColor || 'var(--accent)' }} />
+              {/* Header */}
+              <div className="docs-th" style={{ gridTemplateColumns:cols }}>
+                <span onClick={() => toggleSort('title')}>Titre <SortIcon col="title"/></span>
+                <span>Entreprise</span>
+                <span>Confidentialité</span>
+                <span onClick={() => toggleSort('pages')}>Pages <SortIcon col="pages"/></span>
+                <span onClick={() => toggleSort('date')}>Modifié <SortIcon col="date"/></span>
+                <span></span>
+              </div>
 
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${confColor}15`, color: confColor }}>
-                      {doc.confidentiality}
+              {/* Rows */}
+              {filtered.map(doc => {
+                const confColor = CONF_COLORS[doc.confidentiality] || '#6B7280'
+                const accent    = doc.docStyle?.accentColor || 'var(--accent)'
+                return (
+                  <div key={doc.id} className="docs-tr" style={{ gridTemplateColumns:cols }} onClick={() => openDoc(doc.id)}>
+
+                    {/* Title + ref */}
+                    <div className="docs-name">
+                      <div className="docs-icon-box" style={{ background:`${accent}12` }}>
+                        <FileText size={13} color={accent}/>
+                      </div>
+                      <div style={{ minWidth:0 }}>
+                        <div className="docs-title">{doc.title || 'Sans titre'}</div>
+                        {doc.ref && <div style={{ fontSize:10, color:'var(--text4)', fontFamily:'monospace', marginTop:1 }}>{doc.ref}</div>}
+                      </div>
+                    </div>
+
+                    {/* Entity */}
+                    <span style={{ fontSize:12, color:'var(--text4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {doc.entityName || '—'}
                     </span>
-                    <span className="font-mono text-[9px]" style={{ color: 'var(--text4)' }}>{doc.ref || '—'}</span>
-                  </div>
 
-                  <div className="text-[14px] font-bold mb-1 leading-tight" style={{ color: 'var(--text)' }}>
-                    {doc.title || 'Sans titre'}
-                  </div>
-                  <div className="text-[11px] mb-3" style={{ color: 'var(--text4)' }}>
-                    {doc.subtitle || doc.entityName || '—'}
-                  </div>
-
-                  <div className="flex items-center gap-3 text-[10px]" style={{ color: 'var(--text4)' }}>
-                    <span className="flex items-center gap-1"><Layers size={10} /> {doc.pageCount} page{doc.pageCount > 1 ? 's' : ''}</span>
-                    <span className="flex items-center gap-1"><Clock size={10} />
-                      {updatedAt.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                    {/* Confidentiality */}
+                    <span>
+                      <span className="docs-conf" style={{ background:`${confColor}10`, color:confColor }}>
+                        {doc.confidentiality || '—'}
+                      </span>
                     </span>
-                  </div>
 
-                  <div className="flex gap-2 mt-3 pt-3 border-t opacity-0 group-hover:opacity-100 transition-opacity" style={{ borderColor: 'var(--border)' }}>
-                    <button
-                      onClick={e => { e.stopPropagation(); handleDuplicate(doc.id) }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer border"
-                      style={{ background: 'transparent', borderColor: 'var(--border)', color: 'var(--text4)' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                    >
-                      <Copy size={10} /> Dupliquer
-                    </button>
-                    <button
-                      onClick={e => {
-                        e.stopPropagation()
-                        if (window.confirm('Supprimer ce document définitivement ?')) deleteDocument(doc.id)
-                      }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer border"
-                      style={{ background: 'transparent', borderColor: 'var(--border)', color: 'var(--text4)' }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#FEE2E2'; (e.currentTarget as HTMLElement).style.color = '#DC2626'; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text4)'; }}
-                    >
-                      <Trash2 size={10} /> Supprimer
-                    </button>
+                    {/* Pages */}
+                    <span style={{ fontSize:12, color:'var(--text4)' }}>{doc.pageCount || 0}p</span>
+
+                    {/* Date */}
+                    <span style={{ fontSize:12, color:'var(--text4)' }}>
+                      {new Date(doc.updatedAt).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'2-digit' })}
+                    </span>
+
+                    {/* Actions */}
+                    <div className="docs-row-actions" onClick={e => e.stopPropagation()}>
+                      <button className="act-btn" title="Dupliquer" onClick={() => duplicateDocument(doc.id)}>
+                        <Copy size={11}/>
+                      </button>
+                      <button className="act-btn danger" title="Supprimer"
+                        onClick={() => { if (window.confirm('Supprimer ce document définitivement ?')) deleteDocument(doc.id) }}>
+                        <Trash2 size={11}/>
+                      </button>
+                    </div>
+
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                )
+              })}
+            </div>
+          )}
+
+        </div>
       </div>
-    </div>
+    </>
   )
 }

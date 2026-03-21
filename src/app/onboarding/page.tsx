@@ -1,53 +1,127 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { FileText, Shield, MapPin, MessageSquare, Check } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
+import Image from 'next/image'
+import logo from '../../app/icon.png'
+import {
+  FileText, Check, Upload, ChevronRight, ArrowLeft,
+  User, Building2, CheckCircle2, Zap, Globe,
+  BarChart2, BookOpen, Shield, Clock, Download,
+} from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
-import { useProfile } from '@/contexts/ProfileContext'
-import { PALETTE } from '@/lib/templates'
+import { useProfile }  from '@/contexts/ProfileContext'
+import { PALETTE }     from '@/lib/templates'
 
-const SECTORS = ['', 'Technologie / SaaS', 'Finance & Investissement', 'Conseil & Stratégie', 'Industrie', 'Immobilier', 'Santé & Biotech', 'Commerce', 'BTP', 'Agriculture', 'Autre']
-const LEGALS  = ['', 'SA', 'SARL', 'SAS', 'GIE', 'ONG', 'EI', 'Autre']
-const CONFIDENTIALITIES = ['CONFIDENTIEL', 'USAGE INTERNE', 'PUBLIC', 'STRICTEMENT CONFIDENTIEL']
+type AccountType = 'individual' | 'company' | null
 
-function StepIndicator({ step }: { step: number }) {
-  const steps = ['Compte', 'Profil', 'Éditeur']
-  return (
-    <div className="flex items-center justify-center gap-0 mb-10">
-      {steps.map((s, i) => (
-        <div key={s} className="flex items-center">
-          <div className="flex items-center gap-2">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-black border-2 transition-all`}
-              style={i + 1 < step
-                ? { background: 'var(--success)', borderColor: 'var(--success)', color: '#fff' }
-                : i + 1 === step
-                  ? { border: '2px solid var(--accent)', color: 'var(--accent)', background: 'transparent' }
-                  : { border: '2px solid var(--border2)', color: 'var(--text4)', background: 'transparent' }
-              }>
-              {i + 1 < step ? <Check size={13} /> : i + 1}
-            </div>
-            <span className="text-[12px] font-bold"
-              style={{ color: i + 1 < step ? 'var(--success)' : i + 1 === step ? 'var(--accent)' : 'var(--text4)' }}>
-              {s}
-            </span>
-          </div>
-          {i < steps.length - 1 && (
-            <div className="w-12 h-0.5 mx-2"
-              style={{ background: i + 1 < step ? 'var(--success)' : 'var(--border)' }} />
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const SECTORS = ['','Technologie / SaaS','Finance & Investissement','Conseil & Stratégie','Industrie','Immobilier','Santé & Biotech','Commerce','BTP','Agriculture','Autre']
+const LEGALS  = ['','SA','SARL','SAS','GIE','ONG','EI','Autre']
+const STEPS   = [{ id:1, label:'Compte' }, { id:2, label:'Profil' }, { id:3, label:'Éditeur' }]
+
+// ── CSS ───────────────────────────────────────────────────────────────────────
+
+const CSS = `
+  html, body { overflow:hidden; }
+  .ob-page { height:100vh; display:flex; flex-direction:column; background:var(--bg); color:var(--text); font-size:13px; font-family:var(--font-bricolage,sans-serif); overflow:hidden; }
+
+  /* Topbar */
+  .ob-top { height:52px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 20px; }
+  .ob-skip { font-size:12px; color:var(--text4); background:none; border:none; cursor:pointer; display:flex; align-items:center; gap:4px; }
+  .ob-skip:hover { color:var(--text); }
+
+  /* Steps */
+  .ob-steps { height:44px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; padding:0 20px; gap:0; }
+  .ob-step-circle { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700; flex-shrink:0; border:1.5px solid var(--border2); background:transparent; color:var(--text4); transition:all .15s; }
+  .ob-step-circle.done   { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .ob-step-circle.active { border-color:var(--accent); color:var(--accent); }
+  .ob-step-label { font-size:12px; font-weight:500; color:var(--text4); margin-left:6px; }
+  .ob-step-label.active { color:var(--accent); font-weight:600; }
+  .ob-step-label.done   { color:var(--text3); }
+  .ob-step-line { width:36px; height:1px; background:var(--border); margin:0 8px; flex-shrink:0; }
+  .ob-step-line.done { background:var(--accent); }
+
+  /* Body: two columns */
+  .ob-body { flex:1; overflow:hidden; display:grid; grid-template-columns:1fr 340px; }
+
+  /* Form column */
+  .ob-form-col { border-right:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .ob-form-head { padding:14px 20px; border-bottom:1px solid var(--border); flex-shrink:0; }
+  .ob-form-title { font-size:15px; font-weight:700; color:var(--text); margin:0 0 2px; letter-spacing:-.01em; }
+  .ob-form-sub   { font-size:11px; color:var(--text4); margin:0; }
+  .ob-form-body  { flex:1; overflow-y:auto; padding:14px 20px; }
+  .ob-form-footer { padding:11px 20px; border-top:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; background:var(--surface); }
+
+  /* Right panel */
+  .ob-right-col { background:var(--bg2); display:flex; flex-direction:column; overflow:hidden; }
+  .ob-right-head { padding:11px 16px; border-bottom:1px solid var(--border); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); flex-shrink:0; background:var(--surface); }
+  .ob-right-body { flex:1; overflow-y:auto; padding:14px 14px; display:flex; flex-direction:column; gap:12px; }
+
+  /* Account type */
+  .ob-type-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:2px; }
+  .ob-type-card { display:flex; flex-direction:column; gap:5px; padding:10px 11px; border-radius:6px; border:1.5px solid var(--border); background:var(--bg); cursor:pointer; transition:all .15s; text-align:left; }
+  .ob-type-card:hover { border-color:var(--border2); background:var(--surface); }
+  .ob-type-card.sel { border-color:var(--accent); background:var(--accentS); }
+  .ob-type-title { font-size:12px; font-weight:700; color:var(--text); }
+  .ob-type-card.sel .ob-type-title { color:var(--accent); }
+  .ob-type-desc  { font-size:10px; color:var(--text4); line-height:1.4; }
+
+  /* Fields */
+  .ob-field { margin-bottom:9px; }
+  .ob-label { display:block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); margin-bottom:4px; }
+  .ob-input, .ob-select { width:100%; padding:5px 9px; border-radius:6px; border:1px solid var(--border); background:var(--bg); font-size:12px; color:var(--text); outline:none; transition:border-color .15s,background .15s; font-family:inherit; height:28px; }
+  .ob-input:focus, .ob-select:focus { border-color:var(--accent); background:var(--surface); }
+  .ob-input::placeholder { color:var(--text4); }
+  .ob-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+
+  /* Logo upload */
+  .ob-logo-box { width:56px; height:56px; border-radius:6px; border:1px dashed var(--border2); background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; transition:all .15s; flex-shrink:0; }
+  .ob-logo-box:hover { border-color:var(--accent); background:var(--accentS); }
+
+  /* Color palette */
+  .ob-palette { display:flex; gap:5px; flex-wrap:wrap; }
+  .ob-dot { width:20px; height:20px; border-radius:5px; cursor:pointer; border:2px solid transparent; transition:transform .15s,box-shadow .15s; flex-shrink:0; }
+  .ob-dot.sel { transform:scale(1.2); box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--text); }
+  .ob-dot:hover:not(.sel) { transform:scale(1.1); }
+
+  /* Toggle */
+  .ob-toggle-row { display:flex; align-items:center; justify-content:space-between; padding:7px 0; }
+  .ob-checkbox { width:14px; height:14px; border-radius:3px; border:1.5px solid var(--border2); display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; transition:all .12s; }
+  .ob-checkbox.on { background:var(--accent); border-color:var(--accent); }
+
+  /* Divider */
+  .ob-divider { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); margin:10px 0 7px; padding-bottom:5px; border-bottom:1px solid var(--border); }
+
+  /* Right panel blocks */
+  .ob-panel-block { border:1px solid var(--border); border-radius:7px; background:var(--surface); overflow:hidden; }
+  .ob-panel-head { padding:8px 12px; border-bottom:1px solid var(--border); background:var(--bg2); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); }
+  .ob-panel-body { padding:10px 12px; }
+  .ob-check-item { display:flex; align-items:flex-start; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
+  .ob-check-item:last-child { border-bottom:none; }
+  .ob-feat-item { display:flex; gap:9px; padding:6px 0; border-bottom:1px solid var(--border); align-items:flex-start; }
+  .ob-feat-item:last-child { border-bottom:none; }
+  .ob-feat-icon { width:24px; height:24px; border-radius:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .ob-feat-title { font-size:11px; font-weight:600; color:var(--text); }
+  .ob-feat-sub   { font-size:10px; color:var(--text4); margin-top:1px; line-height:1.35; }
+
+  /* Buttons */
+  .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:7px 15px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+  .btn-primary:hover { opacity:.88; }
+  .btn-ghost { display:inline-flex; align-items:center; gap:5px; padding:6px 12px; border-radius:6px; background:transparent; color:var(--text3); border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; transition:all .12s; }
+  .btn-ghost:hover { border-color:var(--border2); color:var(--text); }
+`
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
-  const router = useRouter()
+  const router  = useRouter()
   const { profile, updateProfile } = useProfile()
-  const logoFileRef = useRef<HTMLInputElement>(null)
+  const logoRef = useRef<HTMLInputElement>(null)
+  const [accountType, setAccountType] = useState<AccountType>(null)
+
+  const profileExtra = profile as unknown as Record<string, string>
 
   function handleLogo(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -57,237 +131,262 @@ export default function OnboardingPage() {
     r.readAsDataURL(f)
   }
 
-  const sectionHeader = (icon: React.ReactNode, label: string) => (
-    <div className="flex items-center gap-2 mb-5">
-      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ background: 'var(--accentS)', color: 'var(--accent)' }}>
-        {icon}
-      </div>
-      <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent)' }}>
-        {label}
-      </span>
-    </div>
-  )
-
-  const labelClass = "block text-[10px] font-bold uppercase tracking-widest mb-1.5"
-  const inputStyle = { background: 'var(--bg2)', borderColor: 'var(--border)', color: 'var(--text)' }
-  const inputClass = "w-full rounded-lg px-3.5 py-2.5 text-[13px] border outline-none transition-colors duration-150 font-sans"
-  const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = 'var(--accent)'
-    e.target.style.background = 'var(--surface)'
-  }
-  const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = 'var(--border)'
-    e.target.style.background = 'var(--bg2)'
-  }
+  // Dynamic checklist based on account type
+  const checklist = accountType === 'individual'
+    ? [
+        'Raison sociale (votre nom complet)',
+        'Email de contact',
+        'Ville & pays',
+        'Signataire par défaut',
+      ]
+    : accountType === 'company'
+    ? [
+        'Raison sociale officielle',
+        'Forme juridique & secteur',
+        'RCCM / N° Fiscal',
+        'Capital social',
+        'Coordonnées complètes',
+        'Logo corporate',
+      ]
+    : [
+        'Raison sociale',
+        'Coordonnées',
+        'Couleur corporate',
+        'Logo (optionnel)',
+      ]
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg)' }}>
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 h-14 border-b flex items-center justify-between px-8 flex-shrink-0"
-        style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'var(--accent)' }}>
-            <FileText size={13} color="#fff" strokeWidth={2.5} />
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }}/>
+
+      <div className="ob-page">
+
+        {/* Topbar */}
+        <header className="ob-top">
+          <div style={{ display:'flex', alignItems:'center', gap:9, cursor:'pointer' }} onClick={() => router.push('/')}>
+            <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius:6 }}/>
+            <span style={{ fontSize:15, fontWeight:700, letterSpacing:'-.02em', color:'var(--text)' }}>EETRA</span>
           </div>
-          <span className="text-[15px] font-black tracking-tight" style={{ color: 'var(--text)' }}>EETRA</span>
-        </Link>
-        <div className="flex items-center gap-3">
-          <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={() => router.push('/editor')}>
-            Passer cette étape →
-          </Button>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <ThemeToggle/>
+            <button className="ob-skip" onClick={() => router.push('/editor')}>
+              Passer <ChevronRight size={13}/>
+            </button>
+          </div>
+        </header>
+
+        {/* Steps */}
+        <div className="ob-steps">
+          {STEPS.map((s, i) => (
+            <div key={s.id} style={{ display:'flex', alignItems:'center' }}>
+              <div className={`ob-step-circle${s.id < 2 ? ' done' : s.id === 2 ? ' active' : ''}`}>
+                {s.id < 2 ? <Check size={9} strokeWidth={3}/> : s.id}
+              </div>
+              <span className={`ob-step-label${s.id < 2 ? ' done' : s.id === 2 ? ' active' : ''}`}>{s.label}</span>
+              {i < STEPS.length - 1 && <div className={`ob-step-line${s.id < 2 ? ' done' : ''}`}/>}
+            </div>
+          ))}
+          <span style={{ marginLeft:'auto', fontSize:11, color:'var(--text4)' }}>
+            Ces informations s'appliquent à tous vos documents
+          </span>
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[720px] mx-auto px-6 py-12">
-          <div className="text-center mb-9">
-            <h1 className="text-[30px] font-black tracking-tight mb-2" style={{ color: 'var(--text)' }}>
-              Configurez votre identité corporate
-            </h1>
-            <p className="text-[13px]" style={{ color: 'var(--text3)' }}>
-              Ces informations s&apos;appliquent à tous vos documents. Modifiables dans les paramètres.
-            </p>
-          </div>
-          <StepIndicator step={2} />
+        {/* Body */}
+        <div className="ob-body">
 
-          {/* 1. Visual identity */}
-          <div className="rounded-2xl border p-7 mb-4" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-            {sectionHeader(<Shield size={14} strokeWidth={2} />, 'Identité Visuelle')}
-            <div className="flex gap-7 items-start">
-              {/* Logo upload */}
-              <div>
-                <label className={labelClass} style={{ color: 'var(--text3)' }}>Logo</label>
-                <div
-                  onClick={() => logoFileRef.current?.click()}
-                  className="w-[120px] h-[120px] rounded-xl border-2 border-dashed flex flex-col items-center justify-content cursor-pointer transition-all duration-150 overflow-hidden"
-                  style={{ borderColor: 'var(--border2)', background: 'var(--bg2)' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--accent)'; (e.currentTarget as HTMLElement).style.background = 'var(--accentS)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border2)'; (e.currentTarget as HTMLElement).style.background = 'var(--bg2)'; }}
-                >
-                  {profile.logoDataUrl ? (
-                    <img src={profile.logoDataUrl} alt="logo" className="w-full h-full object-contain p-3" />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center w-full h-full gap-2">
-                      <FileText size={22} color="var(--text4)" />
-                      <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text4)' }}>
-                        Cliquez<br />PNG / SVG
-                      </span>
-                    </div>
+          {/* ── Form column ── */}
+          <div className="ob-form-col">
+            <div className="ob-form-head">
+              <h1 className="ob-form-title">Configuration du profil</h1>
+              <p className="ob-form-sub">Saisissez les informations qui apparaîtront sur vos documents.</p>
+            </div>
+
+            <div className="ob-form-body">
+
+              {/* Account type */}
+              <div className="ob-divider" style={{ marginTop:0 }}>Type de compte</div>
+              <div className="ob-type-grid">
+                <button className={`ob-type-card${accountType === 'individual' ? ' sel' : ''}`} onClick={() => setAccountType('individual')}>
+                  <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                    <User size={14} color={accountType === 'individual' ? 'var(--accent)' : 'var(--text4)'}/>
+                    <span className="ob-type-title">Individuel</span>
+                  </div>
+                  <span className="ob-type-desc">Consultant, freelance, expert indépendant</span>
+                </button>
+                <button className={`ob-type-card${accountType === 'company' ? ' sel' : ''}`} onClick={() => setAccountType('company')}>
+                  <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                    <Building2 size={14} color={accountType === 'company' ? 'var(--accent)' : 'var(--text4)'}/>
+                    <span className="ob-type-title">Entreprise</span>
+                  </div>
+                  <span className="ob-type-desc">PME, cabinet, organisation, startup</span>
+                </button>
+              </div>
+
+              {/* Identity */}
+              <div className="ob-divider">Identité visuelle</div>
+              <div style={{ display:'flex', gap:10, alignItems:'flex-end', marginBottom:9 }}>
+                <div style={{ flexShrink:0 }}>
+                  <div className="ob-label">Logo</div>
+                  <div className="ob-logo-box" onClick={() => logoRef.current?.click()}>
+                    {profile.logoDataUrl
+                      ? <img src={profile.logoDataUrl} alt="logo" style={{ width:'100%', height:'100%', objectFit:'contain', padding:4 }}/>
+                      : <><Upload size={12} color="var(--text4)"/><span style={{ fontSize:8, color:'var(--text4)', marginTop:2 }}>PNG</span></>
+                    }
+                  </div>
+                  <input type="file" ref={logoRef} accept="image/*" style={{ display:'none' }} onChange={handleLogo}/>
+                  {profile.logoDataUrl && (
+                    <button style={{ fontSize:9, color:'#DC2626', background:'none', border:'none', cursor:'pointer', marginTop:2 }} onClick={() => updateProfile({ logoDataUrl: null })}>Retirer</button>
                   )}
                 </div>
-                <input type="file" ref={logoFileRef} accept="image/*" className="hidden" onChange={handleLogo} />
-                {profile.logoDataUrl && (
-                  <button onClick={() => updateProfile({ logoDataUrl: null })}
-                    className="mt-2 text-[11px] cursor-pointer border-none bg-transparent"
-                    style={{ color: 'var(--danger)' }}>
-                    ✕ Retirer
-                  </button>
-                )}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div className="ob-field">
+                    <label className="ob-label">
+                      {accountType === 'individual' ? 'Nom complet *' : 'Raison sociale *'}
+                    </label>
+                    <input className="ob-input" placeholder={accountType === 'individual' ? 'Jean-Marie Kouassi' : 'QUANTUM INDUSTRIES SAS'} value={profile.name} onChange={e => updateProfile({ name: e.target.value })}/>
+                  </div>
+                </div>
               </div>
 
-              {/* Name + sector/legal */}
-              <div className="flex-1 flex flex-col gap-4">
+              {/* Sector + legal — only for company */}
+              {accountType !== 'individual' && (
+                <div className="ob-grid-2">
+                  <div className="ob-field">
+                    <label className="ob-label">Secteur</label>
+                    <select className="ob-select" value={profile.sector || ''} onChange={e => updateProfile({ sector: e.target.value })}>
+                      {SECTORS.map(s => <option key={s} value={s}>{s || 'Sélectionner…'}</option>)}
+                    </select>
+                  </div>
+                  <div className="ob-field">
+                    <label className="ob-label">Forme juridique</label>
+                    <select className="ob-select" value={profile.legal || ''} onChange={e => updateProfile({ legal: e.target.value })}>
+                      {LEGALS.map(l => <option key={l} value={l}>{l || 'Sélectionner…'}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Color */}
+              <div className="ob-divider">Couleur corporate</div>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div className="ob-palette">
+                  {PALETTE.map(c => (
+                    <div key={c} className={`ob-dot${profile.color === c ? ' sel' : ''}`} style={{ background:c }} onClick={() => updateProfile({ color: c })}/>
+                  ))}
+                </div>
+                <input type="color" value={profile.color || '#1B4FD8'} onChange={e => updateProfile({ color: e.target.value })}
+                  style={{ width:24, height:24, borderRadius:5, border:'1px solid var(--border)', cursor:'pointer', padding:2, background:'var(--bg)', flexShrink:0 }}/>
+                <span style={{ fontSize:10, fontFamily:'monospace', color:'var(--accent)' }}>{profile.color || '#1B4FD8'}</span>
+              </div>
+
+              {/* Coordinates */}
+              <div className="ob-divider" style={{ marginTop:10 }}>Coordonnées</div>
+              <div className="ob-grid-2">
+                {([
+                  ['Email',     'email',   'contact@entreprise.com'],
+                  ['Ville',     'city',    'Douala, Cameroun'],
+                  ['Site web',  'web',     'eetra.buyticle.com'],
+                  ['Adresse',   'address', 'Rue du Commerce, Douala'],
+                  ...(accountType !== 'individual' ? [
+                    ['RCCM / N° Fiscal','siret','CM-DLA-2024-B-0001'] as [string,string,string],
+                    ['Capital social',  'capital','5 000 000 FCFA']   as [string,string,string],
+                  ] : []),
+                ] as [string,string,string][]).map(([label, key, ph]) => (
+                  <div key={key} className="ob-field">
+                    <label className="ob-label">{label}</label>
+                    <input className="ob-input" placeholder={ph} value={profileExtra[key] || ''} onChange={e => updateProfile({ [key]: e.target.value })}/>
+                  </div>
+                ))}
+              </div>
+
+              {/* Options */}
+              <div className="ob-divider" style={{ marginTop:10 }}>Options document</div>
+              <div className="ob-grid-2" style={{ marginBottom:6 }}>
+                <div className="ob-field">
+                  <label className="ob-label">{accountType === 'individual' ? 'Titre professionnel' : 'Slogan / Tagline'}</label>
+                  <input className="ob-input" placeholder={accountType === 'individual' ? 'Consultant Senior' : 'Votre devise'} value={profile.tagline || ''} onChange={e => updateProfile({ tagline: e.target.value })}/>
+                </div>
+                <div className="ob-field">
+                  <label className="ob-label">Signataire par défaut</label>
+                  <input className="ob-input" placeholder={accountType === 'individual' ? 'Votre nom' : 'Directeur Général'} value={profile.signer || ''} onChange={e => updateProfile({ signer: e.target.value })}/>
+                </div>
+              </div>
+              <div className="ob-toggle-row">
                 <div>
-                  <label className={labelClass} style={{ color: 'var(--text3)' }}>Raison Sociale *</label>
-                  <input className={inputClass} style={inputStyle} placeholder="Ex : QUANTUM INDUSTRIES SAS"
-                    value={profile.name} onChange={e => updateProfile({ name: e.target.value })}
-                    onFocus={focusStyle} onBlur={blurStyle} />
+                  <div style={{ fontSize:12, fontWeight:600, color:'var(--text)' }}>Filigrane EETRA</div>
+                  <div style={{ fontSize:10, color:'var(--text4)' }}>Afficher "Généré par EETRA" en pied de page</div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass} style={{ color: 'var(--text3)' }}>Secteur</label>
-                    <select className={inputClass} style={inputStyle}
-                      value={profile.sector} onChange={e => updateProfile({ sector: e.target.value })}
-                      onFocus={focusStyle} onBlur={blurStyle}>
-                      {SECTORS.map(s => <option key={s} value={s}>{s || 'Sélectionner...'}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelClass} style={{ color: 'var(--text3)' }}>Forme Juridique</label>
-                    <select className={inputClass} style={inputStyle}
-                      value={profile.legal} onChange={e => updateProfile({ legal: e.target.value })}
-                      onFocus={focusStyle} onBlur={blurStyle}>
-                      {LEGALS.map(l => <option key={l} value={l}>{l || 'Sélectionner...'}</option>)}
-                    </select>
-                  </div>
+                <div className={`ob-checkbox${profile.watermark ? ' on' : ''}`} onClick={() => updateProfile({ watermark: !profile.watermark })}>
+                  {profile.watermark && <Check size={8} color="#fff" strokeWidth={3}/>}
                 </div>
               </div>
+
+            </div>
+
+            <div className="ob-form-footer">
+              <button className="btn-ghost" onClick={() => router.push('/login')}>
+                <ArrowLeft size={12}/> Retour
+              </button>
+              <button className="btn-primary" onClick={() => router.push('/editor')}>
+                Accéder à l'éditeur <ChevronRight size={13}/>
+              </button>
             </div>
           </div>
 
-          {/* 2. Color */}
-          <div className="rounded-2xl border p-7 mb-4" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-            {sectionHeader(<div className="w-3 h-3 rounded-full" style={{ background: 'var(--accent)' }} />, 'Couleur Corporate')}
-            <div className="flex items-center gap-2 flex-wrap mb-4">
-              {PALETTE.map(c => (
-                <button key={c} onClick={() => updateProfile({ color: c })}
-                  className="w-9 h-9 rounded-lg border-2 cursor-pointer transition-all duration-150 flex-shrink-0"
-                  style={{
-                    background: c,
-                    borderColor: profile.color === c ? 'var(--text)' : 'transparent',
-                    transform: profile.color === c ? 'scale(1.15)' : '',
-                  }}
-                  title={c}
-                />
-              ))}
-            </div>
-            <div className="flex items-center gap-3">
-              <input type="color" value={profile.color}
-                onChange={e => updateProfile({ color: e.target.value })}
-                className="w-9 h-9 rounded-lg border cursor-pointer p-0.5"
-                style={{ borderColor: 'var(--border)' }}
-              />
-              <span className="text-[13px]" style={{ color: 'var(--text3)' }}>Couleur personnalisée</span>
-              <span className="font-mono text-[12px]" style={{ color: 'var(--accent)' }}>{profile.color}</span>
-            </div>
-          </div>
+          {/* ── Right panel ── */}
+          <div className="ob-right-col">
+            <div className="ob-right-head">Guide de configuration</div>
+            <div className="ob-right-body">
 
-          {/* 3. Coordinates */}
-          <div className="rounded-2xl border p-7 mb-4" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-            {sectionHeader(<MapPin size={14} strokeWidth={2} />, 'Coordonnées')}
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { label: 'Adresse', key: 'address', ph: '12 rue de la Paix', type: 'text' },
-                { label: 'Ville', key: 'city', ph: "Abidjan, Côte d'Ivoire", type: 'text' },
-                { label: 'Email', key: 'email', ph: 'contact@entreprise.com', type: 'email' },
-                { label: 'Site Web', key: 'web', ph: 'www.entreprise.com', type: 'text' },
-                { label: 'N° RCCM / Fiscal', key: 'siret', ph: 'CI-ABJ-2024-B-0001', type: 'text' },
-                { label: 'Capital Social (FCFA)', key: 'capital', ph: 'Ex : 5 000 000', type: 'text' },
-              ].map(({ label, key, ph, type }) => (
-                <div key={key}>
-                  <label className={labelClass} style={{ color: 'var(--text3)' }}>{label}</label>
-                  <input type={type} className={inputClass} style={inputStyle} placeholder={ph}
-                    value={(profile as unknown as Record<string, string>)[key] || ''}
-                    onChange={e => updateProfile({ [key]: e.target.value })}
-                    onFocus={focusStyle} onBlur={blurStyle}
-                  />
+              {/* Checklist */}
+              <div className="ob-panel-block">
+                <div className="ob-panel-head">
+                  {accountType === 'individual' ? 'Profil individuel' : accountType === 'company' ? 'Profil entreprise' : 'Informations requises'}
                 </div>
-              ))}
+                <div className="ob-panel-body">
+                  {checklist.map((item, i) => (
+                    <div key={i} className="ob-check-item">
+                      <CheckCircle2 size={13} color="var(--accent)" style={{ flexShrink:0, marginTop:1 }}/>
+                      <span style={{ fontSize:12, color:'var(--text3)' }}>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* What you unlock */}
+              <div className="ob-panel-block">
+                <div className="ob-panel-head">Ce que vous débloquez</div>
+                <div className="ob-panel-body">
+                  {[
+                    { Icon:BarChart2, color:'#1B4FD8', bg:'rgba(27,79,216,.1)',  title:'Documents pro A4',    sub:'Business Plan, Audit, Contrat OHADA…' },
+                    { Icon:Download,  color:'#059669', bg:'rgba(5,150,105,.1)',  title:'Export PDF & Word',   sub:'Haute résolution, une page ou tout le doc' },
+                    { Icon:Shield,    color:'#7C3AED', bg:'rgba(124,58,237,.1)', title:'QR authenticité',     sub:'Chaque document a un QR de vérification' },
+                    { Icon:BookOpen,  color:'#D97706', bg:'rgba(217,119,6,.1)',  title:'Bibliothèque OHADA',  sub:'Guides juridiques & business inclus' },
+                    { Icon:Clock,     color:'#0E7490', bg:'rgba(14,116,144,.1)', title:'Historique complet',  sub:'Tous vos exports archivés et traçables' },
+                  ].map(({ Icon, color, bg, title, sub }) => (
+                    <div key={title} className="ob-feat-item">
+                      <div className="ob-feat-icon" style={{ background:bg }}>
+                        <Icon size={12} color={color}/>
+                      </div>
+                      <div>
+                        <div className="ob-feat-title">{title}</div>
+                        <div className="ob-feat-sub">{sub}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div style={{ fontSize:11, color:'var(--text4)', lineHeight:1.55, padding:'2px 2px' }}>
+                Ces informations sont modifiables à tout moment dans les <span style={{ fontWeight:600, color:'var(--text3)' }}>Paramètres → Profil & Entreprise</span>. Elles n'apparaissent que sur vos documents.
+              </div>
+
             </div>
           </div>
 
-          {/* 4. Options */}
-          <div className="rounded-2xl border p-7 mb-6" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-            {sectionHeader(<MessageSquare size={14} strokeWidth={2} />, 'Options Document')}
-            <div className="grid grid-cols-2 gap-4 mb-5">
-              <div>
-                <label className={labelClass} style={{ color: 'var(--text3)' }}>Slogan / Tagline</label>
-                <input className={inputClass} style={inputStyle} placeholder="Votre devise corporate"
-                  value={profile.tagline} onChange={e => updateProfile({ tagline: e.target.value })}
-                  onFocus={focusStyle} onBlur={blurStyle} />
-              </div>
-              <div>
-                <label className={labelClass} style={{ color: 'var(--text3)' }}>Signataire par défaut</label>
-                <input className={inputClass} style={inputStyle} placeholder="Directeur Général"
-                  value={profile.signer} onChange={e => updateProfile({ signer: e.target.value })}
-                  onFocus={focusStyle} onBlur={blurStyle} />
-              </div>
-            </div>
-
-            {/* Watermark toggle */}
-            <div className="rounded-xl p-4 flex items-start justify-between gap-5"
-              style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-              <div>
-                <div className="text-[13px] font-bold mb-1" style={{ color: 'var(--text)' }}>Filigrane EETRA</div>
-                <p className="text-[11px] leading-relaxed max-w-[380px]" style={{ color: 'var(--text3)' }}>
-                  Par défaut, un discret filigrane &quot;Généré par EETRA&quot; apparaît en pied de page. Désactivez-le pour des documents 100% à votre marque (Plan Pro requis).
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                <label className="flex items-center gap-2.5 cursor-pointer">
-                  <div
-                    onClick={() => updateProfile({ watermark: !profile.watermark })}
-                    className="w-5 h-5 rounded flex items-center justify-center border-2 cursor-pointer transition-all"
-                    style={profile.watermark
-                      ? { background: 'var(--accent)', borderColor: 'var(--accent)' }
-                      : { background: 'transparent', borderColor: 'var(--border2)' }
-                    }>
-                    {profile.watermark && <Check size={11} color="#fff" strokeWidth={3} />}
-                  </div>
-                  <span className="text-[12px] font-500" style={{ color: 'var(--text2)', fontWeight: 500 }}>
-                    Afficher le filigrane
-                  </span>
-                </label>
-                <span className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-                  style={{ background: 'rgba(217,119,6,.1)', color: '#D97706' }}>
-                  Plan Pro requis pour désactiver
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 justify-end">
-            <Button variant="ghost" onClick={() => router.push('/login')}>← Retour</Button>
-            <Button variant="primary" onClick={() => router.push('/editor')}>
-              Accéder à l&apos;éditeur
-              <span>→</span>
-            </Button>
-          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

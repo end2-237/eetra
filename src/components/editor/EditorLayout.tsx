@@ -1,40 +1,42 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useDocument } from '@/contexts/DocumentContext'
-import { useProfile } from '@/contexts/ProfileContext'
-import { useNotifications } from '@/contexts/NotificationContext'
+import { useDocument }        from '@/contexts/DocumentContext'
+import { useProfile }         from '@/contexts/ProfileContext'
+import { useNotifications }   from '@/contexts/NotificationContext'
 import { useCustomTemplates } from '@/contexts/CustomTemplateContext'
+import { useLibrary }         from '@/contexts/LibraryContext'
 import { PageLayoutProvider } from '@/contexts/PageLayoutContext'
-import { Sidebar } from './Sidebar'
-import { EditorPanel } from './panels/EditorPanel'
-import { LayoutPanel } from './panels/LayoutPanel'
-import { DocumentViewer } from './document/DocumentViewer'
-import { ExportModal } from './ExportModal'
-import { useLibrary } from '@/contexts/LibraryContext'
-import { TEMPLATES } from '@/lib/templates'
-import type { DocBlock } from '@/types'
-import { generateId } from '@/lib/utils'
+import { Sidebar }            from './Sidebar'
+import { EditorPanel }        from './panels/EditorPanel'
+import { DocumentViewer }     from './document/DocumentViewer'
+import { ExportModal }        from './ExportModal'
+import { TEMPLATES }          from '@/lib/templates'
+import { generateId }         from '@/lib/utils'
+import type { DocBlock }      from '@/types'
 
 export function EditorLayout() {
   const {
     pages, addPage, addBlock, setSelectedTemplate, docStyle,
     title, subtitle, ref: docRef, destination, confidentiality,
-    resetDocument, setPageBlocks, setDocStyle,
-    currentPageIndex,
+    setPageBlocks, setDocStyle, currentPageIndex,
   } = useDocument()
-  const { profile } = useProfile()
+
+  const { profile }         = useProfile()
   const { addNotification } = useNotifications()
-  const { getTemplate } = useCustomTemplates()
-  const { saveDocument } = useLibrary()
+  const { getTemplate }     = useCustomTemplates()
+  const { saveDocument }    = useLibrary()
 
   const [showExport, setShowExport] = useState(false)
   const initDone = useRef(false)
+
+  // ── Template initialisation ───────────────────────────────────────────────
 
   useEffect(() => {
     if (initDone.current) return
     initDone.current = true
 
+    // 1. Custom template
     const pendingCustomId = sessionStorage.getItem('eetra-pending-custom-template')
     if (pendingCustomId) {
       sessionStorage.removeItem('eetra-pending-custom-template')
@@ -42,64 +44,89 @@ export function EditorLayout() {
       if (customTpl) {
         if (customTpl.docStyle) setDocStyle(customTpl.docStyle)
         setSelectedTemplate(pendingCustomId)
-        addNotification({ type: 'success', title: 'Template appliqué', message: `"${customTpl.name}" chargé.` })
+        addNotification({ type:'success', title:'Template appliqué', message:`"${customTpl.name}" chargé.` })
         return
       }
     }
 
+    // 2. Built-in template — inject blocks with proper DocBlock shape
     const pendingId = sessionStorage.getItem('eetra-pending-template')
     if (pendingId) {
       sessionStorage.removeItem('eetra-pending-template')
       const tpl = TEMPLATES.find(t => t.id === pendingId)
       if (tpl) {
         setSelectedTemplate(tpl.id)
+
         if (pages.length === 0) {
           addPage()
-          setTimeout(() => tpl.blocks.forEach(b => addBlock(b.type, b.content)), 50)
+          // Wait one tick for the page to be registered, then hydrate blocks
+          setTimeout(() => {
+            const blocks: DocBlock[] = tpl.blocks.map(b => ({
+              id:      generateId(),
+              type:    b.type,
+              content: typeof b.content === 'string' ? b.content : JSON.stringify(b.content ?? {}),
+            }))
+            // Inject all blocks into page 0 at once (avoids N re-renders)
+            setPageBlocks('current', blocks)
+          }, 50)
         }
-        addNotification({ type: 'success', title: 'Template chargé', message: `"${tpl.name}" prêt.` })
+
+        addNotification({ type:'success', title:'Template chargé', message:`"${tpl.name}" prêt.` })
       }
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-save to library
+  // ── Auto-save ─────────────────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!title && pages.every(p => p.blocks.length === 0)) return
+    const hasContent = title || pages.some(p => p.blocks.length > 0)
+    if (!hasContent) return
+
     const timer = setTimeout(() => {
       saveDocument({
-        id: 'current',
-        title: title || 'Sans titre',
-        subtitle, ref: docRef, destination, confidentiality,
-        entityName: profile.name, pages, docStyle,
-        pageCount: pages.length,
-        blockCount: pages.reduce((c, p) => c + p.blocks.length, 0),
+        id:           'current',
+        title:        title || 'Sans titre',
+        subtitle,
+        ref:          docRef,
+        destination,
+        confidentiality,
+        entityName:   profile.name,
+        pages,
+        docStyle,
+        pageCount:    pages.length,
+        blockCount:   pages.reduce((c, p) => c + p.blocks.length, 0),
       })
     }, 2000)
+
     return () => clearTimeout(timer)
-  }, [title, pages, docStyle])
+  }, [title, pages, docStyle]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    // PageLayoutProvider scoped to the editor — header/footer/watermark/hierarchy config
     <PageLayoutProvider>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-        {/* Left navigation sidebar */}
-        <Sidebar onExport={() => setShowExport(true)} />
+      <div style={{ display:'flex', height:'100vh', overflow:'hidden', background:'var(--bg)' }}>
 
-        {/* Block / layout panel (switches based on activeTab) */}
+        {/* Icon rail sidebar */}
+        <Sidebar onExport={() => setShowExport(true)}/>
+
+        {/* Block / layout panel */}
         <div style={{
-          width: 240, flexShrink: 0, borderRight: '1px solid var(--border)',
-          background: 'var(--surface)', overflow: 'hidden',
-          display: 'flex', flexDirection: 'column',
+          width:240, flexShrink:0,
+          borderRight:'1px solid var(--border)',
+          background:'var(--surface)',
+          overflow:'hidden',
+          display:'flex', flexDirection:'column',
         }}>
-          <EditorPanel />
+          <EditorPanel/>
         </div>
 
-        {/* Main document viewer */}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <DocumentViewer onExport={() => setShowExport(true)} />
+        {/* Document viewer + topbar */}
+        <div style={{ flex:1, overflow:'hidden', display:'flex', flexDirection:'column' }}>
+          <DocumentViewer onExport={() => setShowExport(true)}/>
         </div>
 
-        {showExport && <ExportModal onClose={() => setShowExport(false)} />}
+        {showExport && <ExportModal onClose={() => setShowExport(false)}/>}
       </div>
     </PageLayoutProvider>
   )

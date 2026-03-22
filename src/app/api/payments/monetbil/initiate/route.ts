@@ -8,7 +8,7 @@ const MONETBIL_SERVICE_KEY = process.env.MONETBIL_SERVICE_KEY || ''
 const APP_URL              = process.env.NEXT_PUBLIC_APP_URL  || 'http://localhost:3000'
 
 const PLAN_PRICES = {
-  pro:      { monthly: 10, annual: 142_800 },
+  pro:      { monthly: 14_900, annual: 142_800 },
   business: { monthly: 39_900, annual: 382_800 },
 } as const
 

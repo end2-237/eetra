@@ -1,0 +1,207 @@
+/*
+ * Mobile-responsive additions for EETRA
+ * Append this content to src/app/globals.css
+ *
+ * Breakpoints:
+ *   xs:  < 480px  (small phones)
+ *   sm:  < 640px  (phones)
+ *   md:  < 768px  (tablets/large phones)
+ *   lg: >= 768px  (desktop)
+ */
+
+/* ── Safe area insets (notch phones) ──────────────────────────────────────── */
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+}
+
+/* ── Touch targets ────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+    min-width:  44px;
+  }
+
+  /* But let small icon buttons stay smaller */
+  .sb-btn, .act-btn, .tb-icon-btn, .tpl-act-btn {
+    min-height: unset;
+    min-width:  unset;
+  }
+}
+
+/* ── Landing page ─────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .db { flex-direction: column !important; }
+  .db-side { display: none !important; }
+
+  /* Hero */
+  nav .px-12 { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* Features bento */
+  #features .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Templates grid */
+  #templates [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Pricing */
+  #pricing [style*="repeat(4"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* FAQ grid */
+  #faq [style*="1fr 2fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Footer */
+  footer [style*="240px 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Dashboard ────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .db-side { display: none !important; }
+  .db-right { display: none !important; }
+  .db-center { padding: 12px !important; }
+
+  .stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .tpl-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .db-th span, .db-tr { font-size: 11px !important; }
+}
+
+/* ── Settings ─────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .set-layout { flex-direction: column !important; }
+  .set-sidebar { width: 100% !important; flex-direction: row !important; overflow-x: auto !important; padding: 4px !important; border-right: none !important; border-bottom: 1px solid var(--border) !important; }
+  .set-nav-btn { min-width: 100px !important; justify-content: center !important; }
+  .set-grid-2 { grid-template-columns: 1fr !important; }
+}
+
+/* ── Team & Documents pages ───────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .team-layout { grid-template-columns: 1fr !important; }
+  .team-stats  { grid-template-columns: 1fr 1fr !important; }
+
+  .docs-th, .docs-tr {
+    grid-template-columns: 1fr 70px 70px !important;
+  }
+  .docs-th span:nth-child(3),
+  .docs-th span:nth-child(4),
+  .docs-tr > span:nth-child(3),
+  .docs-tr > span:nth-child(4) {
+    display: none !important;
+  }
+}
+
+/* ── History page ─────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .hist-th, .hist-tr {
+    grid-template-columns: 44px 1fr 80px !important;
+  }
+  /* Hide non-essential columns on mobile */
+  .hist-th span:nth-child(n+4):not(:last-child),
+  .hist-tr > *:nth-child(n+4):not(:last-child) {
+    display: none !important;
+  }
+}
+
+/* ── Onboarding ───────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .ob-body  { grid-template-columns: 1fr !important; }
+  .ob-right-col { display: none !important; }
+  .ob-grid-2 { grid-template-columns: 1fr !important; }
+}
+
+/* ── Login page ───────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .login-page { grid-template-columns: 1fr !important; }
+  .login-left { display: none !important; }
+  .login-right { padding: 24px 16px !important; background: var(--bg) !important; justify-content: flex-start !important; padding-top: 48px !important; }
+}
+
+/* ── Library (ebooks) ─────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .lib-layout { grid-template-columns: 1fr !important; }
+  .lib-sidebar { position: static !important; top: auto !important; }
+  .lib-item { flex-direction: column !important; align-items: flex-start !important; }
+  .lib-item-right { flex-direction: row !important; width: 100% !important; justify-content: space-between !important; }
+}
+
+/* ── Reader modal (ebooks) ────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .reader-overlay { padding: 0 !important; }
+  .reader-modal {
+    border-radius: 0 !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+  }
+  .reader-toc { display: none !important; }
+}
+
+/* ── Templates page ───────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .tpl-grid { grid-template-columns: 1fr 1fr !important; }
+  .tpl-cats { gap: 0 !important; }
+  .tpl-cat  { padding: 7px 8px !important; font-size: 11px !important; }
+}
+
+/* ── Designs page ─────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  #grid [style*="auto-fill"] {
+    grid-template-columns: 1fr !important;
+  }
+  .preview-modal-content {
+    flex-direction: column !important;
+    max-height: 100dvh !important;
+  }
+  .preview-modal-content > div:first-child {
+    height: 220px !important;
+  }
+}
+
+/* ── Editor mobile touch improvements ────────────────────────────────────── */
+@media (max-width: 767px) {
+  /* Ensure contenteditable areas are easily tappable */
+  [contenteditable] {
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    cursor: text !important;
+  }
+
+  /* Prevent rubber-band scroll on iOS in fixed areas */
+  .mobile-no-bounce {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Scrollbar on mobile ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar { display: none; }
+  * { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/* ── Notification center ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .db-icon-btn + div [class*="rounded-2xl"] {
+    position: fixed !important;
+    inset: 0 !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    max-height: 100dvh !important;
+  }
+}

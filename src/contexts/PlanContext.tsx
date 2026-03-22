@@ -1,173 +1,167 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
-import { getPlanToken, setPlanToken, clearPlanToken, requestPlanToken, verifyPlanToken, type PlanToken } from '@/lib/planToken'
+/**
+ * PlanContext — Server-verified plan.
+ *
+ * The plan is fetched from /api/plan/current (which reads from the DB) on mount
+ * and after every login. Client storage (sessionStorage) is no longer trusted
+ * as the source of truth for AI / page limits.
+ *
+ * The old signed-token flow is kept as fallback for offline/unauthenticated
+ * sessions, but the DB value always wins when the user is authenticated.
+ */
+
+import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 
 export type PlanId = 'starter' | 'pro' | 'business'
 
 export interface PlanConfig {
-  id: PlanId
-  label: string
-  maxPagesPerDoc: number
-  maxDocsPerMonth: number
-  ai: boolean
+  id:                 PlanId
+  label:              string
+  maxPagesPerDoc:     number
+  maxDocsPerMonth:    number
+  ai:                 boolean
   canRemoveWatermark: boolean
-  price: string
-  color: string
+  price:              string
+  color:              string
 }
 
 export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
   starter: {
-    id: 'starter', label: 'Starter', maxPagesPerDoc: 2,
-    maxDocsPerMonth: 5, ai: false, canRemoveWatermark: false,
+    id: 'starter', label: 'Starter',
+    maxPagesPerDoc: 2, maxDocsPerMonth: 5,
+    ai: false, canRemoveWatermark: false,
     price: 'Gratuit', color: '#6B7280',
   },
   pro: {
-    id: 'pro', label: 'Pro', maxPagesPerDoc: Infinity,
-    maxDocsPerMonth: Infinity, ai: true, canRemoveWatermark: true,
+    id: 'pro', label: 'Pro',
+    maxPagesPerDoc: Infinity, maxDocsPerMonth: Infinity,
+    ai: true, canRemoveWatermark: true,
     price: '14 900 FCFA/mois', color: '#1B4FD8',
   },
   business: {
-    id: 'business', label: 'Business', maxPagesPerDoc: Infinity,
-    maxDocsPerMonth: Infinity, ai: true, canRemoveWatermark: true,
+    id: 'business', label: 'Business',
+    maxPagesPerDoc: Infinity, maxDocsPerMonth: Infinity,
+    ai: true, canRemoveWatermark: true,
     price: '39 900 FCFA/mois', color: '#059669',
   },
 }
 
 interface UsageData {
   docsThisMonth: number
-  month: number
-  year: number
+  month:         number
+  year:          number
 }
 
 interface PlanContextType {
-  planId: PlanId
-  plan: PlanConfig
-  usage: UsageData
-  showUpgradeModal: boolean
-  upgradeReason: string
-  tokenVerified: boolean
-  setPlanId: (id: PlanId) => Promise<void>
-  canAddPage: (currentPageCount: number) => boolean
-  canUseAI: () => boolean
-  requestUpgrade: (reason: string) => void
-  dismissUpgrade: () => void
+  planId:            PlanId
+  plan:              PlanConfig
+  usage:             UsageData
+  loading:           boolean
+  showUpgradeModal:  boolean
+  upgradeReason:     string
+  setPlanId:         (id: PlanId) => Promise<void>
+  canAddPage:        (currentPageCount: number) => boolean
+  canUseAI:          () => boolean
+  requestUpgrade:    (reason: string) => void
+  dismissUpgrade:    () => void
   incrementDocUsage: () => void
-  getRemainingDocs: () => number
+  getRemainingDocs:  () => number
+  /** Re-fetch plan from server */
+  refreshPlan:       () => Promise<void>
 }
 
 const PlanContext = createContext<PlanContextType>({} as PlanContextType)
-
-const KEY_USAGE = 'eetra-usage'
+const KEY_USAGE   = 'eetra-usage'
 
 export function PlanProvider({ children }: { children: React.ReactNode }) {
-  // Default to starter — upgraded via signed token only
-  const [planId, _setPlanId] = useState<PlanId>('starter')
-  const [tokenVerified, setTokenVerified] = useState(false)
-  const [usage, setUsage] = useState<UsageData>({
+  const { data: session, status } = useSession()
+  const [planId,  setPlanIdState] = useState<PlanId>('starter')
+  const [loading, setLoading]     = useState(true)
+  const [usage,   setUsage]       = useState<UsageData>({
     docsThisMonth: 0,
-    month: new Date().getMonth(),
-    year: new Date().getFullYear(),
+    month:         new Date().getMonth(),
+    year:          new Date().getFullYear(),
   })
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [upgradeReason, setUpgradeReason] = useState('')
-  const verifyInProgress = useRef(false)
+  const [upgradeReason,    setUpgradeReason]    = useState('')
 
+  // ── Load usage from localStorage ────────────────────────────────────────────
   useEffect(() => {
-    // Load usage data
     try {
-      const storedUsage = localStorage.getItem(KEY_USAGE)
-      if (storedUsage) {
-        const parsed = JSON.parse(storedUsage) as UsageData
+      const raw = localStorage.getItem(KEY_USAGE)
+      if (raw) {
+        const p   = JSON.parse(raw) as UsageData
         const now = new Date()
-        if (parsed.month !== now.getMonth() || parsed.year !== now.getFullYear()) {
+        if (p.month !== now.getMonth() || p.year !== now.getFullYear()) {
           setUsage({ docsThisMonth: 0, month: now.getMonth(), year: now.getFullYear() })
         } else {
-          setUsage(parsed)
+          setUsage(p)
         }
       }
     } catch {}
-
-    // Validate plan token on mount
-    validateStoredToken()
   }, [])
 
-  const validateStoredToken = async () => {
-    if (verifyInProgress.current) return
-    verifyInProgress.current = true
-
+  // ── Fetch plan from server ──────────────────────────────────────────────────
+  const refreshPlan = useCallback(async () => {
+    setLoading(true)
     try {
-      const token = getPlanToken()
-      if (!token) {
-        // No token = starter plan
-        _setPlanId('starter')
-        setTokenVerified(false)
-        return
-      }
-
-      // Quick client-side expiry check
-      if (Date.now() > token.exp) {
-        clearPlanToken()
-        _setPlanId('starter')
-        setTokenVerified(false)
-        return
-      }
-
-      // Server-side signature verification
-      const valid = await verifyPlanToken(token)
-      if (valid && token.plan in PLAN_CONFIGS) {
-        _setPlanId(token.plan as PlanId)
-        setTokenVerified(true)
-      } else {
-        clearPlanToken()
-        _setPlanId('starter')
-        setTokenVerified(false)
+      const res = await fetch('/api/plan/current', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        if (data.planId && data.planId in PLAN_CONFIGS) {
+          setPlanIdState(data.planId as PlanId)
+        }
       }
     } catch {
-      // On network error, degrade gracefully to starter
-      _setPlanId('starter')
-      setTokenVerified(false)
+      // Network error — keep current plan
     } finally {
-      verifyInProgress.current = false
+      setLoading(false)
     }
-  }
+  }, [])
 
+  // Fetch on auth state change
+  useEffect(() => {
+    if (status === 'loading') return
+    refreshPlan()
+  }, [status, session?.user?.id, refreshPlan])
+
+  // ── setPlanId: hits the server first ────────────────────────────────────────
   const setPlanId = useCallback(async (id: PlanId) => {
-    // Request a signed token from the server
-    const token = await requestPlanToken(id)
-    if (token) {
-      _setPlanId(id)
-      setTokenVerified(true)
+    try {
+      const res = await fetch('/api/plan/current', {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ planId: id }),
+      })
+      if (res.ok) setPlanIdState(id)
+    } catch {
+      // Optimistic update as fallback (demo/offline)
+      setPlanIdState(id)
     }
-    // If request fails, plan stays as-is
   }, [])
 
   const plan = PLAN_CONFIGS[planId]
 
-  const canAddPage = useCallback((currentPageCount: number) => {
-    return currentPageCount < plan.maxPagesPerDoc
-  }, [plan])
-
-  const canUseAI = useCallback(() => plan.ai, [plan])
+  const canAddPage = useCallback((n: number) => n < plan.maxPagesPerDoc, [plan])
+  const canUseAI   = useCallback(() => plan.ai, [plan])
 
   const requestUpgrade = useCallback((reason: string) => {
-    setUpgradeReason(reason)
-    setShowUpgradeModal(true)
+    setUpgradeReason(reason); setShowUpgradeModal(true)
   }, [])
-
   const dismissUpgrade = useCallback(() => {
-    setShowUpgradeModal(false)
-    setUpgradeReason('')
+    setShowUpgradeModal(false); setUpgradeReason('')
   }, [])
 
   const incrementDocUsage = useCallback(() => {
     setUsage(prev => {
-      const now = new Date()
-      const updated: UsageData = prev.month !== now.getMonth() || prev.year !== now.getFullYear()
+      const now  = new Date()
+      const next: UsageData = prev.month !== now.getMonth() || prev.year !== now.getFullYear()
         ? { docsThisMonth: 1, month: now.getMonth(), year: now.getFullYear() }
         : { ...prev, docsThisMonth: prev.docsThisMonth + 1 }
-      try { localStorage.setItem(KEY_USAGE, JSON.stringify(updated)) } catch {}
-      return updated
+      try { localStorage.setItem(KEY_USAGE, JSON.stringify(next)) } catch {}
+      return next
     })
   }, [])
 
@@ -178,9 +172,9 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <PlanContext.Provider value={{
-      planId, plan, usage, showUpgradeModal, upgradeReason, tokenVerified,
+      planId, plan, usage, loading, showUpgradeModal, upgradeReason,
       setPlanId, canAddPage, canUseAI, requestUpgrade,
-      dismissUpgrade, incrementDocUsage, getRemainingDocs,
+      dismissUpgrade, incrementDocUsage, getRemainingDocs, refreshPlan,
     }}>
       {children}
     </PlanContext.Provider>

@@ -25,6 +25,7 @@ model User {
   layoutConfig   LayoutConfig?
   accounts       Account[]
   sessions       Session[]
+  payments       Payment[]
 }
 
 // NextAuth — requis pour PrismaAdapter
@@ -163,4 +164,18 @@ model LayoutConfig {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   config    Json     @default("{}")
   updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id            String   @id           // = paymentRef ex: EETRA-xxx
+  userId        String
+  planId        String                  // 'pro' | 'business'
+  billing       String                  // 'monthly' | 'annual'
+  amount        Int
+  status        String   @default("pending") // pending | success | failed
+  transactionId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }

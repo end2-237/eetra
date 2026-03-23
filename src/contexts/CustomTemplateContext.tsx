@@ -81,9 +81,8 @@ const CustomTemplateContext = createContext<CustomTemplateContextType>({
   refreshCommunity: async () => {},
 })
 
-// ── localStorage fallback keys ────────────────────────────────────────────────
-const LOCAL_MY_KEY   = 'eetra-custom-templates'
-const LOCAL_COMM_KEY = 'eetra-community-templates'
+// ── localStorage keys ─────────────────────────────────────────────────────────
+const LOCAL_MY_KEY = 'eetra-custom-templates'
 
 function genId() { return 'TPL-' + Math.random().toString(36).slice(2, 10).toUpperCase() }
 
@@ -97,80 +96,6 @@ export const DEFAULT_COVER_STYLE: CoverStyle = {
   titleSize: 'lg',
   coverBlocks: [],
 }
-
-// ── Seed community templates (affiché si API indisponible) ───────────────────
-const SEED_COMMUNITY: CustomTemplate[] = [
-  {
-    id: 'COM-RAPPORT-CA',
-    name: "Rapport Conseil d'Administration",
-    description: 'Compte rendu de réunion du CA avec résolutions et PV complet.',
-    category: 'Gouvernance',
-    icon: '🏛️',
-    tags: ['CA', 'PV', 'Résolutions'],
-    blocks: [
-      { type: 'section', content: 'OUVERTURE DE LA SÉANCE' },
-      { type: 'text', content: "Le Conseil d'Administration s'est réuni le [date] au siège social." },
-      { type: 'section', content: 'DÉLIBÉRATIONS & RÉSOLUTIONS' },
-      { type: 'clause', content: "Résolution N°1\nLe Conseil approuve les comptes annuels de l'exercice." },
-      { type: 'sign' },
-    ],
-    docStyle: STYLE_PRESETS.classic,
-    coverStyle: { ...DEFAULT_COVER_STYLE, layout: 'minimal', accentColor: '#0F172A', titleSize: 'md' },
-    createdAt: '2026-01-15T09:00:00Z',
-    updatedAt: '2026-01-15T09:00:00Z',
-    isPublic: true,
-    usageCount: 127,
-    author: 'Cabinet Juriste OHADA',
-    authorAvatar: '⚖️',
-    likes: 43,
-  },
-  {
-    id: 'COM-PITCH-DECK',
-    name: 'Pitch Deck Investisseurs',
-    description: "Présentation startup pour levée de fonds — structure problem/solution/traction.",
-    category: 'Stratégie',
-    icon: '🚀',
-    tags: ['Startup', 'Levée', 'Pitch'],
-    blocks: [
-      { type: 'section', content: 'LE PROBLÈME QUE NOUS RÉSOLVONS' },
-      { type: 'text', content: 'Le marché souffre de [problème].' },
-      { type: 'kpi' },
-      { type: 'section', content: 'UTILISATION DES FONDS' },
-    ],
-    docStyle: STYLE_PRESETS.modern,
-    coverStyle: { ...DEFAULT_COVER_STYLE, layout: 'bold', accentColor: '#7C3AED', titleSize: 'xl' },
-    createdAt: '2026-02-01T09:00:00Z',
-    updatedAt: '2026-02-01T09:00:00Z',
-    isPublic: true,
-    usageCount: 89,
-    author: 'EETRA Community',
-    authorAvatar: '⭐',
-    likes: 67,
-  },
-  {
-    id: 'COM-NOTE-INTERNE',
-    name: 'Note Interne RH',
-    description: 'Communication RH structurée : annonce, procédure ou circulaire.',
-    category: 'Ressources Humaines',
-    icon: '👥',
-    tags: ['RH', 'Circulaire', 'Personnel'],
-    blocks: [
-      { type: 'section', content: 'OBJET DE LA NOTE' },
-      { type: 'text', content: 'La présente note a pour objet de vous informer de [sujet].' },
-      { type: 'checklist', content: 'Condition 1\nCondition 2\nCondition 3' },
-      { type: 'sign' },
-    ],
-    docStyle: STYLE_PRESETS.minimal,
-    coverStyle: { ...DEFAULT_COVER_STYLE, layout: 'minimal', accentColor: '#059669', titleSize: 'sm' },
-    createdAt: '2026-02-10T09:00:00Z',
-    updatedAt: '2026-02-10T09:00:00Z',
-    isPublic: true,
-    usageCount: 204,
-    author: 'DRH Afrique Corp',
-    authorAvatar: '👤',
-    likes: 31,
-  },
-]
 
 // ── Helper API ────────────────────────────────────────────────────────────────
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T | null> {
@@ -192,19 +117,18 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
   const isAuth = !!session?.user?.id
 
   const [templates,          setTemplates]          = useState<CustomTemplate[]>([])
-  const [communityTemplates, setCommunityTemplates] = useState<CustomTemplate[]>(SEED_COMMUNITY)
+  const [communityTemplates, setCommunityTemplates] = useState<CustomTemplate[]>([])
   const [loading,            setLoading]            = useState(false)
   const [communityLoading,   setCommunityLoading]   = useState(false)
 
   // ── Charger mes templates ──────────────────────────────────────────────────
   useEffect(() => {
-    // Toujours lire localStorage d'abord (affichage immédiat)
+    // Lire localStorage d'abord pour affichage immédiat
     try {
       const s = localStorage.getItem(LOCAL_MY_KEY)
       if (s) setTemplates(JSON.parse(s))
     } catch {}
 
-    // Si connecté, synchroniser avec la BD
     if (status === 'loading') return
     if (!isAuth) return
 
@@ -218,34 +142,22 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
     })
   }, [isAuth, status])
 
-  // ── Charger les templates communautaires ───────────────────────────────────
+  // ── Charger les templates communautaires depuis la BD ──────────────────────
   const refreshCommunity = useCallback(async () => {
     setCommunityLoading(true)
-    const serverTemplates = await apiFetch<CustomTemplate[]>('/api/templates/community')
-    if (serverTemplates && serverTemplates.length > 0) {
-      // Fusionner avec seeds (seeds d'abord si pas déjà dans la BD)
-      const serverIds = new Set(serverTemplates.map(t => t.id))
-      const seedsNotInServer = SEED_COMMUNITY.filter(s => !serverIds.has(s.id))
-      const merged = [...serverTemplates, ...seedsNotInServer]
-      setCommunityTemplates(merged)
-      try { localStorage.setItem(LOCAL_COMM_KEY, JSON.stringify(merged)) } catch {}
-    } else {
-      // Fallback localStorage
-      try {
-        const local = localStorage.getItem(LOCAL_COMM_KEY)
-        if (local) {
-          const parsed = JSON.parse(local) as CustomTemplate[]
-          const ids = new Set(SEED_COMMUNITY.map(s => s.id))
-          setCommunityTemplates([...SEED_COMMUNITY, ...parsed.filter(t => !ids.has(t.id))])
-        }
-      } catch {}
+    try {
+      const serverTemplates = await apiFetch<CustomTemplate[]>('/api/templates/community')
+      if (serverTemplates !== null) {
+        setCommunityTemplates(serverTemplates)
+      }
+    } finally {
+      setCommunityLoading(false)
     }
-    setCommunityLoading(false)
   }, [])
 
   useEffect(() => { refreshCommunity() }, [refreshCommunity])
 
-  // ── CRUD local helpers ─────────────────────────────────────────────────────
+  // ── Persist my templates locally ───────────────────────────────────────────
   const persistMyTemplates = (items: CustomTemplate[]) => {
     try { localStorage.setItem(LOCAL_MY_KEY, JSON.stringify(items)) } catch {}
   }
@@ -283,7 +195,6 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
 
   // ── updateTemplate ─────────────────────────────────────────────────────────
   const updateTemplate = useCallback(async (id: string, updates: Partial<CustomTemplate>) => {
-    // Optimistic update
     setTemplates(prev => {
       const updated = prev.map(t => t.id === id
         ? { ...t, ...updates, updatedAt: new Date().toISOString() }
@@ -308,8 +219,7 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
       persistMyTemplates(updated)
       return updated
     })
-    // Retirer de la communauté si publié
-    setCommunityTemplates(prev => prev.filter(t => t.id !== id || SEED_COMMUNITY.some(s => s.id === t.id)))
+    setCommunityTemplates(prev => prev.filter(t => t.id !== id))
 
     if (isAuth) {
       await apiFetch(`/api/templates/${id}`, { method: 'DELETE' })
@@ -338,7 +248,6 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
     setCommunityTemplates(prev =>
       prev.map(t => t.id === id ? { ...t, usageCount: t.usageCount + 1 } : t)
     )
-    // Incrémenter en BD (pas besoin d'auth)
     apiFetch(`/api/templates/${id}`, { method: 'PATCH' })
   }, [])
 
@@ -353,7 +262,7 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
   const publishTemplate = useCallback(async (id: string) => {
     await updateTemplate(id, { isPublic: true })
 
-    // Ajouter dans la liste communauté locale
+    // Optimistic: ajouter immédiatement dans la liste communauté
     const tpl = templates.find(t => t.id === id)
     if (tpl) {
       const published: CustomTemplate = {
@@ -370,19 +279,16 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
       })
     }
 
-    // Rafraîchir depuis la BD pour que tous les users voient le template
+    // Rafraîchir depuis la BD
     await refreshCommunity()
   }, [templates, updateTemplate, refreshCommunity])
 
   // ── unpublishTemplate ──────────────────────────────────────────────────────
   const unpublishTemplate = useCallback(async (id: string) => {
     await updateTemplate(id, { isPublic: false })
-
-    // Retirer de la liste communauté (sauf seeds)
-    setCommunityTemplates(prev =>
-      prev.filter(t => t.id !== id || SEED_COMMUNITY.some(s => s.id === t.id))
-    )
-  }, [updateTemplate])
+    setCommunityTemplates(prev => prev.filter(t => t.id !== id))
+    await refreshCommunity()
+  }, [updateTemplate, refreshCommunity])
 
   // ── likeTemplate ──────────────────────────────────────────────────────────
   const likeTemplate = useCallback((id: string) => {

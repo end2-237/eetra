@@ -8,7 +8,7 @@ import {
   ArrowLeft, Save, Plus, Trash2, GripVertical,
   Palette, Layout, Type, Layers, Settings, ChevronDown, ChevronUp,
   Check, X, Sparkles, PenTool, Globe, Lock, Eye, EyeOff,
-  Heart, Users, Upload,
+  Loader2,
 } from 'lucide-react'
 import { useCustomTemplates, type CoverLayout, type CoverStyle, DEFAULT_COVER_STYLE } from '@/contexts/CustomTemplateContext'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -57,10 +57,8 @@ function ClassicPreview() {
     <svg viewBox="0 0 60 85" style={{ width: '100%', height: '100%' }}>
       <rect width="60" height="85" fill="white"/>
       <rect x="0" y="0" width="3" height="85" fill="currentColor"/>
-      <rect x="8" y="12" width="20" height="3" rx="1" fill="currentColor" opacity=".7"/>
       <rect x="8" y="32" width="44" height="6" rx="2" fill="currentColor" opacity=".9"/>
       <rect x="8" y="42" width="32" height="5" rx="2" fill="currentColor" opacity=".7"/>
-      <rect x="8" y="55" width="44" height="14" rx="3" fill="currentColor" opacity=".08"/>
     </svg>
   )
 }
@@ -69,8 +67,6 @@ function BoldPreview() {
   return (
     <svg viewBox="0 0 60 85" style={{ width: '100%', height: '100%' }}>
       <rect width="60" height="85" fill="currentColor"/>
-      <circle cx="55" cy="10" r="25" fill="white" opacity=".06"/>
-      <rect x="8" y="12" width="16" height="16" rx="4" fill="white" opacity=".2"/>
       <rect x="8" y="42" width="44" height="7" rx="2" fill="white" opacity=".95"/>
       <rect x="8" y="53" width="32" height="5" rx="2" fill="white" opacity=".7"/>
       <rect x="0" y="72" width="60" height="13" fill="white" opacity=".12"/>
@@ -83,10 +79,8 @@ function MinimalPreview() {
     <svg viewBox="0 0 60 85" style={{ width: '100%', height: '100%' }}>
       <rect width="60" height="85" fill="white"/>
       <rect x="0" y="82" width="60" height="3" fill="currentColor"/>
-      <rect x="8" y="12" width="30" height="2" rx="1" fill="#999" opacity=".5"/>
       <rect x="8" y="42" width="44" height="7" rx="2" fill="#0D1117" opacity=".9"/>
       <rect x="8" y="53" width="28" height="5" rx="2" fill="#0D1117" opacity=".6"/>
-      <rect x="8" y="65" width="22" height="2.5" rx="1" fill="currentColor"/>
     </svg>
   )
 }
@@ -96,11 +90,7 @@ function SplitPreview() {
     <svg viewBox="0 0 60 85" style={{ width: '100%', height: '100%' }}>
       <rect width="60" height="85" fill="white"/>
       <rect x="0" y="0" width="26" height="85" fill="currentColor"/>
-      <rect x="5" y="12" width="16" height="16" rx="3" fill="white" opacity=".2"/>
       <rect x="5" y="42" width="16" height="5" rx="2" fill="white" opacity=".9"/>
-      <rect x="5" y="50" width="14" height="4" rx="2" fill="white" opacity=".7"/>
-      <rect x="31" y="32" width="24" height="14" rx="3" fill="currentColor" opacity=".06"/>
-      <rect x="31" y="50" width="24" height="14" rx="3" fill="currentColor" opacity=".06"/>
     </svg>
   )
 }
@@ -122,7 +112,6 @@ function CoverBg({ layout, accent }: { layout: string; accent: string }) {
   if (layout === 'bold') return (
     <div style={{ position: 'absolute', inset: 0, background: accent }}>
       <div style={{ position: 'absolute', right: -80, top: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
-      <div style={{ position: 'absolute', right: 40, bottom: -60, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,.04)' }} />
     </div>
   )
   if (layout === 'minimal') return (
@@ -144,7 +133,6 @@ function CoverBg({ layout, accent }: { layout: string; accent: string }) {
 }
 
 // ── Cover Editor Bridge ───────────────────────────────────────────────────────
-// Syncs DocumentContext coverStyle ↔ template creator local state
 
 function CoverEditorBridge({
   initialCoverStyle,
@@ -157,10 +145,8 @@ function CoverEditorBridge({
   const pushedRef   = useRef(false)
   const prevJsonRef = useRef('')
 
-  // Push initial template coverStyle into DocumentContext after its own init effect
   useEffect(() => {
     if (pushedRef.current) return
-    // Timeout ensures DocumentProvider's useEffect (localStorage hydration) runs first
     const t = setTimeout(() => {
       pushedRef.current = true
       setCoverStyle(initialCoverStyle)
@@ -168,7 +154,6 @@ function CoverEditorBridge({
     return () => clearTimeout(t)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync DocumentContext → template creator
   useEffect(() => {
     if (!pushedRef.current) return
     const json = JSON.stringify(coverStyle)
@@ -210,7 +195,6 @@ function TemplateCreatorContent() {
   const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
   const [coverStyle, setCoverStyle] = useState<CoverStyle>(DEFAULT_COVER_STYLE)
 
-  // Cover options state (for the simple CoverSettingsPanel)
   const [showLogoOption, setShowLogoOption] = useState(true)
   const [showQrOption, setShowQrOption] = useState(true)
   const [showGridOption, setShowGridOption] = useState(false)
@@ -226,10 +210,12 @@ function TemplateCreatorContent() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [savedId, setSavedId] = useState<string | null>(editId)
 
-  // Ref to save/restore STORAGE_DRAFT when entering/leaving cover-editor tab
+  // États de chargement
+  const [saving,     setSaving]     = useState(false)
+  const [publishing, setPublishing] = useState(false)
+
   const savedDraftRef = useRef<string | null>(null)
 
-  // Save STORAGE_DRAFT when entering cover-editor, restore when leaving
   useEffect(() => {
     if (activeTab === 'cover-editor') {
       try { savedDraftRef.current = localStorage.getItem(STORAGE_DRAFT) } catch {}
@@ -245,9 +231,8 @@ function TemplateCreatorContent() {
     }
   }, [activeTab])
 
-  // Sync cover state → coverStyle object (for simple panel)
   useEffect(() => {
-    if (activeTab === 'cover-editor') return // EditableCoverPage manages this directly
+    if (activeTab === 'cover-editor') return
     setCoverStyle(prev => ({
       ...prev,
       layout: selectedLayout,
@@ -259,7 +244,7 @@ function TemplateCreatorContent() {
     }))
   }, [selectedLayout, accentColor, showLogoOption, showQrOption, showGridOption, titleSize, activeTab])
 
-  // Load existing template
+  // Charger le template existant
   useEffect(() => {
     const id = editId || fromId
     if (!id) return
@@ -286,6 +271,16 @@ function TemplateCreatorContent() {
     setShowQrOption(cs.showQr)
     setShowGridOption(cs.showGrid)
     setTitleSize(cs.titleSize)
+
+    if (tpl.blocks?.length > 0) {
+      setBlocks(tpl.blocks.map((b, i) => ({
+        id: String(i + 1),
+        type: b.type,
+        label: BLOCK_TYPES.find(bt => bt.type === b.type)?.label || b.type,
+        icon:  BLOCK_TYPES.find(bt => bt.type === b.type)?.icon  || '▪',
+        defaultContent: b.content,
+      })))
+    }
   }, [editId, fromId, getTemplate])
 
   const addBlock = useCallback((type: BlockType) => {
@@ -306,60 +301,84 @@ function TemplateCreatorContent() {
   }, [])
 
   const buildPayload = () => ({
-    name: templateName,
+    name:        templateName,
     description: templateDesc,
-    category: templateCategory,
-    icon: templateIcon,
-    tags: templateTags,
-    blocks: blocks.map(b => ({ type: b.type, content: b.defaultContent })),
+    category:    templateCategory,
+    icon:        templateIcon,
+    tags:        templateTags,
+    blocks:      blocks.map(b => ({ type: b.type, content: b.defaultContent })),
     docStyle,
     coverStyle,
     isPublic,
-    author: profile.name || 'EETRA User',
+    author:       profile.name || 'EETRA User',
     authorAvatar: '👤',
-    likes: 0,
+    likes:        0,
   })
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!templateName.trim()) { showToast('Le nom du template est requis', 'err'); return }
-    if (blocks.length === 0) { showToast('Ajoutez au moins un bloc de contenu', 'err'); return }
+    if (blocks.length === 0)  { showToast('Ajoutez au moins un bloc de contenu', 'err'); return }
 
-    const payload = buildPayload()
+    setSaving(true)
+    try {
+      const payload = buildPayload()
 
-    if (editId) {
-      updateTemplate(editId, payload)
-      showToast('Template mis à jour', 'ok')
-      setSavedId(editId)
-    } else {
-      const created = createTemplate(payload)
-      showToast('Template créé avec succès', 'ok')
-      setSavedId(created.id)
+      if (editId) {
+        await updateTemplate(editId, payload)
+        showToast('Template mis à jour', 'ok')
+        setSavedId(editId)
+      } else {
+        const created = await createTemplate(payload)
+        showToast('Template créé avec succès', 'ok')
+        setSavedId(created.id)
+      }
+      setTimeout(() => router.push('/templates'), 800)
+    } catch {
+      showToast('Erreur lors de la sauvegarde', 'err')
+    } finally {
+      setSaving(false)
     }
-    setTimeout(() => router.push('/templates'), 800)
   }
 
-  const handlePublish = () => {
-    if (!savedId && !editId) { showToast('Sauvegardez d\'abord le template', 'err'); return }
+  const handlePublish = async () => {
+    if (!savedId && !editId) { showToast("Sauvegardez d'abord le template", 'err'); return }
     const id = savedId || editId!
-    publishTemplate(id)
-    setIsPublic(true)
-    showToast('Template publié dans la communauté', 'ok')
+    setPublishing(true)
+    try {
+      await publishTemplate(id)
+      setIsPublic(true)
+      showToast('Template publié dans la communauté', 'ok')
+    } catch {
+      showToast('Erreur lors de la publication', 'err')
+    } finally {
+      setPublishing(false)
+    }
   }
 
-  const handleUnpublish = () => {
+  const handleUnpublish = async () => {
     const id = savedId || editId
     if (!id) return
-    unpublishTemplate(id)
-    setIsPublic(false)
-    showToast('Template retiré de la communauté', 'ok')
+    setPublishing(true)
+    try {
+      await unpublishTemplate(id)
+      setIsPublic(false)
+      showToast('Template retiré de la communauté', 'ok')
+    } catch {
+      showToast('Erreur lors du retrait', 'err')
+    } finally {
+      setPublishing(false)
+    }
   }
 
   const accent = accentColor || profile.color || '#1B4FD8'
 
-  const inp = { className: "w-full rounded-xl px-3.5 py-2.5 text-[13px] border outline-none font-sans", style: { background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' } as React.CSSProperties }
+  const inp = {
+    className: "w-full rounded-xl px-3.5 py-2.5 text-[13px] border outline-none font-sans",
+    style: { background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' } as React.CSSProperties
+  }
   const lbl = "block text-[10px] font-bold uppercase tracking-widest mb-2"
 
-  // ── Cover settings panel (simple mode) ────────────────────────────────────
+  // ── Cover settings panel ──────────────────────────────────────────────────
 
   const CoverSettingsPanel = () => (
     <>
@@ -404,9 +423,7 @@ function TemplateCreatorContent() {
           <button key={c} onClick={() => setAccentColor(c)}
             style={{ width: 26, height: 26, borderRadius: 6, background: c, cursor: 'pointer',
               border: `2.5px solid ${accentColor === c ? 'var(--text)' : 'transparent'}`,
-              transform: accentColor === c ? 'scale(1.2)' : 'scale(1)',
-              transition: 'all .15s',
-            }} />
+              transform: accentColor === c ? 'scale(1.2)' : 'scale(1)', transition: 'all .15s' }} />
         ))}
       </div>
       <div className="flex items-center gap-3 mb-4">
@@ -434,9 +451,9 @@ function TemplateCreatorContent() {
       <label className={lbl} style={{ color: 'var(--text3)' }}>Options</label>
       <div className="flex flex-col gap-3">
         {[
-          { key: 'logo', label: 'Afficher le logo',    val: showLogoOption, set: setShowLogoOption },
-          { key: 'qr',   label: 'QR code authenticité',val: showQrOption,   set: setShowQrOption   },
-          { key: 'grid', label: 'Grille de fond',       val: showGridOption, set: setShowGridOption  },
+          { key: 'logo', label: 'Afficher le logo',     val: showLogoOption, set: setShowLogoOption },
+          { key: 'qr',   label: 'QR code authenticité', val: showQrOption,   set: setShowQrOption   },
+          { key: 'grid', label: 'Grille de fond',        val: showGridOption, set: setShowGridOption  },
         ].map(({ key, label, val, set }) => (
           <div key={key} className="flex items-center justify-between">
             <span className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{label}</span>
@@ -457,10 +474,6 @@ function TemplateCreatorContent() {
             {templateName || 'Titre du document'}
           </div>
         </div>
-        <div style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
-          background: `${accent}22`, color: accent }}>
-          {selectedLayout}
-        </div>
       </div>
     </>
   )
@@ -479,8 +492,8 @@ function TemplateCreatorContent() {
         </div>
         <p className="text-[11px]" style={{ color: 'var(--text4)' }}>
           {isPublic
-            ? 'Votre template est accessible à tous les utilisateurs EETRA depuis la galerie de templates.'
-            : 'Publiez votre template pour qu\'il soit disponible dans la communauté EETRA.'}
+            ? 'Votre template est accessible à tous les utilisateurs EETRA depuis la galerie.'
+            : 'Publiez votre template pour le rendre accessible à la communauté EETRA.'}
         </p>
       </div>
 
@@ -504,6 +517,7 @@ function TemplateCreatorContent() {
             { ok: blocks.length >= 2,        text: 'Au moins 2 blocs de contenu' },
             { ok: templateTags.length > 0,   text: 'Au moins 1 tag de recherche' },
             { ok: templateCategory !== '',   text: 'Catégorie définie' },
+            { ok: !!(savedId || editId),     text: 'Template sauvegardé en BD' },
           ].map(({ ok, text }) => (
             <div key={text} className="flex items-center gap-2">
               <div style={{ width: 16, height: 16, borderRadius: '50%', background: ok ? 'rgba(5,150,105,.12)' : 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -518,32 +532,27 @@ function TemplateCreatorContent() {
       <div className="flex flex-col gap-2">
         {!isPublic ? (
           <button onClick={handlePublish}
+            disabled={publishing || (!savedId && !editId)}
             className="w-full p-3 rounded-xl border-none cursor-pointer font-bold text-[13px] flex items-center justify-center gap-2"
-            style={{ background: '#059669', color: '#fff' }}>
-            <Globe size={14} /> Publier dans la communauté
+            style={{ background: '#059669', color: '#fff', opacity: publishing || (!savedId && !editId) ? .6 : 1 }}>
+            {publishing ? <Loader2 size={14} className="animate-spin"/> : <Globe size={14} />}
+            {publishing ? 'Publication…' : 'Publier dans la communauté'}
           </button>
         ) : (
           <button onClick={handleUnpublish}
+            disabled={publishing}
             className="w-full p-3 rounded-xl cursor-pointer font-bold text-[12px] flex items-center justify-center gap-2"
-            style={{ background: 'transparent', border: '1px solid rgba(220,38,38,.3)', color: '#DC2626' }}>
-            <EyeOff size={13} /> Retirer de la communauté
+            style={{ background: 'transparent', border: '1px solid rgba(220,38,38,.3)', color: '#DC2626', opacity: publishing ? .6 : 1 }}>
+            {publishing ? <Loader2 size={13} className="animate-spin"/> : <EyeOff size={13} />}
+            {publishing ? 'Retrait…' : 'Retirer de la communauté'}
           </button>
         )}
       </div>
 
       {isPublic && (
-        <div className="grid grid-cols-2 gap-3">
-          {[
-            { label: 'Vues',          val: '—'      },
-            { label: 'Likes',         val: '0'      },
-            { label: 'Utilisations',  val: '0'      },
-            { label: 'Communauté',    val: 'Active' },
-          ].map(({ label, val }) => (
-            <div key={label} className="p-3 rounded-xl text-center" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-              <div className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>{val}</div>
-              <div className="text-[9px]" style={{ color: 'var(--text4)' }}>{label}</div>
-            </div>
-          ))}
+        <div className="p-3 rounded-xl text-center" style={{ background: 'rgba(5,150,105,.06)', border: '1px solid rgba(5,150,105,.2)' }}>
+          <div className="text-[11px] font-bold" style={{ color: '#059669', marginBottom: 3 }}>✓ Visible par tous les utilisateurs EETRA</div>
+          <div className="text-[10px]" style={{ color: 'var(--text4)' }}>Synchronisé en temps réel avec la base de données</div>
         </div>
       )}
     </div>
@@ -588,10 +597,13 @@ function TemplateCreatorContent() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={() => setActiveTab('publish')}>
-            <Globe size={12} /> {isPublic ? 'Gérer la publication' : 'Publier'}
+            <Globe size={12} /> {isPublic ? 'Gérer' : 'Publier'}
           </Button>
-          <Button variant="primary" size="sm" onClick={handleSave}>
-            <Save size={12} /> {editId ? 'Mettre à jour' : 'Enregistrer'}
+          <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
+            {saving
+              ? <><Loader2 size={12} className="animate-spin" /> Sauvegarde…</>
+              : <><Save size={12} /> {editId ? 'Mettre à jour' : 'Enregistrer'}</>
+            }
           </Button>
         </div>
       </div>
@@ -616,7 +628,7 @@ function TemplateCreatorContent() {
           ))}
         </div>
 
-        {/* Cover-editor: full width with DocumentProvider + bridge */}
+        {/* Cover-editor: full width */}
         {activeTab === 'cover-editor' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ height: 40, flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10 }}>
@@ -694,7 +706,6 @@ function TemplateCreatorContent() {
                   </>
                 )}
 
-                {/* COVER */}
                 {activeTab === 'cover' && <CoverSettingsPanel />}
 
                 {/* META */}
@@ -792,9 +803,7 @@ function TemplateCreatorContent() {
 
                 {/* Cover mini preview */}
                 <div className="mb-6 p-4 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                  <div className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text4)' }}>
-                    Aperçu couverture
-                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text4)' }}>Aperçu couverture</div>
                   <div className="flex items-center gap-4">
                     <div style={{ width: 80, aspectRatio: '.707', position: 'relative', borderRadius: 6, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,.15)', flexShrink: 0 }}>
                       <CoverBg layout={selectedLayout} accent={accent} />
@@ -813,6 +822,10 @@ function TemplateCreatorContent() {
                         <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'var(--bg3)', color: 'var(--text4)' }}>titre {titleSize}</span>
                         {(coverStyle.coverBlocks?.length || 0) > 0 && (
                           <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>{coverStyle.coverBlocks!.length} éléments</span>
+                        )}
+                        {/* Indicateur BD */}
+                        {(savedId || editId) && (
+                          <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(5,150,105,.1)', color: '#059669' }}>✓ sauvegardé</span>
                         )}
                       </div>
                     </div>

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   LayoutGrid, Plus, Search, ArrowLeft, FileText,
-  Trash2, Copy, Edit3, Check, X,
+  Trash2, Copy, Edit3, Check, X, Globe, Lock,
 } from 'lucide-react'
 import { useCustomTemplates, type CustomTemplate } from '@/contexts/CustomTemplateContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -143,12 +143,10 @@ function CoverArticle({ color }: { color: string }) {
       <rect x="12" y="82" width="96" height="4" rx="2" fill="rgba(255,255,255,.07)"/>
       <rect x="12" y="89" width="80" height="4" rx="2" fill="rgba(255,255,255,.07)"/>
       <rect x="12" y="96" width="96" height="4" rx="2" fill="rgba(255,255,255,.07)"/>
-      <rect x="12" y="103" width="65" height="4" rx="2" fill="rgba(255,255,255,.07)"/>
       <line x1="12" y1="116" x2="108" y2="116" stroke="rgba(255,255,255,.1)" strokeWidth=".5"/>
       <text x="12" y="124" fill={color} fontSize="3.5" fontWeight="700" fontFamily="Arial">Auteurs :</text>
       <text x="12" y="131" fill="rgba(255,255,255,.6)" fontSize="3.5" fontFamily="Arial">Prof. NKENG A. · Dr. FOUDA B.</text>
       <text x="12" y="138" fill="rgba(255,255,255,.35)" fontSize="3" fontFamily="Arial">UY II · ESSEC Douala</text>
-      <text x="12" y="148" fill="rgba(255,255,255,.3)" fontSize="3" fontFamily="Arial">DOI: 10.1234/raa.2026.12.3</text>
     </svg>
   )
 }
@@ -168,7 +166,6 @@ function CoverExpose({ color }: { color: string }) {
       <text x="60" y="84" textAnchor="middle" fill={color} fontSize="6.5" fontWeight="900" fontFamily="Arial">EN ENTREPRISE</text>
       <line x1="12" y1="90" x2="108" y2="90" stroke="#E8E8E8" strokeWidth=".7"/>
       <text x="60" y="100" textAnchor="middle" fill="#666" fontSize="3.5" fontFamily="Arial">UE : Gestion des Ressources Humaines</text>
-      <text x="60" y="107" textAnchor="middle" fill="#888" fontSize="3.5" fontFamily="Arial">Semestre 5 · Groupe TD-3</text>
       <rect x="14" y="114" width="92" height="30" rx="4" fill="#F8F9FB"/>
       <text x="60" y="122" textAnchor="middle" fill="#AAA" fontSize="3" fontWeight="700" fontFamily="Arial" letterSpacing=".5">MEMBRES DU GROUPE</text>
       <text x="60" y="130" textAnchor="middle" fill="#444" fontSize="3.5" fontFamily="Arial">NJOYA Fatima · BELLO Kevin</text>
@@ -192,26 +189,9 @@ function CoverFacture({ color }: { color: string }) {
       <text x="12" y="61" fill="#666" fontSize="3.5" fontFamily="Arial">Akwa, Douala · Cameroun</text>
       <rect x="8" y="67" width="104" height="8" rx="2" fill={color} opacity=".1"/>
       <text x="11" y="73" fill={color} fontSize="3" fontWeight="800" fontFamily="Arial">Désignation</text>
-      <text x="69" y="73" fill={color} fontSize="3" fontWeight="800" fontFamily="Arial">Qté</text>
-      <text x="84" y="73" fill={color} fontSize="3" fontWeight="800" fontFamily="Arial">P.U.</text>
-      <text x="103" y="73" textAnchor="end" fill={color} fontSize="3" fontWeight="800" fontFamily="Arial">Total</text>
-      {[['Développement web','1f','350k','350k'],['Formation équipe','2j','75k','150k'],['Maintenance','1m','80k','80k'],['Documentation','1f','45k','45k']].map(([d,q,u,t],i)=>(
-        <g key={i}>
-          <rect x="8" y={78+i*10} width="104" height="10" fill={i%2?'#FAFAFA':'white'}/>
-          <text x="11" y={85+i*10} fill="#333" fontSize="3" fontFamily="Arial">{d}</text>
-          <text x="69" y={85+i*10} fill="#666" fontSize="3" fontFamily="Arial">{q}</text>
-          <text x="84" y={85+i*10} fill="#666" fontSize="3" fontFamily="Arial">{u}</text>
-          <text x="103" y={85+i*10} textAnchor="end" fill="#111" fontSize="3" fontWeight="700" fontFamily="Arial">{t}</text>
-        </g>
-      ))}
       <rect x="64" y="122" width="48" height="26" rx="3" fill="#F8F9FB"/>
-      <text x="68" y="131" fill="#888" fontSize="3" fontFamily="Arial">Sous-total HT</text>
-      <text x="107" y="131" textAnchor="end" fill="#555" fontSize="3" fontFamily="Arial">625 000</text>
-      <text x="68" y="140" fill="#888" fontSize="3" fontFamily="Arial">TVA 19.25%</text>
-      <text x="107" y="140" textAnchor="end" fill="#555" fontSize="3" fontFamily="Arial">120 312</text>
       <rect x="64" y="144" width="48" height="7" rx="3" fill={color}/>
       <text x="68" y="149.5" fill="white" fontSize="3" fontWeight="800" fontFamily="Arial">TOTAL TTC</text>
-      <text x="107" y="149.5" textAnchor="end" fill="white" fontSize="3" fontWeight="800" fontFamily="Arial">745 312</text>
       <line x1="8" y1="158" x2="112" y2="158" stroke="#F0F0F0" strokeWidth=".6"/>
       <text x="8" y="165" fill="#AAA" fontSize="3.5" fontFamily="Arial">eetra.buyticle.com</text>
     </svg>
@@ -233,8 +213,6 @@ function CoverAudit({ color }: { color: string }) {
       <rect x="12" y="93" width="14" height="1.5" rx=".75" fill="rgba(255,255,255,.4)"/>
       <text x="12" y="105" fill="rgba(255,255,255,.45)" fontSize="3" fontFamily="Arial">ENTITÉ AUDITÉE</text>
       <text x="12" y="112" fill="white" fontSize="4" fontWeight="600" fontFamily="Arial">SOCIÉTÉ TARGET SARL</text>
-      <text x="12" y="125" fill="rgba(255,255,255,.45)" fontSize="3" fontFamily="Arial">PÉRIODE</text>
-      <text x="12" y="132" fill="white" fontSize="4" fontWeight="600" fontFamily="Arial">01/01 – 31/12/2025</text>
       <line x1="0" y1="150" x2="120" y2="150" stroke="rgba(255,255,255,.12)" strokeWidth=".6"/>
       <text x="12" y="159" fill="rgba(255,255,255,.45)" fontSize="3.5" fontFamily="Arial">CONFIDENTIEL · Usage strictement limité</text>
     </svg>
@@ -251,18 +229,57 @@ function CoverContrat({ color }: { color: string }) {
       <text x="12" y="63" fill="#0D1117" fontSize="12.5" fontWeight="900" fontFamily="Arial">OHADA</text>
       <line x1="12" y1="69" x2="40" y2="69" stroke={color} strokeWidth="1.5"/>
       <line x1="12" y1="84" x2="12" y2="122" stroke="#E8E8E8" strokeWidth=".7"/>
-      <text x="18" y="94" fill="#CCC" fontSize="3" fontWeight="700" fontFamily="Arial">NATURE</text>
-      <text x="58" y="94" fill="#555" fontSize="3.5" fontFamily="Arial">Contrat de prestation</text>
-      <text x="18" y="106" fill="#CCC" fontSize="3" fontWeight="700" fontFamily="Arial">RÉF.</text>
-      <text x="58" y="106" fill="#555" fontSize="3.5" fontFamily="Arial">CT-2026-001</text>
-      <text x="18" y="118" fill="#CCC" fontSize="3" fontWeight="700" fontFamily="Arial">PAYS</text>
-      <text x="58" y="118" fill="#555" fontSize="3.5" fontFamily="Arial">Cameroun / OHADA</text>
       <rect x="12" y="132" width="44" height="16" rx="3" fill="#F5F5F5"/>
       <text x="34" y="142" textAnchor="middle" fill="#CCC" fontSize="3.5" fontFamily="Arial">PARTIE A</text>
       <rect x="64" y="132" width="44" height="16" rx="3" fill={color} opacity=".08" stroke={color} strokeWidth=".5" strokeOpacity=".3"/>
       <text x="86" y="142" textAnchor="middle" fill={color} fontSize="3.5" fontFamily="Arial">PARTIE B</text>
       <line x1="12" y1="156" x2="108" y2="156" stroke="#F0F0F0" strokeWidth=".6"/>
       <text x="12" y="163" fill="#CCC" fontSize="3.5" fontFamily="Arial">eetra.buyticle.com</text>
+    </svg>
+  )
+}
+
+// ── Custom template cover mini ────────────────────────────────────────────────
+
+function CustomCoverMini({ tpl }: { tpl: CustomTemplate }) {
+  const layout = tpl.coverStyle?.layout || 'classic'
+  const accent = tpl.coverStyle?.accentColor || '#1B4FD8'
+  const initial = tpl.name.charAt(0).toUpperCase()
+  if (layout === 'bold') return (
+    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
+      <rect width="120" height="170" fill={accent}/>
+      <circle cx="108" cy="28" r="52" fill="rgba(255,255,255,.06)"/>
+      <rect x="12" y="16" width="26" height="26" rx="6" fill="rgba(255,255,255,.16)"/>
+      <text x="25" y="32" textAnchor="middle" fill="white" fontSize="12" fontWeight="900" fontFamily="Arial">{initial}</text>
+      <rect x="12" y="82" width="88" height="10" rx="5" fill="rgba(255,255,255,.92)"/>
+      <rect x="12" y="96" width="66" height="10" rx="5" fill="rgba(255,255,255,.88)"/>
+      <rect x="0" y="156" width="120" height="14" fill="rgba(0,0,0,.22)"/>
+    </svg>
+  )
+  if (layout === 'minimal') return (
+    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
+      <rect width="120" height="170" fill="#fff"/>
+      <rect x="0" y="167" width="120" height="3" fill={accent}/>
+      <rect x="12" y="68" width="96" height="11" rx="5.5" fill="#0D1117" opacity=".9"/>
+      <rect x="12" y="84" width="74" height="9" rx="4.5" fill="#0D1117" opacity=".82"/>
+      <rect x="12" y="99" width="52" height="6.5" rx="3.25" fill="#444" opacity=".36"/>
+    </svg>
+  )
+  if (layout === 'split') return (
+    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
+      <rect width="120" height="170" fill="#fff"/>
+      <rect x="0" y="0" width="54" height="170" fill={accent}/>
+      <text x="27" y="96" textAnchor="middle" fill="rgba(255,255,255,.9)" fontSize="9" fontWeight="900" fontFamily="Arial">{initial}</text>
+      <rect x="60" y="50" width="48" height="20" rx="4" fill="#F8F9FB"/>
+    </svg>
+  )
+  return (
+    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
+      <rect width="120" height="170" fill="white"/>
+      <rect x="0" y="0" width="5" height="170" fill={accent}/>
+      <rect x="14" y="72" width="88" height="9" rx="4" fill="#0D1117" opacity=".88"/>
+      <rect x="14" y="86" width="70" height="8" rx="4" fill="#0D1117" opacity=".8"/>
+      <rect x="14" y="114" width="92" height="28" rx="5" fill="#F5F7FA"/>
     </svg>
   )
 }
@@ -298,7 +315,7 @@ const CATALOGUE: TplDef[] = [
 
 const NIVEAUX   = ['Tous niveaux', 'Licence', 'Master', 'Doctorat']
 const FILIERES  = ['Toutes filières', 'Informatique', 'Droit', 'Sciences Éco', 'Lettres', 'Sciences', 'Médecine', 'Génie Civil']
-const MAIN_CATS = ['Tous', 'Business', 'Audit', 'Juridique', 'Comptabilité', 'PV & Réunions', 'Direction', 'Académique', 'Publication', 'Mes templates']
+const MAIN_CATS = ['Tous', 'Business', 'Audit', 'Juridique', 'Comptabilité', 'PV & Réunions', 'Direction', 'Académique', 'Publication', 'Communauté', 'Mes templates']
 
 const CSS = `
   .tpl-page { min-height:100vh; background:var(--bg); color:var(--text); font-size:13px; font-family:var(--font-bricolage,sans-serif); }
@@ -337,6 +354,7 @@ const CSS = `
   .bdg-cat    { background:var(--bg3); color:var(--text4); }
   .bdg-custom { background:var(--accentS); color:var(--accent); }
   .bdg-niveau { background:rgba(124,58,237,.1); color:#7C3AED; font-size:9px; }
+  .bdg-pub    { background:rgba(5,150,105,.1); color:#059669; font-size:9px; }
   .tpl-table { border:1px solid var(--border); border-radius:7px; background:var(--surface); overflow:hidden; margin-bottom:24px; }
   .tpl-th { display:grid; gap:10px; padding:7px 14px; background:var(--bg2); border-bottom:1px solid var(--border); }
   .tpl-th span { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text4); }
@@ -347,6 +365,9 @@ const CSS = `
   .tpl-act-btn { width:24px; height:24px; border-radius:5px; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s; color:var(--text4); }
   .tpl-act-btn:hover { border-color:var(--border2); color:var(--text); }
   .tpl-act-btn.danger:hover { background:#FEE2E2; border-color:#FCA5A5; color:#DC2626; }
+  .tpl-act-btn.publish { border-color:rgba(5,150,105,.3); color:#059669; background:rgba(5,150,105,.06); }
+  .tpl-act-btn.publish:hover { background:rgba(5,150,105,.12); }
+  .tpl-act-btn.unpublish { border-color:rgba(107,114,128,.2); color:var(--text4); }
   .tpl-empty { border:1px solid var(--border); border-radius:7px; background:var(--surface); padding:48px 24px; text-align:center; }
   .tpl-overlay { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:24px; }
   .tpl-modal { background:var(--surface); border-radius:8px; width:100%; max-width:520px; border:1px solid var(--border); display:flex; overflow:hidden; max-height:88vh; box-shadow:0 20px 60px rgba(0,0,0,.25); }
@@ -357,11 +378,14 @@ const CSS = `
   .btn-ghost { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:6px; background:transparent; color:var(--text2); border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; transition:all .12s; }
   .btn-ghost:hover { border-color:var(--border2); background:var(--bg3); }
   .btn-sm { padding:4px 10px; font-size:11px; }
+  .comm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
+  .comm-card { border:1px solid var(--border); border-radius:8px; background:var(--surface); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s,box-shadow .15s; }
+  .comm-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.09); }
 `
 
 export default function TemplatesPage() {
   const router = useRouter()
-  const { templates: custom, deleteTemplate, duplicateTemplate, incrementUsage } = useCustomTemplates()
+  const { templates: custom, deleteTemplate, duplicateTemplate, incrementUsage, publishTemplate, unpublishTemplate, communityTemplates } = useCustomTemplates()
   const { toast, showToast } = useToast()
   const [search,  setSearch]  = useState('')
   const [cat,     setCat]     = useState('Tous')
@@ -378,12 +402,22 @@ export default function TemplatesPage() {
     router.push('/editor')
   }
 
+  const handlePublishToggle = (tpl: CustomTemplate) => {
+    if (tpl.isPublic) {
+      unpublishTemplate(tpl.id)
+      showToast('Template retiré de la communauté', 'ok')
+    } else {
+      publishTemplate(tpl.id)
+      showToast('Template publié dans la communauté', 'ok')
+    }
+  }
+
   const q = search.toLowerCase()
   const filtered = CATALOGUE.filter(t => {
     const matchQ   = !search || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.tags.some(g => g.toLowerCase().includes(q))
-    const matchCat = cat === 'Tous' || cat === 'Mes templates' || t.cat === cat
+    const matchCat = cat === 'Tous' || cat === 'Mes templates' || cat === 'Communauté' || t.cat === cat
     const matchNiv = niveau === 'Tous niveaux' || t.subcat === niveau
-    return matchQ && matchCat && matchNiv && cat !== 'Mes templates'
+    return matchQ && matchCat && matchNiv && cat !== 'Mes templates' && cat !== 'Communauté'
   })
 
   const filterCustom = custom.filter(t => {
@@ -391,10 +425,16 @@ export default function TemplatesPage() {
     return matchQ && (cat === 'Tous' || cat === 'Mes templates' || t.category === cat)
   })
 
-  const showBuiltin = cat !== 'Mes templates'
-  const showCustom  = cat === 'Tous' || cat === 'Mes templates'
+  const filterCommunity = communityTemplates.filter(t => {
+    const matchQ = !search || t.name.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.tags?.some(g => g.toLowerCase().includes(q))
+    return matchQ
+  })
+
+  const showBuiltin   = cat !== 'Mes templates' && cat !== 'Communauté'
+  const showCustom    = cat === 'Tous' || cat === 'Mes templates'
+  const showCommunity = cat === 'Communauté'
   const showAcadFilters = cat === 'Académique' || cat === 'Tous'
-  const colsCustom = '1fr 120px 70px 80px 80px 110px'
+  const colsCustom = '1fr 120px 70px 80px 80px 130px'
 
   const groups: Record<string, TplDef[]> = {}
   filtered.forEach(t => { if (!groups[t.cat]) groups[t.cat] = []; groups[t.cat].push(t) })
@@ -419,7 +459,7 @@ export default function TemplatesPage() {
           <div className="tpl-header">
             <div>
               <h1 className="tpl-h1">Templates</h1>
-              <p className="tpl-sub">{CATALOGUE.length} templates · {custom.length} personnalisés · Cameroun / OHADA</p>
+              <p className="tpl-sub">{CATALOGUE.length} templates · {custom.length} personnalisés · {communityTemplates.length} communauté</p>
             </div>
             <button className="btn-primary" onClick={() => router.push('/templates/create')}><Plus size={13}/> Nouveau template</button>
           </div>
@@ -445,10 +485,58 @@ export default function TemplatesPage() {
                 {c === 'Mes templates' && custom.length > 0 && (
                   <span style={{ marginLeft:5, fontSize:10, fontWeight:700, padding:'1px 5px', borderRadius:3, background: cat === c ? 'var(--accentS)' : 'var(--bg3)', color: cat === c ? 'var(--accent)' : 'var(--text4)' }}>{custom.length}</span>
                 )}
+                {c === 'Communauté' && communityTemplates.length > 0 && (
+                  <span style={{ marginLeft:5, fontSize:10, fontWeight:700, padding:'1px 5px', borderRadius:3, background: cat === c ? 'rgba(5,150,105,.15)' : 'var(--bg3)', color: cat === c ? '#059669' : 'var(--text4)' }}>{communityTemplates.length}</span>
+                )}
               </button>
             ))}
           </div>
 
+          {/* ── Communauté ── */}
+          {showCommunity && (
+            <div style={{ marginBottom:28 }}>
+              {filterCommunity.length === 0 ? (
+                <div className="tpl-empty">
+                  <Globe size={26} color="var(--text4)" style={{ margin:'0 auto 10px' }}/>
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text2)', marginBottom:4 }}>Galerie communautaire</div>
+                  <p style={{ fontSize:12, color:'var(--text4)', margin:'0 0 14px' }}>Publiez vos propres templates depuis "Mes templates" pour les partager avec la communauté.</p>
+                  <button className="btn-primary btn-sm" onClick={() => setCat('Mes templates')}>Voir mes templates</button>
+                </div>
+              ) : (
+                <>
+                  <div className="tpl-section-label">Communauté · {filterCommunity.length} template{filterCommunity.length > 1 ? 's' : ''}</div>
+                  <div className="comm-grid">
+                    {filterCommunity.map(tpl => (
+                      <div key={tpl.id} className="comm-card" onClick={() => useCustom(tpl)}>
+                        <div className="tpl-card-cover">
+                          <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(0,0,0,.03) 1px,transparent 1px)', backgroundSize:'14px 14px' }}/>
+                          <div className="tpl-card-cover-inner"><CustomCoverMini tpl={tpl} /></div>
+                          {tpl.usageCount > 0 && (
+                            <span style={{ position:'absolute', top:8, right:8, fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'rgba(0,0,0,.45)', color:'#fff' }}>
+                              ×{tpl.usageCount}
+                            </span>
+                          )}
+                        </div>
+                        <div className="tpl-card-body">
+                          <div className="tpl-card-name">{tpl.name}</div>
+                          <div className="tpl-card-desc">{tpl.description || tpl.category}</div>
+                          <div className="tpl-card-footer">
+                            <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                              <span style={{ fontSize:9, color:'var(--text4)', fontWeight:500 }}>{tpl.author || 'Communauté'}</span>
+                              <span style={{ fontSize:9, color:'var(--text4)' }}>{tpl.blocks.length} blocs{tpl.likes ? ` · ${tpl.likes} ♥` : ''}</span>
+                            </div>
+                            <button className="tpl-use-btn" onClick={e => { e.stopPropagation(); useCustom(tpl) }}>Utiliser →</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── Mes templates ── */}
           {showCustom && custom.length > 0 && (
             <div style={{ marginBottom:28 }}>
               <div className="tpl-section-label">Mes templates personnalisés</div>
@@ -461,7 +549,10 @@ export default function TemplatesPage() {
                     <div style={{ display:'flex', alignItems:'center', gap:9, minWidth:0 }}>
                       <div className="tpl-icon-box" style={{ background:'var(--accentS)' }}><LayoutGrid size={13} color="var(--accent)"/></div>
                       <div style={{ minWidth:0 }}>
-                        <div style={{ fontSize:12, fontWeight:600, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tpl.name}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:1 }}>
+                          <div style={{ fontSize:12, fontWeight:600, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tpl.name}</div>
+                          {tpl.isPublic && <span className="bdg bdg-pub">publié</span>}
+                        </div>
                         <div style={{ fontSize:10, color:'var(--text4)' }}>{tpl.description}</div>
                       </div>
                     </div>
@@ -469,8 +560,14 @@ export default function TemplatesPage() {
                     <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.blocks.length}</span>
                     <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.usageCount||0}</span>
                     <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.createdAt ? new Date(tpl.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) : '—'}</span>
-                    <div style={{ display:'flex', gap:5 }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display:'flex', gap:4 }} onClick={e => e.stopPropagation()}>
                       <button className="tpl-use-btn" onClick={() => useCustom(tpl)}>Utiliser</button>
+                      <button
+                        className={`tpl-act-btn ${tpl.isPublic ? 'unpublish' : 'publish'}`}
+                        title={tpl.isPublic ? 'Retirer de la communauté' : 'Publier dans la communauté'}
+                        onClick={() => handlePublishToggle(tpl)}>
+                        {tpl.isPublic ? <Lock size={10}/> : <Globe size={10}/>}
+                      </button>
                       <button className="tpl-act-btn" onClick={() => router.push(`/templates/create?edit=${tpl.id}`)}><Edit3 size={10}/></button>
                       <button className="tpl-act-btn" onClick={() => { duplicateTemplate(tpl.id); showToast('Dupliqué','ok') }}><Copy size={10}/></button>
                       <button className="tpl-act-btn danger" onClick={() => { if(window.confirm('Supprimer ?')) deleteTemplate(tpl.id) }}><Trash2 size={10}/></button>
@@ -490,6 +587,7 @@ export default function TemplatesPage() {
             </div>
           )}
 
+          {/* ── Templates intégrés ── */}
           {showBuiltin && (filtered.length === 0
             ? (
               <div className="tpl-empty">

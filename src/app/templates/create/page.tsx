@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   ArrowLeft, Save, Plus, Trash2, GripVertical,
@@ -18,7 +18,8 @@ import { Toast } from '@/components/ui/Toast'
 import { useToast } from '@/hooks/useToast'
 import { STYLE_PRESETS, FONT_TITLE_OPTIONS, type DocumentStyle, type BlockType } from '@/types'
 import { PALETTE, TEMPLATES } from '@/lib/templates'
-import { CoverPageEditor, type CoverBlock } from '@/components/editor/cover/CoverPageEditor'
+import { DocumentProvider, useDocument, STORAGE_DRAFT } from '@/contexts/DocumentContext'
+import { EditableCoverPage } from '@/components/editor/document/EditableCoverPage'
 
 type StudioTab = 'blocks' | 'style' | 'cover' | 'cover-editor' | 'meta' | 'publish'
 
@@ -142,6 +143,48 @@ function CoverBg({ layout, accent }: { layout: string; accent: string }) {
   )
 }
 
+// ── Cover Editor Bridge ───────────────────────────────────────────────────────
+// Syncs DocumentContext coverStyle ↔ template creator local state
+
+function CoverEditorBridge({
+  initialCoverStyle,
+  onCoverStyleChange,
+}: {
+  initialCoverStyle: CoverStyle
+  onCoverStyleChange: (cs: CoverStyle) => void
+}) {
+  const { coverStyle, setCoverStyle } = useDocument()
+  const pushedRef   = useRef(false)
+  const prevJsonRef = useRef('')
+
+  // Push initial template coverStyle into DocumentContext after its own init effect
+  useEffect(() => {
+    if (pushedRef.current) return
+    // Timeout ensures DocumentProvider's useEffect (localStorage hydration) runs first
+    const t = setTimeout(() => {
+      pushedRef.current = true
+      setCoverStyle(initialCoverStyle)
+    }, 60)
+    return () => clearTimeout(t)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync DocumentContext → template creator
+  useEffect(() => {
+    if (!pushedRef.current) return
+    const json = JSON.stringify(coverStyle)
+    if (json !== prevJsonRef.current) {
+      prevJsonRef.current = json
+      onCoverStyleChange(coverStyle)
+    }
+  }, [coverStyle]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <EditableCoverPage zoom={0.62} />
+    </div>
+  )
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 function TemplateCreatorContent() {
@@ -166,9 +209,8 @@ function TemplateCreatorContent() {
 
   const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
   const [coverStyle, setCoverStyle] = useState<CoverStyle>(DEFAULT_COVER_STYLE)
-  const [coverBlocks, setCoverBlocks] = useState<CoverBlock[]>([])
 
-  // Cover options state
+  // Cover options state (for the simple CoverSettingsPanel)
   const [showLogoOption, setShowLogoOption] = useState(true)
   const [showQrOption, setShowQrOption] = useState(true)
   const [showGridOption, setShowGridOption] = useState(false)
@@ -184,8 +226,28 @@ function TemplateCreatorContent() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [savedId, setSavedId] = useState<string | null>(editId)
 
-  // Sync cover state → coverStyle object
+  // Ref to save/restore STORAGE_DRAFT when entering/leaving cover-editor tab
+  const savedDraftRef = useRef<string | null>(null)
+
+  // Save STORAGE_DRAFT when entering cover-editor, restore when leaving
   useEffect(() => {
+    if (activeTab === 'cover-editor') {
+      try { savedDraftRef.current = localStorage.getItem(STORAGE_DRAFT) } catch {}
+    } else if (savedDraftRef.current !== undefined) {
+      const snap = savedDraftRef.current
+      const t = setTimeout(() => {
+        try {
+          if (snap) localStorage.setItem(STORAGE_DRAFT, snap)
+          else localStorage.removeItem(STORAGE_DRAFT)
+        } catch {}
+      }, 200)
+      return () => clearTimeout(t)
+    }
+  }, [activeTab])
+
+  // Sync cover state → coverStyle object (for simple panel)
+  useEffect(() => {
+    if (activeTab === 'cover-editor') return // EditableCoverPage manages this directly
     setCoverStyle(prev => ({
       ...prev,
       layout: selectedLayout,
@@ -194,9 +256,8 @@ function TemplateCreatorContent() {
       showQr: showQrOption,
       showGrid: showGridOption,
       titleSize,
-      coverBlocks,
     }))
-  }, [selectedLayout, accentColor, showLogoOption, showQrOption, showGridOption, titleSize, coverBlocks])
+  }, [selectedLayout, accentColor, showLogoOption, showQrOption, showGridOption, titleSize, activeTab])
 
   // Load existing template
   useEffect(() => {
@@ -214,25 +275,17 @@ function TemplateCreatorContent() {
       setIsPublic(tpl.isPublic)
       setDocStyle(tpl.docStyle)
     } else {
-      // from: copy name
       setTemplateName(`${tpl.name} (copie)`)
     }
 
     const cs = tpl.coverStyle
+    setCoverStyle(cs)
     setSelectedLayout(cs.layout)
     setAccentColor(cs.accentColor || '#1B4FD8')
     setShowLogoOption(cs.showLogo)
     setShowQrOption(cs.showQr)
     setShowGridOption(cs.showGrid)
     setTitleSize(cs.titleSize)
-    setCoverBlocks(cs.coverBlocks || [])
-
-    setBlocks(tpl.blocks.map((b, i) => ({
-      id: String(i + 1), type: b.type,
-      label: BLOCK_TYPES.find(bt => bt.type === b.type)?.label || b.type,
-      icon:  BLOCK_TYPES.find(bt => bt.type === b.type)?.icon  || '?',
-      defaultContent: b.content,
-    })))
   }, [editId, fromId, getTemplate])
 
   const addBlock = useCallback((type: BlockType) => {
@@ -260,7 +313,7 @@ function TemplateCreatorContent() {
     tags: templateTags,
     blocks: blocks.map(b => ({ type: b.type, content: b.defaultContent })),
     docStyle,
-    coverStyle: { ...coverStyle, coverBlocks },
+    coverStyle,
     isPublic,
     author: profile.name || 'EETRA User',
     authorAvatar: '👤',
@@ -286,14 +339,11 @@ function TemplateCreatorContent() {
   }
 
   const handlePublish = () => {
-    if (!savedId && !editId) {
-      showToast('Sauvegardez d\'abord le template', 'err')
-      return
-    }
+    if (!savedId && !editId) { showToast('Sauvegardez d\'abord le template', 'err'); return }
     const id = savedId || editId!
     publishTemplate(id)
     setIsPublic(true)
-    showToast('🌍 Template publié dans la communauté !', 'ok')
+    showToast('Template publié dans la communauté', 'ok')
   }
 
   const handleUnpublish = () => {
@@ -304,32 +354,30 @@ function TemplateCreatorContent() {
     showToast('Template retiré de la communauté', 'ok')
   }
 
+  const accent = accentColor || profile.color || '#1B4FD8'
+
   const inp = { className: "w-full rounded-xl px-3.5 py-2.5 text-[13px] border outline-none font-sans", style: { background: 'var(--bg)', borderColor: 'var(--border)', color: 'var(--text)' } as React.CSSProperties }
   const lbl = "block text-[10px] font-bold uppercase tracking-widest mb-2"
 
-  const accent = accentColor || profile.color || '#1B4FD8'
-
-  // ── Cover settings panel ──────────────────────────────────────────────────
+  // ── Cover settings panel (simple mode) ────────────────────────────────────
 
   const CoverSettingsPanel = () => (
     <>
-      {/* CTA vers éditeur libre */}
       <div className="p-3 rounded-xl border mb-4 flex items-center gap-3 cursor-pointer"
         style={{ background: 'rgba(124,58,237,.08)', borderColor: 'rgba(124,58,237,.3)' }}
         onClick={() => setActiveTab('cover-editor')}>
         <PenTool size={16} color="#7C3AED" />
         <div>
           <div className="text-[12px] font-bold" style={{ color: '#7C3AED' }}>Éditeur de couverture avancé</div>
-          <div className="text-[10px]" style={{ color: '#9066e0' }}>Textes, formes, images librement positionnés</div>
+          <div className="text-[10px]" style={{ color: '#9066e0' }}>Formes, textes, effets, dégradés, calques</div>
         </div>
-        {coverBlocks.length > 0 && (
+        {(coverStyle.coverBlocks?.length || 0) > 0 && (
           <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#7C3AED', color: '#fff' }}>
-            {coverBlocks.length}
+            {coverStyle.coverBlocks!.length}
           </span>
         )}
       </div>
 
-      {/* Layout */}
       <label className={lbl} style={{ color: 'var(--text3)' }}>Mise en page</label>
       <div className="grid grid-cols-2 gap-2 mb-4">
         {COVER_LAYOUTS.map(layout => (
@@ -350,7 +398,6 @@ function TemplateCreatorContent() {
         ))}
       </div>
 
-      {/* Couleur */}
       <label className={lbl} style={{ color: 'var(--text3)' }}>Couleur principale</label>
       <div className="flex gap-2 flex-wrap mb-3">
         {PALETTE.map(c => (
@@ -369,7 +416,6 @@ function TemplateCreatorContent() {
         <span className="text-[11px] font-mono" style={{ color: accent }}>{accentColor}</span>
       </div>
 
-      {/* Taille du titre */}
       <label className={lbl} style={{ color: 'var(--text3)' }}>Taille du titre</label>
       <div className="flex gap-2 mb-5">
         {(['sm','md','lg','xl'] as const).map(s => (
@@ -385,13 +431,12 @@ function TemplateCreatorContent() {
         ))}
       </div>
 
-      {/* Options */}
       <label className={lbl} style={{ color: 'var(--text3)' }}>Options</label>
       <div className="flex flex-col gap-3">
         {[
-          { key: 'logo', label: 'Afficher le logo', val: showLogoOption, set: setShowLogoOption },
-          { key: 'qr',   label: 'QR code authenticité', val: showQrOption, set: setShowQrOption },
-          { key: 'grid', label: 'Grille de fond', val: showGridOption, set: setShowGridOption },
+          { key: 'logo', label: 'Afficher le logo',    val: showLogoOption, set: setShowLogoOption },
+          { key: 'qr',   label: 'QR code authenticité',val: showQrOption,   set: setShowQrOption   },
+          { key: 'grid', label: 'Grille de fond',       val: showGridOption, set: setShowGridOption  },
         ].map(({ key, label, val, set }) => (
           <div key={key} className="flex items-center justify-between">
             <span className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{label}</span>
@@ -404,7 +449,6 @@ function TemplateCreatorContent() {
         ))}
       </div>
 
-      {/* Preview miniature */}
       <div className="mt-5 rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border)', aspectRatio: '.707', position: 'relative', background: '#fff' }}>
         <CoverBg layout={selectedLayout} accent={accent} />
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 16, zIndex: 2 }}>
@@ -425,7 +469,6 @@ function TemplateCreatorContent() {
 
   const PublishPanel = () => (
     <div className="flex flex-col gap-4">
-      {/* Status */}
       <div className="p-4 rounded-xl border"
         style={{ background: isPublic ? 'rgba(5,150,105,.06)' : 'var(--bg2)', borderColor: isPublic ? 'rgba(5,150,105,.3)' : 'var(--border)' }}>
         <div className="flex items-center gap-3 mb-2">
@@ -437,19 +480,14 @@ function TemplateCreatorContent() {
         <p className="text-[11px]" style={{ color: 'var(--text4)' }}>
           {isPublic
             ? 'Votre template est accessible à tous les utilisateurs EETRA depuis la galerie de templates.'
-            : 'Publiez votre template pour qu\'il soit disponible dans la communauté EETRA.'
-          }
+            : 'Publiez votre template pour qu\'il soit disponible dans la communauté EETRA.'}
         </p>
       </div>
 
-      {/* Infos auteur */}
       <div>
         <label className={lbl} style={{ color: 'var(--text3)' }}>Présenté comme</label>
-        <div className="flex items-center gap-3 p-3 rounded-xl border"
-          style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accentS)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>
-            👤
-          </div>
+        <div className="flex items-center gap-3 p-3 rounded-xl border" style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accentS)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>👤</div>
           <div>
             <div className="text-[12px] font-bold" style={{ color: 'var(--text)' }}>{profile.name || 'Votre nom'}</div>
             <div className="text-[10px]" style={{ color: 'var(--text4)' }}>{profile.sector || 'Votre secteur'}</div>
@@ -457,16 +495,15 @@ function TemplateCreatorContent() {
         </div>
       </div>
 
-      {/* Checklist pré-publication */}
       <div>
         <label className={lbl} style={{ color: 'var(--text3)' }}>Avant de publier</label>
         <div className="flex flex-col gap-2">
           {[
-            { ok: templateName.length > 3,    text: 'Nom du template (min. 4 caractères)' },
-            { ok: templateDesc.length > 10,   text: 'Description informative' },
-            { ok: blocks.length >= 2,          text: 'Au moins 2 blocs de contenu' },
-            { ok: templateTags.length > 0,     text: 'Au moins 1 tag de recherche' },
-            { ok: templateCategory !== '',     text: 'Catégorie définie' },
+            { ok: templateName.length > 3,  text: 'Nom du template (min. 4 caractères)' },
+            { ok: templateDesc.length > 10, text: 'Description informative' },
+            { ok: blocks.length >= 2,        text: 'Au moins 2 blocs de contenu' },
+            { ok: templateTags.length > 0,   text: 'Au moins 1 tag de recherche' },
+            { ok: templateCategory !== '',   text: 'Catégorie définie' },
           ].map(({ ok, text }) => (
             <div key={text} className="flex items-center gap-2">
               <div style={{ width: 16, height: 16, borderRadius: '50%', background: ok ? 'rgba(5,150,105,.12)' : 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -478,7 +515,6 @@ function TemplateCreatorContent() {
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col gap-2">
         {!isPublic ? (
           <button onClick={handlePublish}
@@ -495,18 +531,15 @@ function TemplateCreatorContent() {
         )}
       </div>
 
-      {/* Stats si publié */}
       {isPublic && (
         <div className="grid grid-cols-2 gap-3">
           {[
-            { icon: '👁️', label: 'Vues', val: '—' },
-            { icon: '❤️', label: 'Likes', val: '0' },
-            { icon: '📥', label: 'Utilisations', val: '0' },
-            { icon: '🌍', label: 'Communauté', val: 'Active' },
-          ].map(({ icon, label, val }) => (
-            <div key={label} className="p-3 rounded-xl text-center"
-              style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-              <div className="text-lg">{icon}</div>
+            { label: 'Vues',          val: '—'      },
+            { label: 'Likes',         val: '0'      },
+            { label: 'Utilisations',  val: '0'      },
+            { label: 'Communauté',    val: 'Active' },
+          ].map(({ label, val }) => (
+            <div key={label} className="p-3 rounded-xl text-center" style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }}>
               <div className="text-[16px] font-bold" style={{ color: 'var(--text)' }}>{val}</div>
               <div className="text-[9px]" style={{ color: 'var(--text4)' }}>{label}</div>
             </div>
@@ -539,10 +572,10 @@ function TemplateCreatorContent() {
             style={{ background: 'var(--accentS)', color: 'var(--accent)' }}>
             {blocks.length} bloc{blocks.length > 1 ? 's' : ''} · couv. {selectedLayout}
           </span>
-          {coverBlocks.length > 0 && (
+          {(coverStyle.coverBlocks?.length || 0) > 0 && (
             <span className="text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-widest"
               style={{ background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>
-              ✏️ {coverBlocks.length} élément{coverBlocks.length > 1 ? 's' : ''}
+              {coverStyle.coverBlocks!.length} élément{coverStyle.coverBlocks!.length > 1 ? 's' : ''}
             </span>
           )}
           {isPublic && (
@@ -570,7 +603,7 @@ function TemplateCreatorContent() {
           style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
           {TABS.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} title={tab.label}
-              className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border-none transition-all"
+              className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer border-none transition-all relative"
               style={activeTab === tab.id
                 ? { background: tab.highlight ? 'rgba(124,58,237,.15)' : tab.id === 'publish' ? 'rgba(5,150,105,.15)' : 'var(--accentS)', color: tab.highlight ? '#7C3AED' : tab.id === 'publish' ? '#059669' : 'var(--accent)' }
                 : { background: 'transparent', color: tab.highlight ? '#9066e0' : tab.id === 'publish' ? '#059669' : 'var(--text4)' }
@@ -583,42 +616,23 @@ function TemplateCreatorContent() {
           ))}
         </div>
 
-        {/* Cover-editor full width */}
+        {/* Cover-editor: full width with DocumentProvider + bridge */}
         {activeTab === 'cover-editor' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ height: 40, flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>Éditeur de couverture libre</span>
-              <span style={{ fontSize: 10, color: 'var(--text4)' }}>Textes, formes, images — positionnez librement</span>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span style={{ fontSize: 10, color: 'var(--text4)' }}>Fond :</span>
-                {COVER_LAYOUTS.map(l => (
-                  <button key={l.id} onClick={() => setSelectedLayout(l.id)}
-                    style={{ padding: '3px 9px', borderRadius: 6, border: '1px solid', fontSize: 10, fontWeight: 700, cursor: 'pointer',
-                      borderColor: selectedLayout === l.id ? accent : 'var(--border)',
-                      background: selectedLayout === l.id ? `${accent}18` : 'var(--bg2)',
-                      color: selectedLayout === l.id ? accent : 'var(--text4)',
-                    }}>
-                    {l.label}
-                  </button>
-                ))}
-                <div style={{ width: 1, height: 18, background: 'var(--border)' }} />
-                <span style={{ fontSize: 10, color: 'var(--text4)' }}>Couleur :</span>
-                {PALETTE.slice(0, 7).map(c => (
-                  <button key={c} onClick={() => setAccentColor(c)}
-                    style={{ width: 18, height: 18, borderRadius: 4, background: c, border: `2px solid ${accentColor === c ? '#fff' : 'transparent'}`, cursor: 'pointer', outline: accentColor === c ? `2px solid ${c}` : 'none', outlineOffset: 1 }} />
-                ))}
-                <input type="color" value={accentColor}
-                  onChange={e => setAccentColor(e.target.value)}
-                  style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid var(--border)', padding: 1, cursor: 'pointer' }} />
-              </div>
+            <div style={{ height: 40, flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>Éditeur de couverture</span>
+              <span style={{ fontSize: 10, color: 'var(--text4)' }}>Formes, textes, images, effets — positionnez librement</span>
+              <button onClick={() => setActiveTab('cover')} style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: 'var(--text4)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer' }}>
+                ← Mode simple
+              </button>
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
-              <CoverPageEditor
-                blocks={coverBlocks}
-                onChange={setCoverBlocks}
-                accentColor={accent}
-                baseLayoutBg={<CoverBg layout={selectedLayout} accent={accent} />}
-              />
+              <DocumentProvider>
+                <CoverEditorBridge
+                  initialCoverStyle={coverStyle}
+                  onCoverStyleChange={(newCs) => setCoverStyle(newCs)}
+                />
+              </DocumentProvider>
             </div>
           </div>
         ) : (
@@ -657,7 +671,7 @@ function TemplateCreatorContent() {
                     <div className="text-[11px] font-bold uppercase tracking-widest mb-4" style={{ color: 'var(--text4)' }}>Style Typographique</div>
                     <label className={lbl} style={{ color: 'var(--text3)' }}>Preset</label>
                     <div className="grid grid-cols-2 gap-2 mb-4">
-                      {[{ k:'classic',label:'Classic',icon:'🏛️'},{k:'modern',label:'Modern',icon:'⬡'},{k:'editorial',label:'Éditorial',icon:'📰'},{k:'minimal',label:'Minimal',icon:'◻'}].map(({k,label,icon}) => (
+                      {[{k:'classic',label:'Classic',icon:'🏛️'},{k:'modern',label:'Modern',icon:'⬡'},{k:'editorial',label:'Éditorial',icon:'📰'},{k:'minimal',label:'Minimal',icon:'◻'}].map(({k,label,icon}) => (
                         <button key={k} onClick={() => setDocStyle(STYLE_PRESETS[k])}
                           className="p-3 rounded-xl border cursor-pointer text-left transition-all"
                           style={{ background: docStyle.preset === k ? `${accent}18` : 'var(--surface)', borderColor: docStyle.preset === k ? accent : 'var(--border)' }}>
@@ -746,7 +760,6 @@ function TemplateCreatorContent() {
                   </>
                 )}
 
-                {/* PUBLISH tab in side panel */}
                 {activeTab === 'publish' && <PublishPanel />}
               </div>
             </div>
@@ -762,11 +775,11 @@ function TemplateCreatorContent() {
                     </span>
                   </h2>
                   <div className="flex gap-2">
-                    {coverBlocks.length > 0 && (
+                    {(coverStyle.coverBlocks?.length || 0) > 0 && (
                       <button onClick={() => setActiveTab('cover-editor')}
                         className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-lg cursor-pointer border"
                         style={{ borderColor: 'rgba(124,58,237,.3)', background: 'rgba(124,58,237,.08)', color: '#7C3AED' }}>
-                        <PenTool size={11} /> Couverture ({coverBlocks.length})
+                        <PenTool size={11} /> Couverture ({coverStyle.coverBlocks!.length})
                       </button>
                     )}
                     <button onClick={() => setActiveTab('cover')}
@@ -798,12 +811,14 @@ function TemplateCreatorContent() {
                       <div className="flex gap-1 flex-wrap">
                         <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: `${accent}14`, color: accent }}>{selectedLayout}</span>
                         <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'var(--bg3)', color: 'var(--text4)' }}>titre {titleSize}</span>
-                        {coverBlocks.length > 0 && <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>{coverBlocks.length} éléments</span>}
+                        {(coverStyle.coverBlocks?.length || 0) > 0 && (
+                          <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>{coverStyle.coverBlocks!.length} éléments</span>
+                        )}
                       </div>
                     </div>
-                    <button onClick={() => setActiveTab('cover')} className="ml-auto cursor-pointer border-none bg-transparent"
-                      style={{ fontSize: 11, fontWeight: 700, color: accent }}>
-                      Modifier →
+                    <button onClick={() => setActiveTab('cover-editor')} className="ml-auto cursor-pointer border-none bg-transparent"
+                      style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED' }}>
+                      Éditer →
                     </button>
                   </div>
                 </div>

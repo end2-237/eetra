@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button'
 import { TEMPLATES } from '@/lib/templates'
 import { generateId } from '@/lib/utils'
 import { DocBlock } from '@/types'
-import type { CoverStyle } from '@/contexts/CustomTemplateContext'
+import type { CoverStyle, CustomTemplate } from '@/contexts/CustomTemplateContext'
 
 interface Props { showToast: (msg: string, type?: 'ok' | 'err' | 'default') => void }
 
@@ -72,20 +72,11 @@ type TabId = 'smart' | 'mine' | 'community'
 export function TemplatesPanel({ showToast }: Props) {
   const { selectedTemplate, setSelectedTemplate, pages, currentPageIndex, setPageBlocks, setCoverStyle } = useDocument()
   const { profile } = useProfile()
-  const { templates: myTemplates, incrementUsage } = useCustomTemplates()
+  const { templates: myTemplates, incrementUsage, communityTemplates } = useCustomTemplates()
+
   const [activeTab, setActiveTab] = useState<TabId>('smart')
   const [search, setSearch] = useState('')
-  const [communityTemplates, setCommunityTemplates] = useState<any[]>([])
-  const [loadingCommunity, setLoadingCommunity] = useState(false)
   const [selectedCustomId, setSelectedCustomId] = useState<string | null>(null)
-
-  const fetchCommunity = useCallback(async () => {
-    setLoadingCommunity(true)
-    try { const res = await fetch('/api/templates/public'); if (res.ok) setCommunityTemplates(await res.json()) }
-    catch {} finally { setLoadingCommunity(false) }
-  }, [])
-
-  useEffect(() => { if (activeTab === 'community') fetchCommunity() }, [activeTab, fetchCommunity])
 
   function applySmartTemplate() {
     const tpl = TEMPLATES.find(t => t.id === selectedTemplate); if (!tpl) return
@@ -97,32 +88,36 @@ export function TemplatesPanel({ showToast }: Props) {
     showToast(`"${tpl.name}" appliqué`, 'ok')
   }
 
-  function applyCustomTemplate(tpl: any) {
+  function applyCustomTemplate(tpl: CustomTemplate) {
     const page = pages[currentPageIndex]; if (!page) { showToast('Ajoutez d\'abord une page', 'err'); return }
-    if (tpl.coverStyle) { const cs: CoverStyle = typeof tpl.coverStyle === 'string' ? JSON.parse(tpl.coverStyle) : tpl.coverStyle; setCoverStyle(cs) }
+    if (tpl.coverStyle) {
+      const cs: CoverStyle = typeof tpl.coverStyle === 'string' ? JSON.parse(tpl.coverStyle) : tpl.coverStyle
+      setCoverStyle(cs)
+    }
     if (tpl.blocks?.length > 0) {
       const bl = typeof tpl.blocks === 'string' ? JSON.parse(tpl.blocks) : tpl.blocks
       setPageBlocks(page.id, bl.map((b: any) => ({ id: generateId(), type: b.type, content: b.content, tableData: b.tableData })))
     }
     if (tpl.id && myTemplates.find(m => m.id === tpl.id)) incrementUsage(tpl.id)
-    showToast(`"${tpl.name}" appliqué`, 'ok'); setSelectedCustomId(null)
+    showToast(`"${tpl.name}" appliqué`, 'ok')
+    setSelectedCustomId(null)
   }
 
-  const filteredSmart = TEMPLATES.filter(t => !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.tags.some(g => g.toLowerCase().includes(search.toLowerCase())))
-  const filteredMine = myTemplates.filter(t => !search || t.name.toLowerCase().includes(search.toLowerCase()))
-  const filteredCommunity = communityTemplates.filter((t: any) => !search || t.name.toLowerCase().includes(search.toLowerCase()))
-  const smartSelected = activeTab === 'smart' && !!selectedTemplate
+  const q = search.toLowerCase()
+  const filteredSmart = TEMPLATES.filter(t => !search || t.name.toLowerCase().includes(q) || t.tags.some(g => g.toLowerCase().includes(q)))
+  const filteredMine = myTemplates.filter(t => !search || t.name.toLowerCase().includes(q))
+  const filteredCommunity = communityTemplates.filter(t => !search || t.name.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q))
+
+  const smartSelected  = activeTab === 'smart' && !!selectedTemplate
   const customSelected = (activeTab === 'mine' || activeTab === 'community') && !!selectedCustomId
 
   const TABS = [
-    { id: 'smart' as TabId, icon: <Star size={11} />, label: 'Smart', count: TEMPLATES.length },
-    { id: 'mine' as TabId, icon: <Lock size={11} />, label: 'Mes modèles', count: myTemplates.length },
-    { id: 'community' as TabId, icon: <Globe size={11} />, label: 'Communauté' },
+    { id: 'smart' as TabId,     icon: <Star size={11} />,  label: 'Smart',     count: TEMPLATES.length },
+    { id: 'mine' as TabId,      icon: <Lock size={11} />,  label: 'Mes modèles', count: myTemplates.length },
+    { id: 'community' as TabId, icon: <Globe size={11} />, label: 'Communauté', count: communityTemplates.length },
   ]
 
   return (
-    // FIX: flex column avec overflow:hidden — le footer est un flex child flexShrink:0
-    // jamais position:absolute qui débordait sur l'éditeur
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg2)', overflow: 'hidden' }}>
 
       {/* Header */}
@@ -149,9 +144,10 @@ export function TemplatesPanel({ showToast }: Props) {
         </div>
       </div>
 
-      {/* Scrollable content — flex:1 pousse le footer vers le bas */}
+      {/* Scrollable content */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
 
+        {/* ── SMART ── */}
         {activeTab === 'smart' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {filteredSmart.map(tpl => (
@@ -181,6 +177,7 @@ export function TemplatesPanel({ showToast }: Props) {
           </div>
         )}
 
+        {/* ── MES MODÈLES ── */}
         {activeTab === 'mine' && (
           myTemplates.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '28px 16px' }}>
@@ -200,7 +197,11 @@ export function TemplatesPanel({ showToast }: Props) {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tpl.name}</span>
-                        {tpl.isPublic && <span style={{ fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(5,150,105,.1)', color: '#059669', flexShrink: 0 }}>PUBLIC</span>}
+                        {tpl.isPublic && (
+                          <span style={{ fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(5,150,105,.1)', color: '#059669', flexShrink: 0 }}>
+                            publié
+                          </span>
+                        )}
                       </div>
                       <p style={{ fontSize: 10, color: 'var(--text4)', margin: 0, lineHeight: 1.35 }}>{tpl.description || tpl.category}</p>
                       <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 4 }}>{tpl.blocks.length} blocs · {tpl.usageCount} utilisations</div>
@@ -212,37 +213,39 @@ export function TemplatesPanel({ showToast }: Props) {
           )
         )}
 
+        {/* ── COMMUNAUTÉ ── */}
         {activeTab === 'community' && (
-          loadingCommunity ? (
-            <div style={{ textAlign: 'center', padding: '28px 0' }}>
-              <div style={{ width: 28, height: 28, border: '2px solid var(--accentS)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin .8s linear infinite', margin: '0 auto 10px' }} />
-              <p style={{ fontSize: 12, color: 'var(--text4)' }}>Chargement…</p>
-              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-            </div>
-          ) : communityTemplates.length === 0 ? (
+          communityTemplates.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '28px 16px' }}>
               <Globe size={28} color="var(--text4)" style={{ margin: '0 auto 10px' }} />
               <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>Galerie communautaire vide</p>
-              <p style={{ fontSize: 11, color: 'var(--text4)', lineHeight: 1.5 }}>Publiez vos templates pour les partager.</p>
+              <p style={{ fontSize: 11, color: 'var(--text4)', lineHeight: 1.5 }}>Publiez vos templates depuis "Mes modèles" pour les partager.</p>
             </div>
           ) : (
             <>
-              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 8 }}>{filteredCommunity.length} modèle{filteredCommunity.length > 1 ? 's' : ''}</div>
+              <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 8 }}>
+                {filteredCommunity.length} modèle{filteredCommunity.length > 1 ? 's' : ''}
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {filteredCommunity.map((tpl: any) => {
-                  const cs: CoverStyle | undefined = tpl.coverStyle ? (typeof tpl.coverStyle === 'string' ? JSON.parse(tpl.coverStyle) : tpl.coverStyle) : undefined
+                {filteredCommunity.map(tpl => {
                   const isSel = selectedCustomId === tpl.id
                   return (
                     <div key={tpl.id} onClick={() => setSelectedCustomId(isSel ? null : tpl.id)}
                       style={{ borderRadius: 10, border: '2px solid', borderColor: isSel ? 'var(--accent)' : 'var(--border)', background: isSel ? 'var(--accentS)' : 'var(--surface)', cursor: 'pointer', transition: 'all .15s', overflow: 'hidden' }}>
                       <div style={{ aspectRatio: '.707', background: 'var(--bg3)', overflow: 'hidden', position: 'relative' }}>
-                        <CoverMini coverStyle={cs} name={tpl.name} />
-                        {tpl.usageCount > 0 && <div style={{ position: 'absolute', top: 4, right: 4, fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(0,0,0,.5)', color: '#fff' }}>×{tpl.usageCount}</div>}
+                        <CoverMini coverStyle={tpl.coverStyle} name={tpl.name} />
+                        {tpl.usageCount > 0 && (
+                          <div style={{ position: 'absolute', top: 4, right: 4, fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(0,0,0,.5)', color: '#fff' }}>×{tpl.usageCount}</div>
+                        )}
                       </div>
                       <div style={{ padding: '7px 8px' }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 2 }}>{tpl.name}</div>
-                        <div style={{ fontSize: 9, color: 'var(--text4)' }}>{tpl.user?.name || 'Communauté'} · {tpl.blocks?.length || 0} blocs</div>
-                        {tpl.category && <span style={{ fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--accentS2)', color: 'var(--accent)', display: 'inline-block', marginTop: 4 }}>{tpl.category}</span>}
+                        <div style={{ fontSize: 9, color: 'var(--text4)' }}>{tpl.author || 'Communauté'} · {tpl.blocks?.length || 0} blocs</div>
+                        {tpl.category && (
+                          <span style={{ fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'var(--accentS2)', color: 'var(--accent)', display: 'inline-block', marginTop: 4 }}>
+                            {tpl.category}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )
@@ -253,7 +256,7 @@ export function TemplatesPanel({ showToast }: Props) {
         )}
       </div>
 
-      {/* FOOTER — flexShrink:0 = reste toujours visible en bas, jamais débordant */}
+      {/* Footer */}
       <div style={{ flexShrink: 0, padding: '10px 10px 12px', background: 'var(--surface)', borderTop: '1px solid var(--border)' }}>
         {smartSelected && (
           <>
@@ -262,13 +265,19 @@ export function TemplatesPanel({ showToast }: Props) {
             </Button>
             {(() => {
               const tpl = TEMPLATES.find(t => t.id === selectedTemplate)
-              return tpl?.coverStyle ? <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--text4)', marginTop: 5, marginBottom: 0 }}>Cover <strong>{tpl.coverStyle.layout}</strong> incluse</p> : null
+              return tpl?.coverStyle
+                ? <p style={{ fontSize: 9, textAlign: 'center', color: 'var(--text4)', marginTop: 5, marginBottom: 0 }}>Cover <strong>{tpl.coverStyle.layout}</strong> incluse</p>
+                : null
             })()}
           </>
         )}
         {customSelected && (() => {
-          const tpl = activeTab === 'mine' ? myTemplates.find(t => t.id === selectedCustomId) : communityTemplates.find((t: any) => t.id === selectedCustomId)
-          return tpl ? <Button variant="primary" fullWidth onClick={() => applyCustomTemplate(tpl)} size="sm">Appliquer "{tpl.name}" →</Button> : null
+          const tpl = activeTab === 'mine'
+            ? myTemplates.find(t => t.id === selectedCustomId)
+            : communityTemplates.find(t => t.id === selectedCustomId)
+          return tpl
+            ? <Button variant="primary" fullWidth onClick={() => applyCustomTemplate(tpl)} size="sm">Appliquer "{tpl.name}" →</Button>
+            : null
         })()}
         {!smartSelected && !customSelected && (
           <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text4)', margin: 0 }}>Sélectionnez un modèle ci-dessus</p>

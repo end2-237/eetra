@@ -3,8 +3,8 @@
 import { useRef } from 'react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
-import { CoverPage } from './CoverPage'
 import { ContentPage } from './ContentPage'
+import { EditableCoverPage } from './EditableCoverPage'
 import {
   ZoomIn, ZoomOut, Plus, ChevronLeft, ChevronRight,
   RotateCcw, RotateCw, Download,
@@ -31,24 +31,6 @@ export function DocumentViewer({ onExport }: Props) {
   const handleZoomIn  = () => setZoom(Math.min(zoom + 0.1, 1.5))
   const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.35))
 
-  const frameStyle = (minH = false): React.CSSProperties => ({
-    width:    PAGE_W * zoom,
-    height:   minH ? undefined : PAGE_H * zoom,
-    minHeight: minH ? PAGE_H * zoom : undefined,
-    flexShrink: 0,
-    overflow: 'hidden',
-    borderRadius: 4,
-    background: '#fff',
-  })
-
-  const innerStyle: React.CSSProperties = {
-    width:           PAGE_W,
-    height:          PAGE_H,
-    transform:       `scale(${zoom})`,
-    transformOrigin: 'top left',
-    marginBottom:    -(PAGE_H - PAGE_H * zoom),
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
@@ -69,72 +51,48 @@ export function DocumentViewer({ onExport }: Props) {
             {title || 'Document sans titre'}
           </span>
           {modified && (
-            <span style={{
-              fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20,
-              background: 'rgba(217,119,6,.1)', color: '#D97706', letterSpacing: '.06em',
-            }}>
+            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(217,119,6,.1)', color: '#D97706', letterSpacing: '.06em' }}>
               Non sauvegardé
             </span>
           )}
-          {/* Cover layout badge */}
-          <span style={{
-            fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20,
-            background: 'var(--accentS)', color: 'var(--accent)', letterSpacing: '.06em',
-            textTransform: 'uppercase',
-          }}>
-            {coverStyle.layout}
+          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'var(--accentS)', color: 'var(--accent)', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+            {coverStyle?.layout || 'classic'}
           </span>
+          {(coverStyle?.coverBlocks?.length || 0) > 0 && (
+            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,.1)', color: '#7C3AED', letterSpacing: '.06em' }}>
+              ✏️ {coverStyle.coverBlocks!.length} élément{coverStyle.coverBlocks!.length > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
 
-        {/* Centre — undo / redo / zoom / page count */}
+        {/* Centre — undo / redo / zoom */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button onClick={undo} disabled={!canUndo} title="Annuler (Ctrl+Z)"
-            style={{
-              width: 32, height: 32, borderRadius: 8, border: 'none',
-              cursor: canUndo ? 'pointer' : 'not-allowed', background: 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: canUndo ? 'var(--text3)' : 'var(--border2)',
-            }}>
+            style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: canUndo ? 'pointer' : 'not-allowed', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: canUndo ? 'var(--text3)' : 'var(--border2)' }}>
             <RotateCcw size={13} />
           </button>
           <button onClick={redo} disabled={!canRedo} title="Rétablir (Ctrl+Y)"
-            style={{
-              width: 32, height: 32, borderRadius: 8, border: 'none',
-              cursor: canRedo ? 'pointer' : 'not-allowed', background: 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: canRedo ? 'var(--text3)' : 'var(--border2)',
-            }}>
+            style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: canRedo ? 'pointer' : 'not-allowed', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: canRedo ? 'var(--text3)' : 'var(--border2)' }}>
             <RotateCw size={13} />
           </button>
 
           <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
 
           <button onClick={handleZoomOut} title="Zoom arrière"
-            style={{
-              width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)',
-              cursor: 'pointer', background: 'var(--bg2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)',
-            }}>
+            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }}>
             <ZoomOut size={12} />
           </button>
           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text4)', minWidth: 40, textAlign: 'center' }}>
             {Math.round(zoom * 100)}%
           </span>
           <button onClick={handleZoomIn} title="Zoom avant"
-            style={{
-              width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)',
-              cursor: 'pointer', background: 'var(--bg2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)',
-            }}>
+            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }}>
             <ZoomIn size={12} />
           </button>
 
           <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
 
-          <span style={{
-            fontSize: 11, color: 'var(--text4)', fontWeight: 600,
-            padding: '2px 8px', borderRadius: 6, background: 'var(--bg3)',
-          }}>
+          <span style={{ fontSize: 11, color: 'var(--text4)', fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg3)' }}>
             {pages.length + 1} page{pages.length + 1 > 1 ? 's' : ''}
           </span>
         </div>
@@ -152,22 +110,21 @@ export function DocumentViewer({ onExport }: Props) {
         ref={viewerRef}
         style={{
           flex: 1, overflowY: 'auto', overflowX: 'auto',
-          background: 'var(--bg3)', padding: '32px 24px',
+          background: 'var(--bg3)', padding: '52px 24px 32px',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24,
         }}
       >
-        {/* Cover — with dynamic coverStyle from context */}
+        {/* ── COVER — EditableCoverPage with top bar ── */}
         <div
           id="eetra-page-cover"
           style={{
-            ...frameStyle(),
+            flexShrink: 0,
+            borderRadius: 4,
             boxShadow: '0 4px 32px rgba(0,0,0,.12)',
+            marginTop: 44, // space for the top edit bar
           }}
         >
-          <div style={innerStyle}>
-            {/* Pass coverStyle from DocumentContext */}
-            <CoverPage coverStyle={coverStyle} />
-          </div>
+          <EditableCoverPage zoom={zoom} />
         </div>
 
         {/* Content pages */}
@@ -177,7 +134,12 @@ export function DocumentViewer({ onExport }: Props) {
             id={`eetra-page-${idx}`}
             onClick={() => setCurrentPageIndex(idx)}
             style={{
-              ...frameStyle(),
+              width: PAGE_W * zoom,
+              height: PAGE_H * zoom,
+              flexShrink: 0,
+              overflow: 'hidden',
+              borderRadius: 4,
+              background: '#fff',
               boxShadow: currentPageIndex === idx
                 ? `0 0 0 2px ${profile.color || '#1B4FD8'}, 0 4px 32px rgba(0,0,0,.12)`
                 : '0 4px 32px rgba(0,0,0,.10)',
@@ -185,7 +147,7 @@ export function DocumentViewer({ onExport }: Props) {
               transition: 'box-shadow .15s',
             }}
           >
-            <div style={innerStyle}>
+            <div style={{ width: PAGE_W, height: PAGE_H, transform: `scale(${zoom})`, transformOrigin: 'top left', marginBottom: -(PAGE_H - PAGE_H * zoom) }}>
               <ContentPage page={page} pageIndex={idx} totalPages={pages.length} />
             </div>
           </div>
@@ -200,18 +162,8 @@ export function DocumentViewer({ onExport }: Props) {
             background: 'transparent', cursor: 'pointer', color: 'var(--text4)',
             fontSize: 12, fontWeight: 700, transition: 'all .15s',
           }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.borderColor = 'var(--accent)'
-            el.style.color       = 'var(--accent)'
-            el.style.background  = 'var(--accentS)'
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.borderColor = 'var(--border2)'
-            el.style.color       = 'var(--text4)'
-            el.style.background  = 'transparent'
-          }}
+          onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)'; el.style.background = 'var(--accentS)' }}
+          onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border2)'; el.style.color = 'var(--text4)'; el.style.background = 'transparent' }}
         >
           <Plus size={14} /> Ajouter une page
         </button>
@@ -227,37 +179,21 @@ export function DocumentViewer({ onExport }: Props) {
           <button
             onClick={() => setCurrentPageIndex(Math.max(0, currentPageIndex - 1))}
             disabled={currentPageIndex === 0}
-            style={{
-              width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)',
-              cursor: currentPageIndex === 0 ? 'not-allowed' : 'pointer', background: 'var(--bg2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: currentPageIndex === 0 ? 'var(--border2)' : 'var(--text3)',
-            }}>
+            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: currentPageIndex === 0 ? 'not-allowed' : 'pointer', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: currentPageIndex === 0 ? 'var(--border2)' : 'var(--text3)' }}>
             <ChevronLeft size={13} />
           </button>
 
           <div style={{ display: 'flex', gap: 4 }}>
             {pages.map((_, i) => (
               <button key={i} onClick={() => setCurrentPageIndex(i)}
-                style={{
-                  width: i === currentPageIndex ? 20 : 7, height: 7,
-                  borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0,
-                  background: i === currentPageIndex ? 'var(--accent)' : 'var(--border2)',
-                  transition: 'all .15s',
-                }} />
+                style={{ width: i === currentPageIndex ? 20 : 7, height: 7, borderRadius: 10, border: 'none', cursor: 'pointer', padding: 0, background: i === currentPageIndex ? 'var(--accent)' : 'var(--border2)', transition: 'all .15s' }} />
             ))}
           </div>
 
           <button
             onClick={() => setCurrentPageIndex(Math.min(pages.length - 1, currentPageIndex + 1))}
             disabled={currentPageIndex === pages.length - 1}
-            style={{
-              width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)',
-              cursor: currentPageIndex === pages.length - 1 ? 'not-allowed' : 'pointer',
-              background: 'var(--bg2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: currentPageIndex === pages.length - 1 ? 'var(--border2)' : 'var(--text3)',
-            }}>
+            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: currentPageIndex === pages.length - 1 ? 'not-allowed' : 'pointer', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: currentPageIndex === pages.length - 1 ? 'var(--border2)' : 'var(--text3)' }}>
             <ChevronRight size={13} />
           </button>
 

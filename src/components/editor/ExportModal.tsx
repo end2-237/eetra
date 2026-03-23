@@ -17,6 +17,14 @@ interface Props {
 type ExportStep = 'options' | 'loading' | 'done' | 'error'
 type ExportFormat = 'pdf' | 'word'
 
+// A4 en pixels à 96dpi (utilisé pour html2canvas)
+const PAGE_W = 794
+const PAGE_H = 1123
+
+// A4 en millimètres (utilisé pour jsPDF)
+const A4_W_MM = 210
+const A4_H_MM = 297
+
 export function ExportModal({ onClose }: Props) {
   const { title, subtitle, pages, docId, markSaved } = useDocument()
   const { profile } = useProfile()
@@ -36,9 +44,6 @@ export function ExportModal({ onClose }: Props) {
   const docName = (title || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
   // ── PDF EXPORT ─────────────────────────────────────────────────────────────
-  // Captures actual DOM elements that are already rendered with correct styles.
-  // This avoids the "blank PDF" bug caused by CSS variables not resolving in
-  // off-screen clones — we reset the zoom transform temporarily instead.
   const handlePdfExport = async () => {
     setStep('loading')
     setProgress(5)
@@ -54,15 +59,17 @@ export function ExportModal({ onClose }: Props) {
 
       setProgress(15)
 
-      // Hide UI chrome (delete buttons, drag handles, etc.)
       document.body.classList.add('pdf-exporting')
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
       await new Promise(r => setTimeout(r, 150))
 
+      // ── CORRECTION : utiliser unit:'mm' + format:'a4' ──────────────────────
+      // Avec unit:'px', jsPDF convertit en points à 72dpi ce qui rétrécit
+      // la page. Avec unit:'mm' + 'a4', on obtient exactement 210×297 mm.
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: [794, 1123],
+        unit: 'mm',
+        format: 'a4',
         compress: true,
       })
 
@@ -79,37 +86,55 @@ export function ExportModal({ onClose }: Props) {
 
         const outerEl = document.getElementById(pageIds[i])
         if (!outerEl) continue
-        // The INNER div is the actual 794×1123 content — outer is the zoomed frame
         const innerEl = outerEl.firstElementChild as HTMLElement
         if (!innerEl) continue
 
-        // Temporarily undo the viewer zoom so html2canvas sees the true A4 size
-        const savedTransform   = innerEl.style.transform
-        const savedMarginBottom = innerEl.style.marginBottom
+        // Sauvegarder les styles, désactiver le zoom pour la capture
+        const savedTransform     = innerEl.style.transform
+        const savedMarginBottom  = innerEl.style.marginBottom
+        const savedOuterWidth    = outerEl.style.width
+        const savedOuterHeight   = outerEl.style.height
+        const savedOuterOverflow = outerEl.style.overflow
+        const savedOuterBorderRadius = outerEl.style.borderRadius
+
+        outerEl.style.width        = `${PAGE_W}px`
+        outerEl.style.height       = `${PAGE_H}px`
+        outerEl.style.overflow     = 'visible'
+        outerEl.style.borderRadius = '0'
         innerEl.style.transform    = 'none'
         innerEl.style.marginBottom = '0'
 
-        // One animation frame so the browser repaints at the new size
-        await new Promise(r => requestAnimationFrame(r))
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
 
         const canvas = await html2canvas(innerEl, {
           scale,
-          useCORS: true,
-          allowTaint: true,
+          useCORS:         true,
+          allowTaint:      true,
           backgroundColor: '#ffffff',
-          width: 794,
-          height: 1123,
-          logging: false,
+          width:           PAGE_W,
+          height:          PAGE_H,
+          windowWidth:     PAGE_W,
+          windowHeight:    PAGE_H,
+          logging:         false,
         })
 
-        // Restore zoom
+        // Restaurer les styles
+        outerEl.style.width        = savedOuterWidth
+        outerEl.style.height       = savedOuterHeight
+        outerEl.style.overflow     = savedOuterOverflow
+        outerEl.style.borderRadius = savedOuterBorderRadius
         innerEl.style.transform    = savedTransform
         innerEl.style.marginBottom = savedMarginBottom
 
         if (i > 0) pdf.addPage()
+
+        // ── CORRECTION : addImage avec dimensions en mm (pleine page A4) ──────
         pdf.addImage(
           canvas.toDataURL('image/jpeg', quality === 'high' ? 0.97 : 0.85),
-          'JPEG', 0, 0, 794, 1123,
+          'JPEG',
+          0, 0,          // x, y en mm
+          A4_W_MM,       // largeur = 210 mm
+          A4_H_MM,       // hauteur = 297 mm
         )
       }
 

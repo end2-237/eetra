@@ -143,17 +143,20 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
   }, [isAuth, status])
 
   // ── Charger les templates communautaires depuis la BD ──────────────────────
-  const refreshCommunity = useCallback(async () => {
-    setCommunityLoading(true)
-    try {
-      const serverTemplates = await apiFetch<CustomTemplate[]>('/api/templates/community')
-      if (serverTemplates !== null) {
-        setCommunityTemplates(serverTemplates)
-      }
-    } finally {
-      setCommunityLoading(false)
-    }
-  }, [])
+
+const refreshCommunity = useCallback(async () => {
+  setCommunityLoading(true)
+  try {
+    const res = await fetch('/api/templates/community', { cache: 'no-store' })
+    if (!res.ok) return
+    const serverTemplates: CustomTemplate[] = await res.json()
+    setCommunityTemplates(serverTemplates)
+  } catch {
+    // silently fail
+  } finally {
+    setCommunityLoading(false)
+  }
+}, [])
 
   useEffect(() => { refreshCommunity() }, [refreshCommunity])
 
@@ -260,35 +263,56 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
 
   // ── publishTemplate ────────────────────────────────────────────────────────
   const publishTemplate = useCallback(async (id: string) => {
-    await updateTemplate(id, { isPublic: true })
-
-    // Optimistic: ajouter immédiatement dans la liste communauté
-    const tpl = templates.find(t => t.id === id)
-    if (tpl) {
-      const published: CustomTemplate = {
-        ...tpl,
-        isPublic: true,
-        publishedAt: new Date().toISOString(),
-        likes: tpl.likes ?? 0,
-      }
-      setCommunityTemplates(prev => {
-        const exists = prev.find(t => t.id === id)
-        return exists
-          ? prev.map(t => t.id === id ? published : t)
-          : [published, ...prev]
+    // 1. Mise à jour optimiste locale immédiate
+    setTemplates(prev => {
+      const updated = prev.map(t =>
+        t.id === id ? { ...t, isPublic: true, updatedAt: new Date().toISOString() } : t
+      )
+      persistMyTemplates(updated)
+      return updated
+    })
+  
+    // 2. Appel API direct (pas via updateTemplate pour éviter le debounce)
+    if (isAuth) {
+      await apiFetch(`/api/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isPublic: true }),
       })
     }
-
-    // Rafraîchir depuis la BD
+  
+    // 3. Rafraîchir la liste communauté depuis la BD (sans cache)
     await refreshCommunity()
-  }, [templates, updateTemplate, refreshCommunity])
+  }, [isAuth, refreshCommunity])
+  
+  const unpublishTemplate = useCallback(async (id: string) => {
+    // 1. Mise à jour optimiste locale
+    setTemplates(prev => {
+      const updated = prev.map(t =>
+        t.id === id ? { ...t, isPublic: false, updatedAt: new Date().toISOString() } : t
+      )
+      persistMyTemplates(updated)
+      return updated
+    })
+    setCommunityTemplates(prev => prev.filter(t => t.id !== id))
+  
+    // 2. Appel API direct
+    if (isAuth) {
+      await apiFetch(`/api/templates/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isPublic: false }),
+      })
+    }
+  
+    // 3. Rafraîchir
+    await refreshCommunity()
+  }, [isAuth, refreshCommunity])
 
   // ── unpublishTemplate ──────────────────────────────────────────────────────
-  const unpublishTemplate = useCallback(async (id: string) => {
-    await updateTemplate(id, { isPublic: false })
-    setCommunityTemplates(prev => prev.filter(t => t.id !== id))
-    await refreshCommunity()
-  }, [updateTemplate, refreshCommunity])
+  // const unpublishTemplate = useCallback(async (id: string) => {
+  //   await updateTemplate(id, { isPublic: false })
+  //   setCommunityTemplates(prev => prev.filter(t => t.id !== id))
+  //   await refreshCommunity()
+  // }, [updateTemplate, refreshCommunity])
 
   // ── likeTemplate ──────────────────────────────────────────────────────────
   const likeTemplate = useCallback((id: string) => {

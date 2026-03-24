@@ -28,7 +28,7 @@ export async function GET() {
       authorAvatar:'👤',
       likes:       0,
     })), {
-      headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' },
+      headers: { 'Cache-Control': 'no-store' }, // ← fix: plus de cache
     })
   } catch (err) {
     console.error('[GET /api/templates/community]', err)

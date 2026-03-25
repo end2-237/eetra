@@ -8,6 +8,7 @@ const MONETBIL_SERVICE_KEY = process.env.MONETBIL_SERVICE_KEY || ''
 const APP_URL              = process.env.NEXT_PUBLIC_APP_URL  || 'http://localhost:3000'
 
 const PLAN_PRICES = {
+  student:  { monthly: 2_000, annual: 20_000 },
   pro:      { monthly: 14_900, annual: 142_800 },
   business: { monthly: 39_900, annual: 382_800 },
 } as const
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   const { planId, billing = 'monthly', phone = '', country = 'CM' } = await req.json()
 
-  if (!planId || !['pro', 'business'].includes(planId)) {
+  if (!planId || !['pro', 'business', 'student'].includes(planId)) {
     return NextResponse.json({ error: 'Plan invalide' }, { status: 400 })
   }
 

@@ -20,7 +20,7 @@ const COUNTRY_OPTIONS = [
 ]
 
 interface Props {
-  planId:  'pro' | 'business'
+  planId:  'pro' | 'business' | 'student'
   billing: 'monthly' | 'annual'
   onClose: () => void
   onSuccess?: () => void
@@ -29,6 +29,7 @@ interface Props {
 const PLAN_PRICES = {
   pro:      { monthly: 14_900,  annual: 142_800,  label: 'Plan Pro'      },
   business: { monthly: 39_900,  annual: 382_800,  label: 'Plan Business' },
+  student:  { monthly: 2_000,   annual: 19_999,   label: 'Plan Étudiant' },
 }
 
 export function MonetbilModal({ planId, billing, onClose, onSuccess }: Props) {

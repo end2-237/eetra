@@ -16,6 +16,15 @@ const PLANS = [
     ],
   },
   {
+    id: 'student', label: 'Tarif Étudiant', monthly: 2000, annual: 2000,
+    sub: 'Pour les étudiants', cta: 'Choisir Tarif Étudiant', featured: false, accent: '#059669',
+    features: [
+      { text: 'Accès complet', ok: true }, { text: 'Support 24/7', ok: true },
+      { text: 'Export PDF', ok: true }, { text: '2 pages max / doc', ok: true },
+      { text: 'Sans filigrane', ok: false },
+    ],
+  },
+  {
     id: 'pro', label: 'Pro', monthly: 14900, annual: 11900,
     sub: 'Pour les professionnels exigeants', cta: 'Passer au plan Pro', featured: true, accent: '#1B4FD8',
     features: [

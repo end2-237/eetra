@@ -90,11 +90,9 @@ const CSS = `
   .btn-danger:hover { background:rgba(220,38,38,.08); }
   .btn-sm { padding:5px 11px; font-size:11px; }
 
-  /* Plan card */
-  .plan-card { border-radius:14px; padding:20px 18px; border:2px solid var(--border); cursor:pointer; transition:all .2s; }
+  .plan-card { border-radius:10px; padding:16px; border:2px solid var(--border); cursor:pointer; transition:all .2s; margin-bottom:10px; }
   .plan-card:hover { border-color:var(--border2); }
   .plan-card.selected { border-color:var(--accent); background:var(--accentS); }
-  .plan-card.current { border-color:var(--success); background:rgba(5,150,105,.06); }
 
   @media (max-width: 767px) {
     .set-layout { flex-direction: column; }
@@ -129,90 +127,89 @@ function Checkbox({ on, onClick }: { on: boolean; onClick: () => void }) {
 function SettingsContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
-  const { profile, updateProfile }   = useProfile()
-  const { clearAll, markAllAsRead }  = useNotifications()
+  const { profile, updateProfile }              = useProfile()
+  const { clearAll, markAllAsRead }             = useNotifications()
   const { plan, planId, refreshPlan, setPlanId } = usePlan()
-  const { toast, showToast }         = useToast()
-  const logoRef                      = useRef<HTMLInputElement>(null)
+  const { toast, showToast }                    = useToast()
+  const logoRef                                 = useRef<HTMLInputElement>(null)
 
-  const [activeTab,   setActiveTab]   = useState<Tab>('profile')
-  const [showPw,      setShowPw]      = useState(false)
-  const [notifPrefs,  setNotifPrefs]  = useState<NotifPrefs>({ exports: true, comments: true, team: true, updates: false, marketing: false })
-  const [monetbilPlan, setMonetbilPlan] = useState<'pro' | 'business' | null>(null)
+  const [activeTab,      setActiveTab]      = useState<Tab>('profile')
+  const [showPw,         setShowPw]         = useState(false)
+  const [notifPrefs,     setNotifPrefs]     = useState<NotifPrefs>({
+    exports: true, comments: true, team: true, updates: false, marketing: false,
+  })
+  const [monetbilPlan,    setMonetbilPlan]    = useState<'pro' | 'business' | 'student' | null>(null)
   const [monetbilBilling, setMonetbilBilling] = useState<'monthly' | 'annual'>('monthly')
 
-// Handle return from Monetbil
-useEffect(() => {
-  const payment = searchParams.get('payment')
-  const ref     = searchParams.get('ref')
+  // Handle return from Monetbil
+  useEffect(() => {
+    const payment = searchParams.get('payment')
+    const ref     = searchParams.get('ref')
 
-  if (payment === 'cancel') {
-    showToast('Paiement annulé.', 'err')
-    setActiveTab('plan')
-    return
-  }
+    if (payment === 'cancel') {
+      showToast('Paiement annulé.', 'err')
+      setActiveTab('plan')
+      return
+    }
 
-  if (payment === 'demo' && ref) {
-    // Mode démo: activer directement via verify (planId vient de la DB)
-    setActiveTab('plan')
-    ;(async () => {
-      const res  = await fetch('/api/payments/monetbil/verify', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentRef: ref }),
-      })
-      const data = await res.json()
-      if (data.confirmed) { await refreshPlan(); showToast(`Plan activé (démo)`, 'ok') }
-    })()
-    return
-  }
-
-  // ── Retour depuis Monetbil ─────────────────────────────────────────────
-  // On n'utilise QUE le paymentRef — tout le reste vient de notre DB
-  if (payment === 'return' && ref) {
-    setActiveTab('plan')
-    const status        = searchParams.get('status') || ''
-    const transactionId = searchParams.get('transaction_id') || ''
-  
-    ;(async () => {
-      try {
+    if (payment === 'demo' && ref) {
+      setActiveTab('plan')
+      ;(async () => {
         const res  = await fetch('/api/payments/monetbil/verify', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ paymentRef: ref, status, transactionId }),
+          body:    JSON.stringify({ paymentRef: ref }),
         })
         const data = await res.json()
-  
-        if (data.confirmed) {
-          await refreshPlan()
-          showToast('🎉 Paiement confirmé ! Plan activé.', 'ok')
-        } else if (data.status === 'failed') {
-          showToast('Le paiement a échoué. Veuillez réessayer.', 'err')
-        } else {
-          // Retry une fois après 4s
-          setTimeout(async () => {
-            try {
-              const r2   = await fetch('/api/payments/monetbil/verify', {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ paymentRef: ref, status, transactionId }),
-              })
-              const d2 = await r2.json()
-              if (d2.confirmed) {
-                await refreshPlan()
-                showToast('🎉 Plan activé !', 'ok')
-              } else {
-                showToast('Vérification en cours… Actualisez dans quelques instants.', 'ok')
-              }
-            } catch {}
-          }, 4000)
+        if (data.confirmed) { await refreshPlan(); showToast('Plan activé (démo)', 'ok') }
+      })()
+      return
+    }
+
+    if (payment === 'return' && ref) {
+      setActiveTab('plan')
+      const status        = searchParams.get('status') || ''
+      const transactionId = searchParams.get('transaction_id') || ''
+
+      ;(async () => {
+        try {
+          const res  = await fetch('/api/payments/monetbil/verify', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ paymentRef: ref, status, transactionId }),
+          })
+          const data = await res.json()
+
+          if (data.confirmed) {
+            await refreshPlan()
+            showToast('🎉 Paiement confirmé ! Plan activé.', 'ok')
+          } else if (data.status === 'failed') {
+            showToast('Le paiement a échoué. Veuillez réessayer.', 'err')
+          } else {
+            setTimeout(async () => {
+              try {
+                const r2 = await fetch('/api/payments/monetbil/verify', {
+                  method:  'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body:    JSON.stringify({ paymentRef: ref, status, transactionId }),
+                })
+                const d2 = await r2.json()
+                if (d2.confirmed) {
+                  await refreshPlan()
+                  showToast('🎉 Plan activé !', 'ok')
+                } else {
+                  showToast('Vérification en cours… Actualisez dans quelques instants.', 'ok')
+                }
+              } catch {}
+            }, 4000)
+          }
+        } catch {
+          showToast('Erreur réseau. Rechargez la page.', 'err')
         }
-      } catch {
-        showToast('Erreur réseau. Rechargez la page.', 'err')
-      }
-    })()
-  }
-}, []) // eslint-disable-line react-hooks/exhaustive-deps
+      })()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (!f) return
@@ -225,11 +222,35 @@ useEffect(() => {
   const setExtra = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     updateProfile({ [key]: e.target.value })
 
-  const planColor = ({ starter: '#6B7280', pro: '#1B4FD8', business: '#059669' } as Record<string, string>)[planId] ?? '#1B4FD8'
+  const planColor = ({
+    starter:  '#6B7280',
+    pro:      '#1B4FD8',
+    business: '#059669',
+    student:  '#059669',
+  } as Record<string, string>)[planId] ?? '#1B4FD8'
 
   const PLAN_DEFS = [
-    { id: 'pro'      as const, label: 'Pro',      price: '14 900', color: '#1B4FD8', features: ['Documents illimités','IA rédactionnelle','Pages illimitées','Export PDF + Word','Sans filigrane'] },
-    { id: 'business' as const, label: 'Business', price: '39 900', color: '#059669', features: ['Tout le plan Pro','Jusqu\'à 10 membres','Espace partagé','Collaboration temps réel','Support prioritaire'] },
+    {
+      id: 'pro' as const,
+      label: 'Pro',
+      price: '14 900',
+      color: '#1B4FD8',
+      features: ['Documents illimités', 'IA rédactionnelle', 'Pages illimitées', 'Export PDF + Word', 'Sans filigrane'],
+    },
+    {
+      id: 'student' as const,
+      label: 'Tarif Étudiant',
+      price: '2 000',
+      color: '#059669',
+      features: ['Accès complet', 'Support 24/7', 'Export PDF', '2 pages max / doc', 'Sans filigrane'],
+    },
+    {
+      id: 'business' as const,
+      label: 'Business',
+      price: '39 900',
+      color: '#059669',
+      features: ["Tout le plan Pro", "Jusqu'à 10 membres", 'Espace partagé', 'Collaboration temps réel', 'Support prioritaire'],
+    },
   ]
 
   return (
@@ -256,7 +277,11 @@ useEffect(() => {
           <aside className="set-sidebar">
             <div className="set-nav-label">Paramètres</div>
             {TABS.map(({ id, Icon, label }) => (
-              <button key={id} className={`set-nav-btn${activeTab === id ? ' active' : ''}`} onClick={() => setActiveTab(id)}>
+              <button
+                key={id}
+                className={`set-nav-btn${activeTab === id ? ' active' : ''}`}
+                onClick={() => setActiveTab(id)}
+              >
                 <Icon size={14} color={activeTab === id ? 'var(--accent)' : 'var(--text4)'} />
                 {label}
               </button>
@@ -276,25 +301,37 @@ useEffect(() => {
                   <div className="set-block">
                     <SectionHead>Identité visuelle</SectionHead>
                     <div className="set-block-body">
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
                         <div style={{ flexShrink: 0 }}>
                           <div className="set-logo-box" onClick={() => logoRef.current?.click()}>
                             {profile.logoDataUrl
                               ? <img src={profile.logoDataUrl} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }} />
-                              : <><Upload size={16} color="var(--text4)" style={{ marginBottom: 4 }} /><span style={{ fontSize: 9, color: 'var(--text4)', fontWeight: 600 }}>Logo</span></>
+                              : (
+                                <>
+                                  <Upload size={16} color="var(--text4)" style={{ marginBottom: 4 }} />
+                                  <span style={{ fontSize: 9, color: 'var(--text4)', fontWeight: 600 }}>Logo</span>
+                                </>
+                              )
                             }
                           </div>
                           <input type="file" ref={logoRef} accept="image/*" style={{ display: 'none' }} onChange={handleLogoChange} />
                           {profile.logoDataUrl && (
-                            <button style={{ fontSize: 10, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', display: 'block', width: '100%', textAlign: 'center', marginTop: 5 }}
-                              onClick={() => updateProfile({ logoDataUrl: null })}>
+                            <button
+                              style={{ fontSize: 10, color: '#DC2626', background: 'none', border: 'none', cursor: 'pointer', display: 'block', width: '100%', textAlign: 'center', marginTop: 5 }}
+                              onClick={() => updateProfile({ logoDataUrl: null })}
+                            >
                               Retirer
                             </button>
                           )}
                         </div>
                         <div style={{ flex: 1 }}>
                           <Field label="Raison sociale">
-                            <input className="set-input" placeholder="QUANTUM INDUSTRIES SAS" value={profile.name} onChange={e => updateProfile({ name: e.target.value })} />
+                            <input
+                              className="set-input"
+                              placeholder="QUANTUM INDUSTRIES SAS"
+                              value={profile.name}
+                              onChange={e => updateProfile({ name: e.target.value })}
+                            />
                           </Field>
                           <div className="set-grid-2">
                             <Field label="Secteur">
@@ -318,11 +355,11 @@ useEffect(() => {
                     <div className="set-block-body">
                       <div className="set-grid-2">
                         {([
-                          ['Adresse', 'address', 'Rue du Commerce, Douala'],
-                          ['Ville', 'city', 'Douala, Cameroun'],
-                          ['Email', 'email', 'contact@entreprise.com'],
-                          ['Site web', 'web', 'eetra.buyticle.com'],
-                          ['RCCM / N° Fiscal', 'siret', 'CM-DLA-2024-B-0001'],
+                          ['Adresse',        'address', 'Rue du Commerce, Douala'],
+                          ['Ville',          'city',    'Douala, Cameroun'],
+                          ['Email',          'email',   'contact@entreprise.com'],
+                          ['Site web',       'web',     'eetra.buyticle.com'],
+                          ['RCCM / N° Fiscal','siret',  'CM-DLA-2024-B-0001'],
                           ['Capital social', 'capital', '5 000 000 FCFA'],
                         ] as [string, string, string][]).map(([label, key, ph]) => (
                           <Field key={key} label={label}>
@@ -338,10 +375,20 @@ useEffect(() => {
                     <div className="set-block-body">
                       <div className="set-grid-2" style={{ marginBottom: 12 }}>
                         <Field label="Slogan / Tagline">
-                          <input className="set-input" placeholder="Votre devise corporate" value={profile.tagline || ''} onChange={e => updateProfile({ tagline: e.target.value })} />
+                          <input
+                            className="set-input"
+                            placeholder="Votre devise corporate"
+                            value={profile.tagline || ''}
+                            onChange={e => updateProfile({ tagline: e.target.value })}
+                          />
                         </Field>
                         <Field label="Signataire par défaut">
-                          <input className="set-input" placeholder="Directeur Général" value={profile.signer || ''} onChange={e => updateProfile({ signer: e.target.value })} />
+                          <input
+                            className="set-input"
+                            placeholder="Directeur Général"
+                            value={profile.signer || ''}
+                            onChange={e => updateProfile({ signer: e.target.value })}
+                          />
                         </Field>
                       </div>
                       <div className="set-toggle-row">
@@ -365,6 +412,7 @@ useEffect(() => {
                 <>
                   <h2 className="set-section-h">Apparence</h2>
                   <p className="set-section-sub">Personnalisez l'interface et la couleur corporate.</p>
+
                   <div className="set-block">
                     <SectionHead>Thème de l'interface</SectionHead>
                     <div className="set-block-body">
@@ -377,20 +425,29 @@ useEffect(() => {
                       </div>
                     </div>
                   </div>
+
                   <div className="set-block">
                     <SectionHead>Couleur corporate</SectionHead>
                     <div className="set-block-body">
                       <div style={{ marginBottom: 14 }}>
                         <div className="set-palette">
                           {PALETTE.map(c => (
-                            <div key={c} className={`set-color-dot${profile.color === c ? ' selected' : ''}`}
-                              style={{ background: c }} onClick={() => updateProfile({ color: c })} />
+                            <div
+                              key={c}
+                              className={`set-color-dot${profile.color === c ? ' selected' : ''}`}
+                              style={{ background: c }}
+                              onClick={() => updateProfile({ color: c })}
+                            />
                           ))}
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <input type="color" value={profile.color || '#1B4FD8'} onChange={e => updateProfile({ color: e.target.value })}
-                          style={{ width: 34, height: 34, borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', padding: 3, background: 'var(--bg)' }} />
+                        <input
+                          type="color"
+                          value={profile.color || '#1B4FD8'}
+                          onChange={e => updateProfile({ color: e.target.value })}
+                          style={{ width: 34, height: 34, borderRadius: 6, border: '1px solid var(--border)', cursor: 'pointer', padding: 3, background: 'var(--bg)' }}
+                        />
                         <div>
                           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Couleur personnalisée</div>
                           <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--accent)' }}>{profile.color || '#1B4FD8'}</div>
@@ -409,20 +466,21 @@ useEffect(() => {
                       <h2 className="set-section-h">Notifications</h2>
                       <p className="set-section-sub" style={{ margin: 0 }}>Gérez vos préférences.</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <button className="btn-ghost btn-sm" onClick={markAllAsRead}>Tout marquer lu</button>
                       <button className="btn-danger btn-sm" onClick={clearAll}>Effacer tout</button>
                     </div>
                   </div>
+
                   <div className="set-block">
                     <SectionHead>Préférences e-mail</SectionHead>
                     <div className="set-block-body">
                       {([
-                        ['exports', 'Exports de documents', 'Confirmation à chaque export PDF ou Word'],
-                        ['comments', 'Nouveaux commentaires', 'Notification lors de nouvelles annotations'],
-                        ['team', 'Activité équipe', 'Modifications et ajouts de membres'],
-                        ['updates', 'Mises à jour produit', 'Nouvelles fonctionnalités'],
-                        ['marketing', 'Communications marketing', 'Conseils, tutoriels et promotions'],
+                        ['exports',   'Exports de documents',      'Confirmation à chaque export PDF ou Word'],
+                        ['comments',  'Nouveaux commentaires',      'Notification lors de nouvelles annotations'],
+                        ['team',      'Activité équipe',            'Modifications et ajouts de membres'],
+                        ['updates',   'Mises à jour produit',       'Nouvelles fonctionnalités'],
+                        ['marketing', 'Communications marketing',   'Conseils, tutoriels et promotions'],
                       ] as [keyof NotifPrefs, string, string][]).map(([key, label, desc]) => (
                         <div key={key} className="set-toggle-row">
                           <div>
@@ -434,6 +492,7 @@ useEffect(() => {
                       ))}
                     </div>
                   </div>
+
                   <button className="btn-primary" onClick={() => showToast('Préférences sauvegardées', 'ok')}>
                     <Save size={12} /> Enregistrer
                   </button>
@@ -445,13 +504,18 @@ useEffect(() => {
                 <>
                   <h2 className="set-section-h">Sécurité</h2>
                   <p className="set-section-sub">Gérez votre mot de passe et la sécurité du compte.</p>
+
                   <div className="set-block">
                     <SectionHead>Mot de passe</SectionHead>
                     <div className="set-block-body">
                       {(['Mot de passe actuel', 'Nouveau mot de passe', 'Confirmer le nouveau'] as const).map((label, i) => (
                         <Field key={label} label={label}>
                           <div className="set-pw-wrap">
-                            <input type={showPw ? 'text' : 'password'} className="set-input" placeholder={i === 1 ? '8 caractères minimum' : '••••••••'} />
+                            <input
+                              type={showPw ? 'text' : 'password'}
+                              className="set-input"
+                              placeholder={i === 1 ? '8 caractères minimum' : '••••••••'}
+                            />
                             {i === 0 && (
                               <button type="button" className="set-pw-toggle" onClick={() => setShowPw(v => !v)}>
                                 {showPw ? <EyeOff size={13} /> : <Eye size={13} />}
@@ -460,11 +524,16 @@ useEffect(() => {
                           </div>
                         </Field>
                       ))}
-                      <button className="btn-primary btn-sm" style={{ marginTop: 6 }} onClick={() => showToast('Mot de passe mis à jour', 'ok')}>
+                      <button
+                        className="btn-primary btn-sm"
+                        style={{ marginTop: 6 }}
+                        onClick={() => showToast('Mot de passe mis à jour', 'ok')}
+                      >
                         Changer le mot de passe
                       </button>
                     </div>
                   </div>
+
                   <div className="set-block">
                     <SectionHead>Session active</SectionHead>
                     <div className="set-block-body">
@@ -476,7 +545,9 @@ useEffect(() => {
                           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Session actuelle</div>
                           <div style={{ fontSize: 11, color: 'var(--text4)', marginTop: 1 }}>Navigateur web · Douala, CM · En cours</div>
                         </div>
-                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(5,150,105,.1)', color: '#059669' }}>Actif</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 4, background: 'rgba(5,150,105,.1)', color: '#059669' }}>
+                          Actif
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -503,8 +574,11 @@ useEffect(() => {
                     </div>
                     <div className="set-block-body">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 10, background: `${planColor}14`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {planId === 'starter' ? <Zap size={18} color={planColor} /> : <CheckCircle2 size={18} color={planColor} />}
+                        <div style={{ width: 40, height: 40, borderRadius: 10, background: `${planColor}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {planId === 'starter'
+                            ? <Zap size={18} color={planColor} />
+                            : <CheckCircle2 size={18} color={planColor} />
+                          }
                         </div>
                         <div>
                           <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>Plan {plan.label}</div>
@@ -527,62 +601,55 @@ useEffect(() => {
                     </div>
                   </div>
 
-                  {/* Plan upgrade */}
-                  {planId === 'starter' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-                      {PLAN_DEFS.map(p => (
-                        <div key={p.id} className={`plan-card${monetbilPlan === p.id ? ' selected' : ''}`}
-                          onClick={() => setMonetbilPlan(p.id)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 4 }}>{p.label}</div>
-                            <div style={{ fontSize: 12, color: 'var(--text4)', marginBottom: 8 }}>{p.price} FCFA/mois</div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                              {p.features.slice(0, 3).map(f => (
-                                <span key={f} style={{ fontSize: 10, display: 'flex', alignItems: 'center', gap: 3, color: 'var(--text3)' }}>
-                                  <Check size={8} color={p.color} strokeWidth={3} /> {f}
-                                </span>
-                              ))}
-                            </div>
+                  {/* Plan upgrade cards */}
+                  <div style={{ marginBottom: 20 }}>
+                    {PLAN_DEFS.map(p => (
+                      <div
+                        key={p.id}
+                        className={`plan-card${monetbilPlan === p.id ? ' selected' : ''}`}
+                        onClick={() => setMonetbilPlan(p.id)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 2 }}>{p.label}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text4)' }}>{p.price} FCFA/mois</div>
                           </div>
-                          <div style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${monetbilPlan === p.id ? p.color : 'var(--border)'}`, background: monetbilPlan === p.id ? p.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {monetbilPlan === p.id && <Check size={11} color="#fff" strokeWidth={3} />}
-                          </div>
+                          {monetbilPlan === p.id && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: `${p.color}18`, color: p.color }}>
+                              Sélectionné
+                            </span>
+                          )}
                         </div>
-                      ))}
-
-                      {monetbilPlan && (
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <div style={{ display: 'flex', gap: 4, background: 'var(--bg2)', borderRadius: 8, padding: 3 }}>
-                            {(['monthly', 'annual'] as const).map(b => (
-                              <button key={b} onClick={() => setMonetbilBilling(b)}
-                                style={{ padding: '5px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, background: monetbilBilling === b ? 'var(--accent)' : 'transparent', color: monetbilBilling === b ? '#fff' : 'var(--text4)' }}>
-                                {b === 'monthly' ? 'Mensuel' : 'Annuel −20%'}
-                              </button>
-                            ))}
-                          </div>
-                          <button className="btn-primary"
-                            onClick={() => { if (monetbilPlan) setMonetbilPlan(monetbilPlan) }}
-                            style={{ flex: 1 }}>
-                            <CreditCard size={13} /> Payer via Mobile Money
-                          </button>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                          {p.features.map(f => (
+                            <span key={f} style={{ fontSize: 10, display: 'inline-flex', alignItems: 'center', gap: 3, color: 'var(--text3)' }}>
+                              <Check size={8} color={p.color} strokeWidth={3} /> {f}
+                            </span>
+                          ))}
                         </div>
-                      )}
-                    </div>
-                  )}
+                        <button
+                          className="btn-primary"
+                          onClick={e => { e.stopPropagation(); setMonetbilPlan(p.id) }}
+                          style={{ fontSize: 11, padding: '5px 12px' }}
+                        >
+                          <CreditCard size={11} /> Payer via Mobile Money
+                        </button>
+                      </div>
+                    ))}
+                  </div>
 
                   {/* Moyens de paiement */}
                   <div className="set-block">
                     <SectionHead>Moyens de paiement acceptés</SectionHead>
                     <div className="set-block-body">
                       <div className="set-grid-2">
-                        {[
-                          ['Orange Money', '🟠', 'CI, SN, ML, BF, CM'],
+                        {([
+                          ['Orange Money',     '🟠', 'CI, SN, ML, BF, CM'],
                           ['MTN Mobile Money', '🟡', 'CI, GH, UG, RW, CM'],
-                          ['Wave', '🔵', 'CI, SN, ML, BF'],
-                          ['Virement UEMOA', '🏦', 'Zone UEMOA / CEMAC'],
-                        ].map(([name, flag, desc]) => (
-                          <div key={name as string} className="set-pm">
+                          ['Wave',             '🔵', 'CI, SN, ML, BF'],
+                          ['Virement UEMOA',   '🏦', 'Zone UEMOA / CEMAC'],
+                        ] as [string, string, string][]).map(([name, flag, desc]) => (
+                          <div key={name} className="set-pm">
                             <span style={{ fontSize: 20 }}>{flag}</span>
                             <div>
                               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{name}</div>
@@ -591,7 +658,7 @@ useEffect(() => {
                           </div>
                         ))}
                       </div>
-                      <p style={{ fontSize: 11, color: 'var(--text4)', marginTop: 12 }}>
+                      <p style={{ fontSize: 11, color: 'var(--text4)', marginTop: 12, marginBottom: 0 }}>
                         Pour toute demande : <span style={{ fontFamily: 'monospace', color: 'var(--accent)' }}>billing@eetra.buyticle.com</span>
                       </p>
                     </div>
@@ -606,14 +673,14 @@ useEffect(() => {
 
       <Toast {...toast} />
 
-      {/* Monetbil payment modal */}
       {monetbilPlan && (
         <MonetbilModal
           planId={monetbilPlan}
           billing={monetbilBilling}
           onClose={() => setMonetbilPlan(null)}
-          onSuccess={() => {
-            refreshPlan()
+          onSuccess={async () => {
+            await refreshPlan()
+            setMonetbilPlan(null)
             showToast('Plan activé !', 'ok')
           }}
         />

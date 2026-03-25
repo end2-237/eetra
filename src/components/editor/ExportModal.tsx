@@ -83,43 +83,58 @@ export function ExportModal({ onClose }: Props) {
 
         const outerEl = document.getElementById(pageIds[i])
         if (!outerEl) continue
-        const innerEl = outerEl.firstElementChild as HTMLElement
-        if (!innerEl) continue
 
-        const savedTransform     = innerEl.style.transform
-        const savedMarginBottom  = innerEl.style.marginBottom
-        const savedOuterWidth    = outerEl.style.width
-        const savedOuterHeight   = outerEl.style.height
-        const savedOuterOverflow = outerEl.style.overflow
-        const savedOuterBorderRadius = outerEl.style.borderRadius
+        // ── FIX: trouver l'élément A4 réel (794×1123) ──────────────────────
+        // Pour la cover, #eetra-page-cover EST le wrapper outer, et son
+        // premier enfant DIV est le div zoomé. On cherche #eetra-cover-static
+        // qui est toujours rendu à PAGE_W × PAGE_H dans le DOM.
+        // Pour les pages de contenu, outerEl contient un div zoomé en first child.
 
-        outerEl.style.width        = `${PAGE_W}px`
-        outerEl.style.height       = `${PAGE_H}px`
-        outerEl.style.overflow     = 'visible'
-        outerEl.style.borderRadius = '0'
-        innerEl.style.transform    = 'none'
-        innerEl.style.marginBottom = '0'
+        let captureEl: HTMLElement
+        const staticCover = outerEl.querySelector('#eetra-cover-static') as HTMLElement | null
+
+        if (staticCover) {
+          // Cover page — capturer directement le div A4 non-zoomé
+          captureEl = staticCover
+        } else {
+          // Content pages — le premier enfant est le div zoomé via CSS transform
+          const innerEl = outerEl.firstElementChild as HTMLElement
+          captureEl = innerEl || outerEl
+        }
+
+        // Sauvegarder et neutraliser le transform CSS pour le rendu
+        const savedTransform = captureEl.style.transform
+        const savedMarginBottom = captureEl.style.marginBottom
+        const savedWidth = captureEl.style.width
+        const savedHeight = captureEl.style.height
+
+        captureEl.style.transform = 'none'
+        captureEl.style.marginBottom = '0'
+        // S'assurer que les dimensions sont bien A4
+        captureEl.style.width = `${PAGE_W}px`
+        captureEl.style.height = `${PAGE_H}px`
 
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
 
-        const canvas = await html2canvas(innerEl, {
+        const canvas = await html2canvas(captureEl, {
           scale,
-          useCORS:         true,
-          allowTaint:      true,
+          useCORS: true,
+          allowTaint: true,
           backgroundColor: '#ffffff',
-          width:           PAGE_W,
-          height:          PAGE_H,
-          windowWidth:     PAGE_W,
-          windowHeight:    PAGE_H,
-          logging:         false,
+          width: PAGE_W,
+          height: PAGE_H,
+          windowWidth: PAGE_W,
+          windowHeight: PAGE_H,
+          logging: false,
+          // Ignorer les éléments pdf-hidden
+          ignoreElements: (el) => el.classList?.contains('pdf-hidden'),
         })
 
-        outerEl.style.width        = savedOuterWidth
-        outerEl.style.height       = savedOuterHeight
-        outerEl.style.overflow     = savedOuterOverflow
-        outerEl.style.borderRadius = savedOuterBorderRadius
-        innerEl.style.transform    = savedTransform
-        innerEl.style.marginBottom = savedMarginBottom
+        // Restaurer les styles
+        captureEl.style.transform = savedTransform
+        captureEl.style.marginBottom = savedMarginBottom
+        captureEl.style.width = savedWidth
+        captureEl.style.height = savedHeight
 
         if (i > 0) pdf.addPage()
 
@@ -229,212 +244,73 @@ export function ExportModal({ onClose }: Props) {
       for (const [pi, page] of pages.entries()) {
         for (const block of page.blocks) {
           switch (block.type) {
-
-            // ── New heading blocks ─────────────────────────────────────────────
             case 'h1':
-              docChildren.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_1,
-                  children: [new TextRun({ text: block.content || '', bold: true, size: 44, font: FONT })],
-                  spacing: { before: 360, after: 120 },
-                }),
-              )
+              docChildren.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: block.content || '', bold: true, size: 44, font: FONT })], spacing: { before: 360, after: 120 } }))
               break
-
             case 'h2':
-              docChildren.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_2,
-                  children: [new TextRun({ text: block.content || '', bold: true, size: 36, font: FONT })],
-                  spacing: { before: 300, after: 100 },
-                }),
-              )
+              docChildren.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: block.content || '', bold: true, size: 36, font: FONT })], spacing: { before: 300, after: 100 } }))
               break
-
             case 'h3':
-              docChildren.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_3,
-                  children: [new TextRun({ text: block.content || '', bold: true, size: 28, font: FONT })],
-                  spacing: { before: 240, after: 80 },
-                }),
-              )
+              docChildren.push(new Paragraph({ heading: HeadingLevel.HEADING_3, children: [new TextRun({ text: block.content || '', bold: true, size: 28, font: FONT })], spacing: { before: 240, after: 80 } }))
               break
-
             case 'h4':
-              docChildren.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_4,
-                  children: [new TextRun({ text: block.content || '', bold: true, italics: true, size: 24, font: FONT })],
-                  spacing: { before: 200, after: 60 },
-                }),
-              )
+              docChildren.push(new Paragraph({ heading: HeadingLevel.HEADING_4, children: [new TextRun({ text: block.content || '', bold: true, italics: true, size: 24, font: FONT })], spacing: { before: 200, after: 60 } }))
               break
-
-            // ── Lists ───────────────────────────────────────────────────────────
             case 'bullet-list':
               for (const item of (block.content || '').split('\n').filter(Boolean)) {
-                docChildren.push(
-                  new Paragraph({
-                    numbering: { reference: 'eetra-bullets', level: 0 },
-                    children: [new TextRun({ text: item, size: 22, font: FONT })],
-                  }),
-                )
+                docChildren.push(new Paragraph({ numbering: { reference: 'eetra-bullets', level: 0 }, children: [new TextRun({ text: item, size: 22, font: FONT })] }))
               }
               break
-
             case 'numbered-list':
               for (const item of (block.content || '').split('\n').filter(Boolean)) {
-                docChildren.push(
-                  new Paragraph({
-                    numbering: { reference: 'eetra-numbers', level: 0 },
-                    children: [new TextRun({ text: item, size: 22, font: FONT })],
-                  }),
-                )
+                docChildren.push(new Paragraph({ numbering: { reference: 'eetra-numbers', level: 0 }, children: [new TextRun({ text: item, size: 22, font: FONT })] }))
               }
               break
-
-            // ── Existing blocks ─────────────────────────────────────────────────
             case 'section':
-              docChildren.push(
-                new Paragraph({
-                  heading: HeadingLevel.HEADING_1,
-                  children: [new TextRun({ text: block.content || '', bold: true, allCaps: true, color: accentHex, size: 24, font: FONT })],
-                  spacing: { before: 400, after: 120 },
-                  border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } },
-                }),
-              )
+              docChildren.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: block.content || '', bold: true, allCaps: true, color: accentHex, size: 24, font: FONT })], spacing: { before: 400, after: 120 }, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } } }))
               break
-
             case 'text':
-              docChildren.push(
-                new Paragraph({
-                  children: [new TextRun({ text: block.content || '', size: 22, font: FONT })],
-                  alignment: AlignmentType.JUSTIFIED,
-                  spacing: { before: 80, after: 80 },
-                }),
-              )
+              docChildren.push(new Paragraph({ children: [new TextRun({ text: block.content || '', size: 22, font: FONT })], alignment: AlignmentType.JUSTIFIED, spacing: { before: 80, after: 80 } }))
               break
-
             case 'quote':
-              docChildren.push(
-                new Paragraph({
-                  children: [new TextRun({ text: block.content || '', italics: true, size: 26, color: '444444', font: FONT })],
-                  indent: { left: 600 },
-                  spacing: { before: 200, after: 200 },
-                  border: { left: { style: BorderStyle.THICK, size: 12, color: accentHex, space: 12 } },
-                }),
-              )
+              docChildren.push(new Paragraph({ children: [new TextRun({ text: block.content || '', italics: true, size: 26, color: '444444', font: FONT })], indent: { left: 600 }, spacing: { before: 200, after: 200 }, border: { left: { style: BorderStyle.THICK, size: 12, color: accentHex, space: 12 } } }))
               break
-
             case 'table':
               if (block.tableData) {
                 const { headers, rows } = block.tableData
-                docChildren.push(
-                  new Table({
-                    width: { size: 100, type: WidthType.PERCENTAGE },
-                    layout: TableLayoutType.FIXED,
-                    rows: [
-                      new TableRow({
-                        tableHeader: true,
-                        children: headers.map(h =>
-                          new TableCell({
-                            shading: { type: ShadingType.SOLID, fill: accentHex },
-                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, color: 'FFFFFF', size: 18, allCaps: true, font: FONT })] })],
-                          }),
-                        ),
-                      }),
-                      ...rows.map((row, ri) =>
-                        new TableRow({
-                          children: row.map(cell =>
-                            new TableCell({
-                              shading: ri % 2 === 1 ? { type: ShadingType.SOLID, fill: 'F5F7FA' } : undefined,
-                              children: [new Paragraph({ children: [new TextRun({ text: cell, size: 18, font: FONT })] })],
-                            }),
-                          ),
-                        }),
-                      ),
-                    ],
-                  }),
-                )
+                docChildren.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, layout: TableLayoutType.FIXED, rows: [
+                  new TableRow({ tableHeader: true, children: headers.map(h => new TableCell({ shading: { type: ShadingType.SOLID, fill: accentHex }, children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, color: 'FFFFFF', size: 18, allCaps: true, font: FONT })] })] })) }),
+                  ...rows.map((row, ri) => new TableRow({ children: row.map(cell => new TableCell({ shading: ri % 2 === 1 ? { type: ShadingType.SOLID, fill: 'F5F7FA' } : undefined, children: [new Paragraph({ children: [new TextRun({ text: cell, size: 18, font: FONT })] })] })) })),
+                ] }))
               }
               break
-
             case 'clause': {
               const lines = (block.content || '').split('\n')
-              if (lines[0]) {
-                docChildren.push(
-                  new Paragraph({
-                    heading: HeadingLevel.HEADING_2,
-                    children: [new TextRun({ text: lines[0], bold: true, size: 20, color: accentHex, font: FONT })],
-                    spacing: { before: 240, after: 80 },
-                  }),
-                )
-              }
+              if (lines[0]) docChildren.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: lines[0], bold: true, size: 20, color: accentHex, font: FONT })], spacing: { before: 240, after: 80 } }))
               const body = lines.slice(1).join('\n').trim()
-              if (body) {
-                docChildren.push(
-                  new Paragraph({
-                    children: [new TextRun({ text: body, size: 18, italics: true, font: FONT })],
-                    alignment: AlignmentType.JUSTIFIED,
-                    spacing: { before: 60, after: 120 },
-                    shading: { type: ShadingType.SOLID, fill: 'FAFAFA' },
-                  }),
-                )
-              }
+              if (body) docChildren.push(new Paragraph({ children: [new TextRun({ text: body, size: 18, italics: true, font: FONT })], alignment: AlignmentType.JUSTIFIED, spacing: { before: 60, after: 120 }, shading: { type: ShadingType.SOLID, fill: 'FAFAFA' } }))
               break
             }
-
             case 'checklist':
               for (const item of (block.content || '').split('\n').filter(Boolean)) {
-                docChildren.push(
-                  new Paragraph({
-                    children: [new TextRun({ text: `☐  ${item}`, size: 20, font: FONT })],
-                    indent: { left: 360 },
-                    spacing: { before: 40, after: 40 },
-                  }),
-                )
+                docChildren.push(new Paragraph({ children: [new TextRun({ text: `☐  ${item}`, size: 20, font: FONT })], indent: { left: 360 }, spacing: { before: 40, after: 40 } }))
               }
               break
-
             case 'sign':
               docChildren.push(
                 new Paragraph({ text: '', spacing: { before: 480 } }),
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: 'Signature Émetteur', bold: true, size: 18, font: FONT }),
-                    new TextRun({ text: '\t\t\t\t\t', size: 18 }),
-                    new TextRun({ text: 'Signature Destinataire', bold: true, size: 18, font: FONT }),
-                  ],
-                }),
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: '_______________________', size: 18, color: 'BBBBBB' }),
-                    new TextRun({ text: '\t\t\t\t\t', size: 18 }),
-                    new TextRun({ text: '_______________________', size: 18, color: 'BBBBBB' }),
-                  ],
-                  spacing: { before: 600 },
-                }),
+                new Paragraph({ children: [new TextRun({ text: 'Signature Émetteur', bold: true, size: 18, font: FONT }), new TextRun({ text: '\t\t\t\t\t', size: 18 }), new TextRun({ text: 'Signature Destinataire', bold: true, size: 18, font: FONT })] }),
+                new Paragraph({ children: [new TextRun({ text: '_______________________', size: 18, color: 'BBBBBB' }), new TextRun({ text: '\t\t\t\t\t', size: 18 }), new TextRun({ text: '_______________________', size: 18, color: 'BBBBBB' })], spacing: { before: 600 } }),
               )
               break
-
             case 'divider':
-              docChildren.push(
-                new Paragraph({
-                  children: [],
-                  border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: 'E8E8E8', space: 4 } },
-                  spacing: { before: 120, after: 120 },
-                }),
-              )
+              docChildren.push(new Paragraph({ children: [], border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: 'E8E8E8', space: 4 } }, spacing: { before: 120, after: 120 } }))
               break
-
             default:
               break
           }
         }
-        if (pi < pages.length - 1) {
-          docChildren.push(new Paragraph({ pageBreakBefore: true }))
-        }
+        if (pi < pages.length - 1) docChildren.push(new Paragraph({ pageBreakBefore: true }))
       }
 
       setProgress(75)
@@ -444,98 +320,25 @@ export function ExportModal({ onClose }: Props) {
         creator: 'EETRA Platform',
         title: title || 'Document',
         description: subtitle || '',
-        // ── Styles with Times New Roman everywhere ─────────────────────────────
         styles: {
-          default: {
-            document: { run: { font: FONT, size: 22 } },
-          },
+          default: { document: { run: { font: FONT, size: 22 } } },
           paragraphStyles: [
-            {
-              id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-              run: { size: 44, bold: true, font: FONT, color: '000000' },
-              paragraph: { spacing: { before: 360, after: 120 }, outlineLevel: 0 },
-            },
-            {
-              id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-              run: { size: 36, bold: true, font: FONT, color: '000000' },
-              paragraph: { spacing: { before: 300, after: 100 }, outlineLevel: 1 },
-            },
-            {
-              id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-              run: { size: 28, bold: true, font: FONT, color: '000000' },
-              paragraph: { spacing: { before: 240, after: 80 }, outlineLevel: 2 },
-            },
-            {
-              id: 'Heading4', name: 'Heading 4', basedOn: 'Normal', next: 'Normal', quickFormat: true,
-              run: { size: 24, bold: true, italics: true, font: FONT, color: '000000' },
-              paragraph: { spacing: { before: 200, after: 60 }, outlineLevel: 3 },
-            },
+            { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 44, bold: true, font: FONT, color: '000000' }, paragraph: { spacing: { before: 360, after: 120 }, outlineLevel: 0 } },
+            { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 36, bold: true, font: FONT, color: '000000' }, paragraph: { spacing: { before: 300, after: 100 }, outlineLevel: 1 } },
+            { id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 28, bold: true, font: FONT, color: '000000' }, paragraph: { spacing: { before: 240, after: 80 }, outlineLevel: 2 } },
+            { id: 'Heading4', name: 'Heading 4', basedOn: 'Normal', next: 'Normal', quickFormat: true, run: { size: 24, bold: true, italics: true, font: FONT, color: '000000' }, paragraph: { spacing: { before: 200, after: 60 }, outlineLevel: 3 } },
           ],
         },
-        // ── Numbering config for lists ─────────────────────────────────────────
         numbering: {
           config: [
-            {
-              reference: 'eetra-bullets',
-              levels: [{
-                level: 0,
-                format: LevelFormat.BULLET,
-                text: '•',
-                alignment: AlignmentType.LEFT,
-                style: {
-                  run: { font: FONT, size: 22 },
-                  paragraph: { indent: { left: 720, hanging: 360 }, spacing: { after: 60 } },
-                },
-              }],
-            },
-            {
-              reference: 'eetra-numbers',
-              levels: [{
-                level: 0,
-                format: LevelFormat.DECIMAL,
-                text: '%1.',
-                alignment: AlignmentType.LEFT,
-                style: {
-                  run: { font: FONT, size: 22 },
-                  paragraph: { indent: { left: 720, hanging: 360 }, spacing: { after: 60 } },
-                },
-              }],
-            },
+            { reference: 'eetra-bullets', levels: [{ level: 0, format: LevelFormat.BULLET, text: '•', alignment: AlignmentType.LEFT, style: { run: { font: FONT, size: 22 }, paragraph: { indent: { left: 720, hanging: 360 }, spacing: { after: 60 } } } }] },
+            { reference: 'eetra-numbers', levels: [{ level: 0, format: LevelFormat.DECIMAL, text: '%1.', alignment: AlignmentType.LEFT, style: { run: { font: FONT, size: 22 }, paragraph: { indent: { left: 720, hanging: 360 }, spacing: { after: 60 } } } }] },
           ],
         },
         sections: [{
-          properties: {
-            page: {
-              size: { orientation: PageOrientation.PORTRAIT, width: 12240, height: 15840 },
-              margin: { top: 1080, bottom: 900, left: 1080, right: 1080 },
-            },
-          },
-          headers: {
-            default: new Header({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: profile.name || 'EETRA', bold: true, size: 16, color: accentHex, font: FONT }),
-                    new TextRun({ text: '  ·  ' + (title || ''), size: 16, color: '888888', font: FONT }),
-                  ],
-                  border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: 'EEEEEE', space: 6 } },
-                }),
-              ],
-            }),
-          },
-          footers: {
-            default: new Footer({
-              children: [
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: 'Généré par EETRA  ·  ' + docId + '  ·  Page ', size: 14, color: 'CCCCCC', font: FONT }),
-                    new TextRun({ children: [PageNumber.CURRENT], size: 14, color: '888888', font: FONT }),
-                  ],
-                  border: { top: { style: BorderStyle.SINGLE, size: 3, color: 'EEEEEE', space: 6 } },
-                }),
-              ],
-            }),
-          },
+          properties: { page: { size: { orientation: PageOrientation.PORTRAIT, width: 12240, height: 15840 }, margin: { top: 1080, bottom: 900, left: 1080, right: 1080 } } },
+          headers: { default: new Header({ children: [new Paragraph({ children: [new TextRun({ text: profile.name || 'EETRA', bold: true, size: 16, color: accentHex, font: FONT }), new TextRun({ text: '  ·  ' + (title || ''), size: 16, color: '888888', font: FONT })], border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: 'EEEEEE', space: 6 } } })] }) },
+          footers: { default: new Footer({ children: [new Paragraph({ children: [new TextRun({ text: 'Généré par EETRA  ·  ' + docId + '  ·  Page ', size: 14, color: 'CCCCCC', font: FONT }), new TextRun({ children: [PageNumber.CURRENT], size: 14, color: '888888', font: FONT })], border: { top: { style: BorderStyle.SINGLE, size: 3, color: 'EEEEEE', space: 6 } } })] }) },
           children: docChildren,
         }],
       })
@@ -568,18 +371,10 @@ export function ExportModal({ onClose }: Props) {
 
   return (
     <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9000,
-        background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
-      }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div style={{
-        width: '100%', maxWidth: 480, background: 'var(--surface)',
-        borderRadius: 20, border: '1px solid var(--border)',
-        overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.25)',
-      }}>
+      <div style={{ width: '100%', maxWidth: 480, background: 'var(--surface)', borderRadius: 20, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 24px 80px rgba(0,0,0,.25)' }}>
 
         {/* Header */}
         <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -602,7 +397,6 @@ export function ExportModal({ onClose }: Props) {
           {/* OPTIONS */}
           {step === 'options' && (
             <>
-              {/* Doc summary */}
               <div style={{ padding: '12px 16px', borderRadius: 12, background: 'var(--bg2)', border: '1px solid var(--border)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
                 <FileText size={16} color="var(--accent)" />
                 <div>
@@ -611,22 +405,14 @@ export function ExportModal({ onClose }: Props) {
                 </div>
               </div>
 
-              {/* Format selector */}
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 10 }}>
-                  Format d'export
-                </div>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 10 }}>Format d'export</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {([
                     { id: 'pdf' as const, label: 'PDF', desc: 'Impression · Mise en page exacte', badge: 'Recommandé', icon: '📄' },
                     { id: 'word' as const, label: 'Word .docx', desc: 'Éditable · Times New Roman', badge: null, icon: '📝' },
                   ]).map(opt => (
-                    <div key={opt.id} onClick={() => setFormat(opt.id)} style={{
-                      padding: '14px', borderRadius: 12, cursor: 'pointer',
-                      border: `2px solid ${format === opt.id ? 'var(--accent)' : 'var(--border)'}`,
-                      background: format === opt.id ? 'var(--accentS)' : 'var(--bg2)',
-                      transition: 'all .12s',
-                    }}>
+                    <div key={opt.id} onClick={() => setFormat(opt.id)} style={{ padding: '14px', borderRadius: 12, cursor: 'pointer', border: `2px solid ${format === opt.id ? 'var(--accent)' : 'var(--border)'}`, background: format === opt.id ? 'var(--accentS)' : 'var(--bg2)', transition: 'all .12s' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                         <span style={{ fontSize: 16 }}>{opt.icon}</span>
                         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{opt.label}</span>
@@ -638,7 +424,6 @@ export function ExportModal({ onClose }: Props) {
                 </div>
               </div>
 
-              {/* Quality (PDF only) */}
               {format === 'pdf' && (
                 <div style={{ marginBottom: 18 }}>
                   <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 10 }}>Qualité d'image</div>
@@ -647,12 +432,7 @@ export function ExportModal({ onClose }: Props) {
                       { id: 'standard', label: 'Standard', desc: '~2–3 MB · Partage rapide' },
                       { id: 'high', label: 'Haute qualité', desc: '~5–8 MB · Impression' },
                     ].map(opt => (
-                      <div key={opt.id} onClick={() => setQuality(opt.id as typeof quality)} style={{
-                        padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
-                        border: `1.5px solid ${quality === opt.id ? 'var(--accent)' : 'var(--border)'}`,
-                        background: quality === opt.id ? 'var(--accentS)' : 'transparent',
-                        transition: 'all .12s',
-                      }}>
+                      <div key={opt.id} onClick={() => setQuality(opt.id as typeof quality)} style={{ padding: '10px 12px', borderRadius: 10, cursor: 'pointer', border: `1.5px solid ${quality === opt.id ? 'var(--accent)' : 'var(--border)'}`, background: quality === opt.id ? 'var(--accentS)' : 'transparent', transition: 'all .12s' }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{opt.label}</div>
                         <div style={{ fontSize: 10, color: 'var(--text4)' }}>{opt.desc}</div>
                       </div>

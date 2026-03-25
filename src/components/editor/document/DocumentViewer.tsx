@@ -28,8 +28,8 @@ export function DocumentViewer({ onExport }: Props) {
   const { profile } = useProfile()
   const viewerRef = useRef<HTMLDivElement>(null)
 
-  const handleZoomIn  = () => setZoom(Math.min(zoom + 0.1, 1.5))
-  const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.35))
+  const handleZoomIn  = () => setZoom(Math.min(zoom + 0.1, 1.0))   // MAX 100%
+const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.35))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>

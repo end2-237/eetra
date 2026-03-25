@@ -8,7 +8,7 @@ import {
   ArrowLeft, Save, Plus, Trash2, GripVertical,
   Palette, Layout, Type, Layers, Settings, ChevronDown, ChevronUp,
   Check, X, Sparkles, PenTool, Globe, Lock, Eye, EyeOff,
-  Loader2,
+  Loader2, ZoomIn, ZoomOut, Undo2, Redo2,
 } from 'lucide-react'
 import { useCustomTemplates, type CoverLayout, type CoverStyle, DEFAULT_COVER_STYLE } from '@/contexts/CustomTemplateContext'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -45,6 +45,8 @@ const COVER_LAYOUTS: { id: CoverLayout; label: string; desc: string; preview: Re
 
 const TEMPLATE_CATEGORIES = ['Stratégie', 'Finance', 'Juridique', 'Commercial', 'Interne', 'Gouvernance', 'Ressources Humaines', 'Autre']
 const EMOJI_OPTIONS = ['📊', '📄', '🔍', '📝', '✍️', '💰', '📋', '📈', '🏛️', '⚡', '🎯', '🌟', '💼', '🔧', '📦', '🤝', '🚀', '🌱', '👥', '⚖️']
+
+const ZOOM_LEVELS = [0.40, 0.52, 0.62, 0.75, 0.90, 1.0]
 
 interface BlockItem {
   id: string; type: BlockType; label: string; icon: string; defaultContent?: string
@@ -137,9 +139,11 @@ function CoverBg({ layout, accent }: { layout: string; accent: string }) {
 function CoverEditorBridge({
   initialCoverStyle,
   onCoverStyleChange,
+  zoom,
 }: {
   initialCoverStyle: CoverStyle
   onCoverStyleChange: (cs: CoverStyle) => void
+  zoom: number
 }) {
   const { coverStyle, setCoverStyle } = useDocument()
   const pushedRef   = useRef(false)
@@ -164,8 +168,8 @@ function CoverEditorBridge({
   }, [coverStyle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <EditableCoverPage zoom={0.62} />
+    <div style={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 48px' }}>
+      <EditableCoverPage zoom={zoom} />
     </div>
   )
 }
@@ -210,9 +214,74 @@ function TemplateCreatorContent() {
   const [dragId, setDragId] = useState<string | null>(null)
   const [savedId, setSavedId] = useState<string | null>(editId)
 
-  // États de chargement
+  // Loading states
   const [saving,     setSaving]     = useState(false)
   const [publishing, setPublishing] = useState(false)
+
+  // ── Cover-editor zoom & undo/redo ──────────────────────────────────────────
+  const [coverEditorZoom, setCoverEditorZoom] = useState(0.62)
+  const coverHistoryRef  = useRef<CoverStyle[]>([])
+  const coverHistoryIdx  = useRef(-1)
+  const [coverCanUndo, setCoverCanUndo] = useState(false)
+  const [coverCanRedo, setCoverCanRedo] = useState(false)
+
+  const syncCoverFlags = () => {
+    setCoverCanUndo(coverHistoryIdx.current > 0)
+    setCoverCanRedo(coverHistoryIdx.current < coverHistoryRef.current.length - 1)
+  }
+
+  const pushCoverHistory = useCallback((cs: CoverStyle) => {
+    // trim any redo tail
+    if (coverHistoryIdx.current < coverHistoryRef.current.length - 1) {
+      coverHistoryRef.current = coverHistoryRef.current.slice(0, coverHistoryIdx.current + 1)
+    }
+    coverHistoryRef.current.push(cs)
+    if (coverHistoryRef.current.length > 40) coverHistoryRef.current.shift()
+    coverHistoryIdx.current = coverHistoryRef.current.length - 1
+    syncCoverFlags()
+  }, [])
+
+  const handleCoverStyleChange = useCallback((cs: CoverStyle) => {
+    pushCoverHistory(cs)
+    setCoverStyle(cs)
+    // keep simple-mode controls in sync
+    setSelectedLayout(cs.layout)
+    setAccentColor(cs.accentColor || '#1B4FD8')
+    setShowLogoOption(cs.showLogo)
+    setShowQrOption(cs.showQr)
+    setShowGridOption(cs.showGrid)
+    setTitleSize(cs.titleSize)
+  }, [pushCoverHistory])
+
+  const coverUndo = useCallback(() => {
+    if (coverHistoryIdx.current <= 0) return
+    coverHistoryIdx.current -= 1
+    const prev = coverHistoryRef.current[coverHistoryIdx.current]
+    setCoverStyle(prev)
+    syncCoverFlags()
+  }, [])
+
+  const coverRedo = useCallback(() => {
+    if (coverHistoryIdx.current >= coverHistoryRef.current.length - 1) return
+    coverHistoryIdx.current += 1
+    const next = coverHistoryRef.current[coverHistoryIdx.current]
+    setCoverStyle(next)
+    syncCoverFlags()
+  }, [])
+
+  const zoomIn  = () => setCoverEditorZoom(z => Math.min(1.0, parseFloat((z + 0.1).toFixed(2))))
+  const zoomOut = () => setCoverEditorZoom(z => Math.max(0.30, parseFloat((z - 0.1).toFixed(2))))
+
+  // ── Keyboard shortcuts for cover-editor ─────────────────────────────────────
+  useEffect(() => {
+    if (activeTab !== 'cover-editor') return
+    const kd = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); coverUndo() }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); coverRedo() }
+    }
+    document.addEventListener('keydown', kd)
+    return () => document.removeEventListener('keydown', kd)
+  }, [activeTab, coverUndo, coverRedo])
 
   const savedDraftRef = useRef<string | null>(null)
 
@@ -244,7 +313,7 @@ function TemplateCreatorContent() {
     }))
   }, [selectedLayout, accentColor, showLogoOption, showQrOption, showGridOption, titleSize, activeTab])
 
-  // Charger le template existant
+  // Load existing template
   useEffect(() => {
     const id = editId || fromId
     if (!id) return
@@ -628,21 +697,102 @@ function TemplateCreatorContent() {
           ))}
         </div>
 
-        {/* Cover-editor: full width */}
+        {/* ── Cover-editor: full width ── */}
         {activeTab === 'cover-editor' ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ height: 40, flexShrink: 0, borderBottom: '1px solid var(--border)', background: 'var(--surface)', display: 'flex', alignItems: 'center', padding: '0 16px', gap: 10 }}>
+            {/* Cover-editor toolbar */}
+            <div style={{
+              height: 44, flexShrink: 0,
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--surface)',
+              display: 'flex', alignItems: 'center',
+              padding: '0 16px', gap: 8,
+            }}>
               <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>Éditeur de couverture</span>
-              <span style={{ fontSize: 10, color: 'var(--text4)' }}>Formes, textes, images, effets — positionnez librement</span>
-              <button onClick={() => setActiveTab('cover')} style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 700, color: 'var(--text4)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer' }}>
+              <span style={{ fontSize: 10, color: 'var(--text4)' }}>Formes · textes · effets · calques</span>
+
+              {/* Spacer */}
+              <div style={{ flex: 1 }} />
+
+              {/* Undo / Redo */}
+              <button
+                onClick={coverUndo}
+                disabled={!coverCanUndo}
+                title="Annuler (Ctrl+Z)"
+                style={{
+                  width: 28, height: 28, borderRadius: 7,
+                  border: '1px solid var(--border)',
+                  background: 'transparent', cursor: coverCanUndo ? 'pointer' : 'not-allowed',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: coverCanUndo ? 'var(--text3)' : 'var(--border2)',
+                  opacity: coverCanUndo ? 1 : 0.4,
+                }}
+              >
+                <Undo2 size={13} />
+              </button>
+              <button
+                onClick={coverRedo}
+                disabled={!coverCanRedo}
+                title="Rétablir (Ctrl+Y)"
+                style={{
+                  width: 28, height: 28, borderRadius: 7,
+                  border: '1px solid var(--border)',
+                  background: 'transparent', cursor: coverCanRedo ? 'pointer' : 'not-allowed',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: coverCanRedo ? 'var(--text3)' : 'var(--border2)',
+                  opacity: coverCanRedo ? 1 : 0.4,
+                }}
+              >
+                <Redo2 size={13} />
+              </button>
+
+              <div style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 2px' }} />
+
+              {/* Zoom controls */}
+              <button
+                onClick={zoomOut}
+                title="Zoom arrière"
+                style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }}
+              >
+                <ZoomOut size={13} />
+              </button>
+
+              {/* Zoom level selector */}
+              <select
+                value={coverEditorZoom}
+                onChange={e => setCoverEditorZoom(parseFloat(e.target.value))}
+                style={{ height: 28, padding: '0 6px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg2)', fontSize: 11, fontWeight: 700, fontFamily: 'monospace', color: 'var(--text)', cursor: 'pointer', outline: 'none' }}
+              >
+                {ZOOM_LEVELS.map(z => (
+                  <option key={z} value={z}>{Math.round(z * 100)}%</option>
+                ))}
+              </select>
+
+              <button
+                onClick={zoomIn}
+                title="Zoom avant"
+                style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }}
+              >
+                <ZoomIn size={13} />
+              </button>
+
+              <div style={{ width: 1, height: 18, background: 'var(--border)', margin: '0 2px' }} />
+
+              <button
+                onClick={() => setActiveTab('cover')}
+                style={{ fontSize: 10, fontWeight: 700, color: 'var(--text4)', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', cursor: 'pointer' }}
+              >
                 ← Mode simple
               </button>
             </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
+
+            {/* Cover editor canvas — scrollable */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
               <DocumentProvider>
                 <CoverEditorBridge
                   initialCoverStyle={coverStyle}
-                  onCoverStyleChange={(newCs) => setCoverStyle(newCs)}
+                  onCoverStyleChange={handleCoverStyleChange}
+                  zoom={coverEditorZoom}
                 />
               </DocumentProvider>
             </div>
@@ -823,7 +973,6 @@ function TemplateCreatorContent() {
                         {(coverStyle.coverBlocks?.length || 0) > 0 && (
                           <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(124,58,237,.1)', color: '#7C3AED' }}>{coverStyle.coverBlocks!.length} éléments</span>
                         )}
-                        {/* Indicateur BD */}
                         {(savedId || editId) && (
                           <span style={{ fontSize: 9, padding: '1px 5px', borderRadius: 3, background: 'rgba(5,150,105,.1)', color: '#059669' }}>✓ sauvegardé</span>
                         )}
@@ -839,7 +988,7 @@ function TemplateCreatorContent() {
                 {blocks.length === 0 ? (
                   <div className="text-center py-16 rounded-2xl border-2 border-dashed" style={{ borderColor: 'var(--border2)' }}>
                     <Layers size={32} style={{ color: 'var(--text4)', margin: '0 auto 12px' }} />
-                    <p className="text-[13px]" style={{ color: 'var(--text4)' }}>Ajoutez des blocs depuis le panneau gauche</p>
+                    <p className="text-[13px]" style={{ color: 'var(--text4)' }}>Ajoutez des blocs depuis le panneau de gauche</p>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">

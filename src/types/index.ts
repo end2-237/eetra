@@ -1,24 +1,35 @@
-export interface CompanyProfile {
-  name: string; sector: string; legal: string; color: string
-  address: string; city: string; email: string; web: string
-  siret: string; capital: string; tagline: string; signer: string
-  logoDataUrl: string | null; watermark: boolean
-}
-
+// ─── Block Types ──────────────────────────────────────────────────────────────
 export type BlockType =
-  | 'section' | 'text' | 'quote' | 'table' | 'kpi'
-  | 'clause' | 'sign' | 'divider' | 'image' | 'checklist'
+  | 'section'
+  | 'text'
+  | 'quote'
+  | 'table'
+  | 'kpi'
+  | 'clause'
+  | 'checklist'
+  | 'image'
   | 'chart'
+  | 'sign'
+  | 'divider'
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'bullet-list'
+  | 'numbered-list'
 
-export interface TableData { headers: string[]; rows: string[][] }
+export interface TableData {
+  headers: string[]
+  rows: string[][]
+}
 
 export interface ChartBlockData {
   type: 'bar' | 'line' | 'pie' | 'donut'
-  title: string
   data: {
     labels: string[]
     datasets: { label: string; data: number[]; color?: string }[]
   }
+  title: string
 }
 
 export interface ImageBlockData {
@@ -37,67 +48,75 @@ export interface DocBlock {
   imageData?: ImageBlockData
 }
 
-export interface DocPage { id: string; blocks: DocBlock[] }
+export interface DocPage {
+  id: string
+  blocks: DocBlock[]
+}
 
 export interface Comment {
-  id: string; text: string; author: string; createdAt: Date
-  resolved: boolean; replies: CommentReply[]
+  id: string
+  text: string
+  author: string
+  createdAt: Date
+  resolved: boolean
+  replies: CommentReply[]
 }
+
 export interface CommentReply {
-  id: string; text: string; author: string; createdAt: Date
-}
-
-export interface Template {
-  id: string; icon: string; name: string; desc: string; tags: string[]
-  blocks: Array<{ type: BlockType; content?: string; tableData?: TableData }>
-}
-
-export type TabName = 'editor' | 'templates' | 'analytics' | 'comments' | 'layout'
-
-export interface DocumentStyle {
-  fontTitle: string; fontBody: string; fontMono: string
-  accentColor: string; preset: 'classic' | 'modern' | 'editorial' | 'minimal'
-}
-
-export const FONT_TITLE_OPTIONS = [
-  { value: 'Bricolage Grotesque', label: 'Bricolage Grotesque', preview: 'Aa' },
-  { value: 'Playfair Display', label: 'Playfair Display', preview: 'Aa' },
-  { value: 'DM Serif Display', label: 'DM Serif Display', preview: 'Aa' },
-  { value: 'Syne', label: 'Syne', preview: 'Aa' },
-  { value: 'Space Grotesk', label: 'Space Grotesk', preview: 'Aa' },
-  { value: 'Cormorant Garamond', label: 'Cormorant Garamond', preview: 'Aa' },
-]
-export const FONT_BODY_OPTIONS = [
-  { value: 'Bricolage Grotesque', label: 'Bricolage Grotesque', preview: 'Lorem ipsum' },
-  { value: 'Libre Caslon Text', label: 'Libre Caslon', preview: 'Lorem ipsum' },
-  { value: 'Source Serif 4', label: 'Source Serif 4', preview: 'Lorem ipsum' },
-  { value: 'DM Sans', label: 'DM Sans', preview: 'Lorem ipsum' },
-  { value: 'Lato', label: 'Lato', preview: 'Lorem ipsum' },
-]
-export const FONT_MONO_OPTIONS = [
-  { value: 'DM Mono', label: 'DM Mono' },
-  { value: 'Fira Code', label: 'Fira Code' },
-  { value: 'IBM Plex Mono', label: 'IBM Plex Mono' },
-  { value: 'JetBrains Mono', label: 'JetBrains Mono' },
-]
-export const STYLE_PRESETS: Record<string, DocumentStyle> = {
-  classic: { fontTitle: 'Bricolage Grotesque', fontBody: 'Libre Caslon Text', fontMono: 'DM Mono', accentColor: '#1B4FD8', preset: 'classic' },
-  modern: { fontTitle: 'Space Grotesk', fontBody: 'DM Sans', fontMono: 'Fira Code', accentColor: '#0F172A', preset: 'modern' },
-  editorial: { fontTitle: 'Playfair Display', fontBody: 'Source Serif 4', fontMono: 'IBM Plex Mono', accentColor: '#4A1D96', preset: 'editorial' },
-  minimal: { fontTitle: 'Syne', fontBody: 'DM Sans', fontMono: 'JetBrains Mono', accentColor: '#374151', preset: 'minimal' },
+  id: string
+  text: string
+  author: string
+  createdAt: Date
 }
 
 export interface HistoryEntry {
-  id: string; docId: string; title: string; entityName: string; type: string
-  pageCount: number; blockCount: number; exportedAt: Date; signature: string; qrData: string
-}
-export interface TeamMember {
-  id: string; name: string; email: string
-  role: 'admin' | 'editor' | 'viewer'; addedAt: Date; avatar: string
+  id: string
+  docId: string
+  title: string
+  entityName: string
+  type: string
+  pageCount: number
+  blockCount: number
+  signature: string
+  qrData: string
+  exportedAt: Date
 }
 
-// ─── ADD THESE TO YOUR EXISTING src/types/index.ts ───────────────────────────
-// Add after the existing exports, before the closing of the file.
+export interface CompanyProfile {
+  name: string
+  sector: string
+  legal: string
+  color: string
+  address: string
+  city: string
+  email: string
+  web: string
+  siret: string
+  capital: string
+  tagline: string
+  signer: string
+  logoDataUrl: string | null
+  logoUrl?: string
+  watermark: boolean
+}
+
+export type TabName = 'editor' | 'templates' | 'layout' | 'analytics' | 'comments'
+
+export interface TeamMember {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'editor' | 'viewer'
+  addedAt: Date
+  avatar: string
+}
+
+export interface DocumentStyle {
+  preset: string
+  fontTitle: string
+  fontBody: string
+  accentColor: string
+}
 
 export interface HeaderConfig {
   show: boolean
@@ -126,9 +145,9 @@ export interface WatermarkConfig {
   show: boolean
   text: string
   preset: 'confidential' | 'draft' | 'sample' | 'custom'
-  opacity: number      // 0–100
-  fontSize: number     // 40–120
-  angle: number        // -75 to 0
+  opacity: number
+  fontSize: number
+  angle: number
   color: string
 }
 
@@ -146,5 +165,51 @@ export interface PageLayoutConfig {
   hierarchy: HierarchyConfig
 }
 
-// Also extend TabName to include 'layout':
-// export type TabName = 'editor' | 'templates' | 'analytics' | 'comments' | 'layout'
+export const FONT_TITLE_OPTIONS = [
+  { value: 'Bricolage Grotesque', label: 'Bricolage', preview: 'Titre moderne' },
+  { value: 'Playfair Display',    label: 'Playfair',  preview: 'Titre élégant' },
+  { value: 'DM Serif Display',    label: 'DM Serif',  preview: 'Titre éditorial' },
+  { value: 'Syne',                label: 'Syne',      preview: 'Titre design' },
+  { value: 'Times New Roman',     label: 'Times NR',  preview: 'Titre classique' },
+]
+
+export const FONT_BODY_OPTIONS = [
+  { value: 'Bricolage Grotesque', label: 'Bricolage', preview: 'Texte courant lisible' },
+  { value: 'DM Sans',             label: 'DM Sans',   preview: 'Texte moderne épuré' },
+  { value: 'Lora',                label: 'Lora',      preview: 'Texte serif doux' },
+  { value: 'Source Serif 4',      label: 'Source S.', preview: 'Texte document pro' },
+  { value: 'Times New Roman',     label: 'Times NR',  preview: 'Texte classique Word' },
+]
+
+export const FONT_MONO_OPTIONS = [
+  { value: 'DM Mono',     label: 'DM Mono' },
+  { value: 'Fira Code',   label: 'Fira Code' },
+  { value: 'Roboto Mono', label: 'Roboto Mono' },
+]
+
+export const STYLE_PRESETS: Record<string, DocumentStyle> = {
+  classic: {
+    preset: 'classic',
+    fontTitle: 'Times New Roman',
+    fontBody: 'Times New Roman',
+    accentColor: '#1B4FD8',
+  },
+  modern: {
+    preset: 'modern',
+    fontTitle: 'Bricolage Grotesque',
+    fontBody: 'DM Sans',
+    accentColor: '#1B4FD8',
+  },
+  editorial: {
+    preset: 'editorial',
+    fontTitle: 'Playfair Display',
+    fontBody: 'Lora',
+    accentColor: '#1B4FD8',
+  },
+  minimal: {
+    preset: 'minimal',
+    fontTitle: 'Syne',
+    fontBody: 'DM Sans',
+    accentColor: '#1B4FD8',
+  },
+}

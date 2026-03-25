@@ -18,6 +18,9 @@ interface Props {
   onUpdateChart?: (blockId: string, chartData: ChartBlockData) => void
   onUpdateImage?: (blockId: string, imageData: ImageBlockData) => void
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>
+  /** Whether to force Times New Roman on all text (set via docStyle.fontBody) */
+  fontBody?: string
+  fontTitle?: string
 }
 
 function useEditableRef(initialContent: string, blockId: string) {
@@ -34,6 +37,8 @@ function readAndSanitize(el: HTMLElement): string {
   return sanitizeContent(el.textContent || '')
 }
 
+// ─── Section ──────────────────────────────────────────────────────────────────
+
 function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
   const ref = useEditableRef(block.content || `SECTION // ${block.id.toUpperCase()}`, block.id)
   return (
@@ -46,14 +51,225 @@ function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: str
   )
 }
 
-function TextBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+// ─── Text ─────────────────────────────────────────────────────────────────────
+
+function TextBlock({ block, onUpdateContent, fontFamily }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent']; fontFamily?: string }) {
+  const placeholder = 'Commencez à écrire votre paragraphe ici. Double-cliquez pour éditer ce texte et remplacez-le par votre contenu.'
   const ref = useEditableRef(block.content || '', block.id)
   return (
     <p ref={ref} contentEditable suppressContentEditableWarning
+      data-placeholder={placeholder}
       onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-      style={{ fontFamily: 'inherit', fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0, textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 20 }} />
+      style={{
+        fontFamily: fontFamily || 'inherit',
+        fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0,
+        textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap',
+        cursor: 'text', minHeight: 20,
+      }} />
   )
 }
+
+// ─── Headings H1–H4 ───────────────────────────────────────────────────────────
+
+function H1Block({ block, onUpdateContent, autoNumber, ordinal }: {
+  block: DocBlock; onUpdateContent?: Props['onUpdateContent']; autoNumber?: boolean; ordinal?: number
+}) {
+  const defaultText = block.content || 'Titre de niveau 1'
+  const ref = useEditableRef(defaultText, block.id)
+  const prefix = autoNumber && ordinal !== undefined ? `${ordinal + 1}. ` : ''
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      {prefix && (
+        <span style={{ fontFamily: 'Times New Roman, serif', fontSize: 20, fontWeight: 900, color: '#111', flexShrink: 0 }}>
+          {prefix}
+        </span>
+      )}
+      <h1 ref={ref} contentEditable suppressContentEditableWarning
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+        style={{
+          fontFamily: 'Times New Roman, serif', fontSize: 20, fontWeight: 900,
+          color: '#111', margin: 0, outline: 'none', cursor: 'text',
+          letterSpacing: '-.01em', lineHeight: 1.15, flex: 1,
+        }} />
+    </div>
+  )
+}
+
+function H2Block({ block, onUpdateContent, autoNumber, h1Ordinal, ordinal }: {
+  block: DocBlock; onUpdateContent?: Props['onUpdateContent']; autoNumber?: boolean; h1Ordinal?: number; ordinal?: number
+}) {
+  const defaultText = block.content || 'Titre de niveau 2'
+  const ref = useEditableRef(defaultText, block.id)
+  const prefix = autoNumber && h1Ordinal !== undefined && ordinal !== undefined
+    ? `${h1Ordinal + 1}.${ordinal + 1} ` : ''
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+      {prefix && (
+        <span style={{ fontFamily: 'Times New Roman, serif', fontSize: 16, fontWeight: 800, color: '#222', flexShrink: 0 }}>
+          {prefix}
+        </span>
+      )}
+      <h2 ref={ref} contentEditable suppressContentEditableWarning
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+        style={{
+          fontFamily: 'Times New Roman, serif', fontSize: 16, fontWeight: 800,
+          color: '#222', margin: 0, outline: 'none', cursor: 'text',
+          lineHeight: 1.25, flex: 1,
+        }} />
+    </div>
+  )
+}
+
+function H3Block({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+  const defaultText = block.content || 'Titre de niveau 3'
+  const ref = useEditableRef(defaultText, block.id)
+  return (
+    <h3 ref={ref} contentEditable suppressContentEditableWarning
+      onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+      style={{
+        fontFamily: 'Times New Roman, serif', fontSize: 14, fontWeight: 700,
+        color: '#333', margin: 0, outline: 'none', cursor: 'text', lineHeight: 1.3,
+      }} />
+  )
+}
+
+function H4Block({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+  const defaultText = block.content || 'Titre de niveau 4'
+  const ref = useEditableRef(defaultText, block.id)
+  return (
+    <h4 ref={ref} contentEditable suppressContentEditableWarning
+      onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+      style={{
+        fontFamily: 'Times New Roman, serif', fontSize: 13, fontWeight: 700,
+        fontStyle: 'italic', color: '#444', margin: 0, outline: 'none',
+        cursor: 'text', lineHeight: 1.35,
+      }} />
+  )
+}
+
+// ─── Bullet List ──────────────────────────────────────────────────────────────
+
+function BulletListBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+  const defaultItems = ['Premier élément', 'Deuxième élément', 'Troisième élément']
+  const getItems = () => block.content ? block.content.split('\n').filter(Boolean) : defaultItems
+  const [items, setItems] = useState<string[]>(getItems)
+
+  const updateItems = (next: string[]) => {
+    setItems(next)
+    onUpdateContent?.(block.id, next.join('\n'))
+  }
+
+  const addItem = () => updateItems([...items, 'Nouvel élément'])
+
+  const updateItem = (i: number, val: string) => {
+    const sanitized = sanitizeContent(val)
+    updateItems(items.map((item, idx) => idx === i ? sanitized : item))
+  }
+
+  const removeItem = (i: number) => {
+    if (items.length > 1) updateItems(items.filter((_, idx) => idx !== i))
+  }
+
+  return (
+    <div>
+      <ul style={{ listStyle: 'disc', paddingLeft: 22, margin: 0 }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ marginBottom: 5, fontFamily: 'Times New Roman, serif', fontSize: 12, color: '#444', lineHeight: 1.7 }}>
+            <span
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={e => updateItem(i, e.currentTarget.textContent || '')}
+              style={{ outline: 'none', cursor: 'text', display: 'inline' }}
+            >
+              {item}
+            </span>
+            {items.length > 1 && (
+              <button
+                className="pdf-hidden"
+                onClick={() => removeItem(i)}
+                style={{ marginLeft: 6, fontSize: 9, color: '#ccc', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+              >×</button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <button
+        className="pdf-hidden"
+        onClick={addItem}
+        style={{
+          marginTop: 5, marginLeft: 22, fontSize: 10, color: '#aaa',
+          background: 'none', border: '1px dashed #e0e0e0', borderRadius: 4,
+          padding: '2px 10px', cursor: 'pointer', display: 'block',
+        }}
+      >
+        + Ajouter un élément
+      </button>
+    </div>
+  )
+}
+
+// ─── Numbered List ────────────────────────────────────────────────────────────
+
+function NumberedListBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+  const defaultItems = ['Premier élément numéroté', 'Deuxième élément numéroté', 'Troisième élément numéroté']
+  const getItems = () => block.content ? block.content.split('\n').filter(Boolean) : defaultItems
+  const [items, setItems] = useState<string[]>(getItems)
+
+  const updateItems = (next: string[]) => {
+    setItems(next)
+    onUpdateContent?.(block.id, next.join('\n'))
+  }
+
+  const addItem = () => updateItems([...items, 'Nouvel élément'])
+
+  const updateItem = (i: number, val: string) => {
+    const sanitized = sanitizeContent(val)
+    updateItems(items.map((item, idx) => idx === i ? sanitized : item))
+  }
+
+  const removeItem = (i: number) => {
+    if (items.length > 1) updateItems(items.filter((_, idx) => idx !== i))
+  }
+
+  return (
+    <div>
+      <ol style={{ listStyleType: 'decimal', paddingLeft: 22, margin: 0 }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ marginBottom: 5, fontFamily: 'Times New Roman, serif', fontSize: 12, color: '#444', lineHeight: 1.7 }}>
+            <span
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={e => updateItem(i, e.currentTarget.textContent || '')}
+              style={{ outline: 'none', cursor: 'text', display: 'inline' }}
+            >
+              {item}
+            </span>
+            {items.length > 1 && (
+              <button
+                className="pdf-hidden"
+                onClick={() => removeItem(i)}
+                style={{ marginLeft: 6, fontSize: 9, color: '#ccc', background: 'none', border: 'none', cursor: 'pointer', lineHeight: 1 }}
+              >×</button>
+            )}
+          </li>
+        ))}
+      </ol>
+      <button
+        className="pdf-hidden"
+        onClick={addItem}
+        style={{
+          marginTop: 5, marginLeft: 22, fontSize: 10, color: '#aaa',
+          background: 'none', border: '1px dashed #e0e0e0', borderRadius: 4,
+          padding: '2px 10px', cursor: 'pointer', display: 'block',
+        }}
+      >
+        + Ajouter un élément
+      </button>
+    </div>
+  )
+}
+
+// ─── Quote ────────────────────────────────────────────────────────────────────
 
 function QuoteBlock({ block, co, entityName, onUpdateContent }: { block: DocBlock; co: string; entityName: string; onUpdateContent?: Props['onUpdateContent'] }) {
   const textRef = useEditableRef(block.content?.split('\n')[0] || '"L\'excellence opérationnelle est le fondement de toute croissance durable."', block.id)
@@ -68,6 +284,8 @@ function QuoteBlock({ block, co, entityName, onUpdateContent }: { block: DocBloc
     </div>
   )
 }
+
+// ─── KPI ──────────────────────────────────────────────────────────────────────
 
 function KpiBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
   const defaultKpis = [
@@ -107,6 +325,8 @@ function KpiBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string;
   )
 }
 
+// ─── Clause ───────────────────────────────────────────────────────────────────
+
 function ClauseBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {
   const titleRef = useEditableRef(block.content?.split('\n')[0] || 'Article — Disposition Contractuelle', block.id)
   const bodyRef = useEditableRef(block.content?.split('\n').slice(1).join('\n') || 'Les parties s\'engagent à respecter l\'ensemble des termes et obligations stipulés dans le présent accord.', block.id)
@@ -124,6 +344,8 @@ function ClauseBlock({ block, co, onUpdateContent }: { block: DocBlock; co: stri
     </div>
   )
 }
+
+// ─── Checklist ────────────────────────────────────────────────────────────────
 
 function ChecklistBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
   const defaultItems = ['Item à compléter 1', 'Item à compléter 2', 'Item à compléter 3']
@@ -157,6 +379,8 @@ function ChecklistBlock({ block, onUpdateContent }: { block: DocBlock; onUpdateC
     </div>
   )
 }
+
+// ─── Table ────────────────────────────────────────────────────────────────────
 
 function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: string; onUpdateTable?: (blockId: string, tableData: TableData) => void }) {
   const defaultData: TableData = block.tableData || {
@@ -226,7 +450,13 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
   )
 }
 
-export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpdateTable, onUpdateContent, onUpdateChart, onUpdateImage, dragHandleProps }: Props) {
+// ─── Main BlockRenderer ───────────────────────────────────────────────────────
+
+export function BlockRenderer({
+  block, color: co, entityName: en, pageId,
+  onUpdateTable, onUpdateContent, onUpdateChart, onUpdateImage,
+  dragHandleProps, fontBody, fontTitle,
+}: Props) {
   const { type } = block
 
   const dragHandle = (
@@ -243,12 +473,23 @@ export function BlockRenderer({ block, color: co, entityName: en, pageId, onUpda
     </div>
   )
 
+  // ── Headings ────────────────────────────────────────────────────────────────
+  if (type === 'h1') return wrap(<H1Block block={block} onUpdateContent={onUpdateContent} />, 'H1')
+  if (type === 'h2') return wrap(<H2Block block={block} onUpdateContent={onUpdateContent} />, 'H2')
+  if (type === 'h3') return wrap(<H3Block block={block} onUpdateContent={onUpdateContent} />, 'H3')
+  if (type === 'h4') return wrap(<H4Block block={block} onUpdateContent={onUpdateContent} />, 'H4')
+
+  // ── Lists ───────────────────────────────────────────────────────────────────
+  if (type === 'bullet-list')   return wrap(<BulletListBlock block={block} onUpdateContent={onUpdateContent} />, 'Bullet List')
+  if (type === 'numbered-list') return wrap(<NumberedListBlock block={block} onUpdateContent={onUpdateContent} />, 'Numbered List')
+
+  // ── Classic blocks ──────────────────────────────────────────────────────────
   if (type === 'section') return wrap(<SectionBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'Section')
-  if (type === 'text') return wrap(<TextBlock block={block} onUpdateContent={onUpdateContent} />, 'Text')
-  if (type === 'quote') return wrap(<QuoteBlock block={block} co={co} entityName={en} onUpdateContent={onUpdateContent} />, 'Quote')
-  if (type === 'table') return wrap(<InteractiveTable block={block} co={co} onUpdateTable={onUpdateTable} />, 'Table')
-  if (type === 'kpi') return wrap(<KpiBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'KPI')
-  if (type === 'clause') return wrap(<ClauseBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'Clause')
+  if (type === 'text')    return wrap(<TextBlock block={block} onUpdateContent={onUpdateContent} fontFamily={fontBody || 'Times New Roman, serif'} />, 'Text')
+  if (type === 'quote')   return wrap(<QuoteBlock block={block} co={co} entityName={en} onUpdateContent={onUpdateContent} />, 'Quote')
+  if (type === 'table')   return wrap(<InteractiveTable block={block} co={co} onUpdateTable={onUpdateTable} />, 'Table')
+  if (type === 'kpi')     return wrap(<KpiBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'KPI')
+  if (type === 'clause')  return wrap(<ClauseBlock block={block} co={co} onUpdateContent={onUpdateContent} />, 'Clause')
   if (type === 'checklist') return wrap(<ChecklistBlock block={block} onUpdateContent={onUpdateContent} />, 'Checklist')
 
   if (type === 'image') return wrap(

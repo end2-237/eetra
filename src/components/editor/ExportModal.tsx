@@ -17,11 +17,11 @@ interface Props {
 type ExportStep = 'options' | 'loading' | 'done' | 'error'
 type ExportFormat = 'pdf' | 'word'
 
-// A4 en pixels à 96dpi (utilisé pour html2canvas)
+// A4 en pixels à 96dpi
 const PAGE_W = 794
 const PAGE_H = 1123
 
-// A4 en millimètres (utilisé pour jsPDF)
+// A4 en millimètres
 const A4_W_MM = 210
 const A4_H_MM = 297
 
@@ -43,7 +43,7 @@ export function ExportModal({ onClose }: Props) {
   const blockCount = pages.reduce((acc, p) => acc + p.blocks.length, 0)
   const docName = (title || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
-  // ── PDF EXPORT ─────────────────────────────────────────────────────────────
+  // ── PDF EXPORT ──────────────────────────────────────────────────────────────
   const handlePdfExport = async () => {
     setStep('loading')
     setProgress(5)
@@ -63,9 +63,6 @@ export function ExportModal({ onClose }: Props) {
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
       await new Promise(r => setTimeout(r, 150))
 
-      // ── CORRECTION : utiliser unit:'mm' + format:'a4' ──────────────────────
-      // Avec unit:'px', jsPDF convertit en points à 72dpi ce qui rétrécit
-      // la page. Avec unit:'mm' + 'a4', on obtient exactement 210×297 mm.
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -89,7 +86,6 @@ export function ExportModal({ onClose }: Props) {
         const innerEl = outerEl.firstElementChild as HTMLElement
         if (!innerEl) continue
 
-        // Sauvegarder les styles, désactiver le zoom pour la capture
         const savedTransform     = innerEl.style.transform
         const savedMarginBottom  = innerEl.style.marginBottom
         const savedOuterWidth    = outerEl.style.width
@@ -118,7 +114,6 @@ export function ExportModal({ onClose }: Props) {
           logging:         false,
         })
 
-        // Restaurer les styles
         outerEl.style.width        = savedOuterWidth
         outerEl.style.height       = savedOuterHeight
         outerEl.style.overflow     = savedOuterOverflow
@@ -128,13 +123,12 @@ export function ExportModal({ onClose }: Props) {
 
         if (i > 0) pdf.addPage()
 
-        // ── CORRECTION : addImage avec dimensions en mm (pleine page A4) ──────
         pdf.addImage(
           canvas.toDataURL('image/jpeg', quality === 'high' ? 0.97 : 0.85),
           'JPEG',
-          0, 0,          // x, y en mm
-          A4_W_MM,       // largeur = 210 mm
-          A4_H_MM,       // hauteur = 297 mm
+          0, 0,
+          A4_W_MM,
+          A4_H_MM,
         )
       }
 
@@ -171,7 +165,7 @@ export function ExportModal({ onClose }: Props) {
     }
   }
 
-  // ── WORD EXPORT ────────────────────────────────────────────────────────────
+  // ── WORD EXPORT ─────────────────────────────────────────────────────────────
   const handleWordExport = async () => {
     setStep('loading')
     setProgress(5)
@@ -182,31 +176,33 @@ export function ExportModal({ onClose }: Props) {
         Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
         HeadingLevel, AlignmentType, BorderStyle, WidthType, ShadingType,
         PageOrientation, Header, Footer, PageNumber, TableLayoutType,
+        LevelFormat,
       } = await import('docx')
 
       setProgress(20)
       setProgressLabel('Génération des sections…')
 
+      const FONT     = 'Times New Roman'
       const accentHex = (profile.color || '#1B4FD8').replace('#', '')
 
       const docChildren: any[] = []
 
-      // ── Cover block ──
+      // ── Cover block ─────────────────────────────────────────────────────────
       docChildren.push(
         new Paragraph({
-          children: [new TextRun({ text: profile.name || 'EETRA', bold: true, size: 18, color: accentHex })],
+          children: [new TextRun({ text: profile.name || 'EETRA', bold: true, size: 18, color: accentHex, font: FONT })],
         }),
         new Paragraph({ text: '' }),
         new Paragraph({
           heading: HeadingLevel.TITLE,
-          children: [new TextRun({ text: (title || 'Document sans titre').toUpperCase(), bold: true, size: 64 })],
+          children: [new TextRun({ text: (title || 'Document sans titre').toUpperCase(), bold: true, size: 64, font: FONT })],
           spacing: { before: 600, after: 200 },
         }),
       )
       if (subtitle) {
         docChildren.push(
           new Paragraph({
-            children: [new TextRun({ text: subtitle, italics: true, size: 26, color: '888888' })],
+            children: [new TextRun({ text: subtitle, italics: true, size: 26, color: '888888', font: FONT })],
           }),
         )
       }
@@ -219,8 +215,8 @@ export function ExportModal({ onClose }: Props) {
         docChildren.push(
           new Paragraph({
             children: [
-              new TextRun({ text: `${lbl} : `, bold: true, size: 18 }),
-              new TextRun({ text: val, size: 18 }),
+              new TextRun({ text: `${lbl} : `, bold: true, size: 18, font: FONT }),
+              new TextRun({ text: val, size: 18, font: FONT }),
             ],
           }),
         )
@@ -229,39 +225,108 @@ export function ExportModal({ onClose }: Props) {
 
       setProgress(40)
 
-      // ── Content pages ──
+      // ── Content pages ────────────────────────────────────────────────────────
       for (const [pi, page] of pages.entries()) {
         for (const block of page.blocks) {
           switch (block.type) {
+
+            // ── New heading blocks ─────────────────────────────────────────────
+            case 'h1':
+              docChildren.push(
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_1,
+                  children: [new TextRun({ text: block.content || '', bold: true, size: 44, font: FONT })],
+                  spacing: { before: 360, after: 120 },
+                }),
+              )
+              break
+
+            case 'h2':
+              docChildren.push(
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_2,
+                  children: [new TextRun({ text: block.content || '', bold: true, size: 36, font: FONT })],
+                  spacing: { before: 300, after: 100 },
+                }),
+              )
+              break
+
+            case 'h3':
+              docChildren.push(
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_3,
+                  children: [new TextRun({ text: block.content || '', bold: true, size: 28, font: FONT })],
+                  spacing: { before: 240, after: 80 },
+                }),
+              )
+              break
+
+            case 'h4':
+              docChildren.push(
+                new Paragraph({
+                  heading: HeadingLevel.HEADING_4,
+                  children: [new TextRun({ text: block.content || '', bold: true, italics: true, size: 24, font: FONT })],
+                  spacing: { before: 200, after: 60 },
+                }),
+              )
+              break
+
+            // ── Lists ───────────────────────────────────────────────────────────
+            case 'bullet-list':
+              for (const item of (block.content || '').split('\n').filter(Boolean)) {
+                docChildren.push(
+                  new Paragraph({
+                    numbering: { reference: 'eetra-bullets', level: 0 },
+                    children: [new TextRun({ text: item, size: 22, font: FONT })],
+                  }),
+                )
+              }
+              break
+
+            case 'numbered-list':
+              for (const item of (block.content || '').split('\n').filter(Boolean)) {
+                docChildren.push(
+                  new Paragraph({
+                    numbering: { reference: 'eetra-numbers', level: 0 },
+                    children: [new TextRun({ text: item, size: 22, font: FONT })],
+                  }),
+                )
+              }
+              break
+
+            // ── Existing blocks ─────────────────────────────────────────────────
             case 'section':
               docChildren.push(
                 new Paragraph({
                   heading: HeadingLevel.HEADING_1,
-                  children: [new TextRun({ text: block.content || '', bold: true, allCaps: true, color: accentHex, size: 24 })],
+                  children: [new TextRun({ text: block.content || '', bold: true, allCaps: true, color: accentHex, size: 24, font: FONT })],
                   spacing: { before: 400, after: 120 },
                   border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: accentHex, space: 4 } },
                 }),
               )
               break
+
             case 'text':
               docChildren.push(
                 new Paragraph({
-                  children: [new TextRun({ text: block.content || '', size: 22 })],
+                  children: [new TextRun({ text: block.content || '', size: 22, font: FONT })],
                   alignment: AlignmentType.JUSTIFIED,
                   spacing: { before: 80, after: 80 },
                 }),
               )
               break
+
             case 'quote':
               docChildren.push(
                 new Paragraph({
-                  children: [new TextRun({ text: block.content || '', italics: true, size: 26, color: '444444' })],
+                  children: [new TextRun({ text: block.content || '', italics: true, size: 26, color: '444444', font: FONT })],
                   indent: { left: 600 },
                   spacing: { before: 200, after: 200 },
                   border: { left: { style: BorderStyle.THICK, size: 12, color: accentHex, space: 12 } },
                 }),
               )
               break
+
             case 'table':
               if (block.tableData) {
                 const { headers, rows } = block.tableData
@@ -275,7 +340,7 @@ export function ExportModal({ onClose }: Props) {
                         children: headers.map(h =>
                           new TableCell({
                             shading: { type: ShadingType.SOLID, fill: accentHex },
-                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, color: 'FFFFFF', size: 18, allCaps: true })] })],
+                            children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, color: 'FFFFFF', size: 18, allCaps: true, font: FONT })] })],
                           }),
                         ),
                       }),
@@ -284,7 +349,7 @@ export function ExportModal({ onClose }: Props) {
                           children: row.map(cell =>
                             new TableCell({
                               shading: ri % 2 === 1 ? { type: ShadingType.SOLID, fill: 'F5F7FA' } : undefined,
-                              children: [new Paragraph({ children: [new TextRun({ text: cell, size: 18 })] })],
+                              children: [new Paragraph({ children: [new TextRun({ text: cell, size: 18, font: FONT })] })],
                             }),
                           ),
                         }),
@@ -294,13 +359,14 @@ export function ExportModal({ onClose }: Props) {
                 )
               }
               break
+
             case 'clause': {
               const lines = (block.content || '').split('\n')
               if (lines[0]) {
                 docChildren.push(
                   new Paragraph({
                     heading: HeadingLevel.HEADING_2,
-                    children: [new TextRun({ text: lines[0], bold: true, size: 20, color: accentHex })],
+                    children: [new TextRun({ text: lines[0], bold: true, size: 20, color: accentHex, font: FONT })],
                     spacing: { before: 240, after: 80 },
                   }),
                 )
@@ -309,7 +375,7 @@ export function ExportModal({ onClose }: Props) {
               if (body) {
                 docChildren.push(
                   new Paragraph({
-                    children: [new TextRun({ text: body, size: 18, italics: true })],
+                    children: [new TextRun({ text: body, size: 18, italics: true, font: FONT })],
                     alignment: AlignmentType.JUSTIFIED,
                     spacing: { before: 60, after: 120 },
                     shading: { type: ShadingType.SOLID, fill: 'FAFAFA' },
@@ -318,25 +384,27 @@ export function ExportModal({ onClose }: Props) {
               }
               break
             }
+
             case 'checklist':
               for (const item of (block.content || '').split('\n').filter(Boolean)) {
                 docChildren.push(
                   new Paragraph({
-                    children: [new TextRun({ text: `☐  ${item}`, size: 20 })],
+                    children: [new TextRun({ text: `☐  ${item}`, size: 20, font: FONT })],
                     indent: { left: 360 },
                     spacing: { before: 40, after: 40 },
                   }),
                 )
               }
               break
+
             case 'sign':
               docChildren.push(
                 new Paragraph({ text: '', spacing: { before: 480 } }),
                 new Paragraph({
                   children: [
-                    new TextRun({ text: 'Signature Émetteur', bold: true, size: 18 }),
+                    new TextRun({ text: 'Signature Émetteur', bold: true, size: 18, font: FONT }),
                     new TextRun({ text: '\t\t\t\t\t', size: 18 }),
-                    new TextRun({ text: 'Signature Destinataire', bold: true, size: 18 }),
+                    new TextRun({ text: 'Signature Destinataire', bold: true, size: 18, font: FONT }),
                   ],
                 }),
                 new Paragraph({
@@ -349,6 +417,7 @@ export function ExportModal({ onClose }: Props) {
                 }),
               )
               break
+
             case 'divider':
               docChildren.push(
                 new Paragraph({
@@ -358,6 +427,7 @@ export function ExportModal({ onClose }: Props) {
                 }),
               )
               break
+
             default:
               break
           }
@@ -374,6 +444,65 @@ export function ExportModal({ onClose }: Props) {
         creator: 'EETRA Platform',
         title: title || 'Document',
         description: subtitle || '',
+        // ── Styles with Times New Roman everywhere ─────────────────────────────
+        styles: {
+          default: {
+            document: { run: { font: FONT, size: 22 } },
+          },
+          paragraphStyles: [
+            {
+              id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+              run: { size: 44, bold: true, font: FONT, color: '000000' },
+              paragraph: { spacing: { before: 360, after: 120 }, outlineLevel: 0 },
+            },
+            {
+              id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+              run: { size: 36, bold: true, font: FONT, color: '000000' },
+              paragraph: { spacing: { before: 300, after: 100 }, outlineLevel: 1 },
+            },
+            {
+              id: 'Heading3', name: 'Heading 3', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+              run: { size: 28, bold: true, font: FONT, color: '000000' },
+              paragraph: { spacing: { before: 240, after: 80 }, outlineLevel: 2 },
+            },
+            {
+              id: 'Heading4', name: 'Heading 4', basedOn: 'Normal', next: 'Normal', quickFormat: true,
+              run: { size: 24, bold: true, italics: true, font: FONT, color: '000000' },
+              paragraph: { spacing: { before: 200, after: 60 }, outlineLevel: 3 },
+            },
+          ],
+        },
+        // ── Numbering config for lists ─────────────────────────────────────────
+        numbering: {
+          config: [
+            {
+              reference: 'eetra-bullets',
+              levels: [{
+                level: 0,
+                format: LevelFormat.BULLET,
+                text: '•',
+                alignment: AlignmentType.LEFT,
+                style: {
+                  run: { font: FONT, size: 22 },
+                  paragraph: { indent: { left: 720, hanging: 360 }, spacing: { after: 60 } },
+                },
+              }],
+            },
+            {
+              reference: 'eetra-numbers',
+              levels: [{
+                level: 0,
+                format: LevelFormat.DECIMAL,
+                text: '%1.',
+                alignment: AlignmentType.LEFT,
+                style: {
+                  run: { font: FONT, size: 22 },
+                  paragraph: { indent: { left: 720, hanging: 360 }, spacing: { after: 60 } },
+                },
+              }],
+            },
+          ],
+        },
         sections: [{
           properties: {
             page: {
@@ -386,8 +515,8 @@ export function ExportModal({ onClose }: Props) {
               children: [
                 new Paragraph({
                   children: [
-                    new TextRun({ text: profile.name || 'EETRA', bold: true, size: 16, color: accentHex }),
-                    new TextRun({ text: '  ·  ' + (title || ''), size: 16, color: '888888' }),
+                    new TextRun({ text: profile.name || 'EETRA', bold: true, size: 16, color: accentHex, font: FONT }),
+                    new TextRun({ text: '  ·  ' + (title || ''), size: 16, color: '888888', font: FONT }),
                   ],
                   border: { bottom: { style: BorderStyle.SINGLE, size: 3, color: 'EEEEEE', space: 6 } },
                 }),
@@ -399,8 +528,8 @@ export function ExportModal({ onClose }: Props) {
               children: [
                 new Paragraph({
                   children: [
-                    new TextRun({ text: 'Généré par EETRA  ·  ' + docId + '  ·  Page ', size: 14, color: 'CCCCCC' }),
-                    new TextRun({ children: [PageNumber.CURRENT], size: 14, color: '888888' }),
+                    new TextRun({ text: 'Généré par EETRA  ·  ' + docId + '  ·  Page ', size: 14, color: 'CCCCCC', font: FONT }),
+                    new TextRun({ children: [PageNumber.CURRENT], size: 14, color: '888888', font: FONT }),
                   ],
                   border: { top: { style: BorderStyle.SINGLE, size: 3, color: 'EEEEEE', space: 6 } },
                 }),
@@ -490,7 +619,7 @@ export function ExportModal({ onClose }: Props) {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   {([
                     { id: 'pdf' as const, label: 'PDF', desc: 'Impression · Mise en page exacte', badge: 'Recommandé', icon: '📄' },
-                    { id: 'word' as const, label: 'Word .docx', desc: 'Éditable · Microsoft Word', badge: null, icon: '📝' },
+                    { id: 'word' as const, label: 'Word .docx', desc: 'Éditable · Times New Roman', badge: null, icon: '📝' },
                   ]).map(opt => (
                     <div key={opt.id} onClick={() => setFormat(opt.id)} style={{
                       padding: '14px', borderRadius: 12, cursor: 'pointer',

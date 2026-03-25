@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import {
   AlignLeft, BarChart2, CheckSquare, ChevronRight, Image, Minus, Quote,
   Table, Type, Zap, Scale, PenTool, ChevronDown, ChevronUp, SlidersHorizontal,
+  List, Hash,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useToast }    from '@/hooks/useToast'
@@ -20,20 +21,33 @@ interface BlockDef {
 }
 
 const BLOCKS: BlockDef[] = [
-  { type: 'section',   label: 'Section',    icon: <Type size={12}/>,        desc: 'Titre de section',      group: 'Structure' },
-  { type: 'text',      label: 'Paragraphe', icon: <AlignLeft size={12}/>,   desc: 'Texte éditorial',       group: 'Structure' },
-  { type: 'quote',     label: 'Citation',   icon: <Quote size={12}/>,       desc: 'Citation exécutive',    group: 'Structure' },
-  { type: 'divider',   label: 'Séparateur', icon: <Minus size={12}/>,       desc: 'Ligne décorative',      group: 'Structure' },
-  { type: 'table',     label: 'Tableau',    icon: <Table size={12}/>,       desc: 'Données tabulaires',    group: 'Données'   },
-  { type: 'kpi',       label: 'KPIs',       icon: <Zap size={12}/>,         desc: 'Métriques clés',        group: 'Données'   },
-  { type: 'chart',     label: 'Graphique',  icon: <BarChart2 size={12}/>,   desc: 'Bar, ligne, camembert', group: 'Données'   },
-  { type: 'checklist', label: 'Checklist',  icon: <CheckSquare size={12}/>, desc: 'Liste de contrôle',     group: 'Données'   },
-  { type: 'image',     label: 'Image',      icon: <Image size={12}/>,       desc: 'Photo ou illustration', group: 'Visuel'    },
-  { type: 'clause',    label: 'Clause',     icon: <Scale size={12}/>,       desc: 'Disposition juridique', group: 'Juridique' },
-  { type: 'sign',      label: 'Signature',  icon: <PenTool size={12}/>,     desc: 'Zone de signature',     group: 'Juridique' },
+  // ── Titres ──────────────────────────────────────────────────────────────────
+  { type: 'h1',           label: 'Titre H1',       icon: <span style={{ fontFamily: 'Times New Roman, serif', fontWeight: 900, fontSize: 13 }}>H1</span>, desc: 'Titre principal niveau 1',        group: 'Titres' },
+  { type: 'h2',           label: 'Titre H2',       icon: <span style={{ fontFamily: 'Times New Roman, serif', fontWeight: 800, fontSize: 12 }}>H2</span>, desc: 'Titre de section niveau 2',       group: 'Titres' },
+  { type: 'h3',           label: 'Titre H3',       icon: <span style={{ fontFamily: 'Times New Roman, serif', fontWeight: 700, fontSize: 11 }}>H3</span>, desc: 'Sous-titre niveau 3',             group: 'Titres' },
+  { type: 'h4',           label: 'Titre H4',       icon: <span style={{ fontFamily: 'Times New Roman, serif', fontWeight: 600, fontSize: 11, fontStyle: 'italic' }}>H4</span>, desc: 'Sous-titre niveau 4',  group: 'Titres' },
+  // ── Listes ──────────────────────────────────────────────────────────────────
+  { type: 'bullet-list',  label: 'Liste à puces',  icon: <List size={12} />,  desc: 'Liste avec points (•)',           group: 'Listes' },
+  { type: 'numbered-list',label: 'Liste numérotée',icon: <Hash size={12} />,  desc: 'Liste avec numéros (1. 2. 3.)',   group: 'Listes' },
+  // ── Structure ───────────────────────────────────────────────────────────────
+  { type: 'section',      label: 'Section',        icon: <Type size={12}/>,         desc: 'Titre de section caps',    group: 'Structure' },
+  { type: 'text',         label: 'Paragraphe',     icon: <AlignLeft size={12}/>,    desc: 'Texte éditorial',           group: 'Structure' },
+  { type: 'quote',        label: 'Citation',       icon: <Quote size={12}/>,        desc: 'Citation exécutive',        group: 'Structure' },
+  { type: 'divider',      label: 'Séparateur',     icon: <Minus size={12}/>,        desc: 'Ligne décorative',          group: 'Structure' },
+  // ── Données ─────────────────────────────────────────────────────────────────
+  { type: 'table',        label: 'Tableau',        icon: <Table size={12}/>,        desc: 'Données tabulaires',        group: 'Données'   },
+  { type: 'kpi',          label: 'KPIs',           icon: <Zap size={12}/>,          desc: 'Métriques clés',            group: 'Données'   },
+  { type: 'chart',        label: 'Graphique',      icon: <BarChart2 size={12}/>,    desc: 'Bar, ligne, camembert',     group: 'Données'   },
+  { type: 'checklist',    label: 'Checklist',      icon: <CheckSquare size={12}/>,  desc: 'Liste de contrôle',         group: 'Données'   },
+  // ── Visuel ──────────────────────────────────────────────────────────────────
+  { type: 'image',        label: 'Image',          icon: <Image size={12}/>,        desc: 'Photo ou illustration',     group: 'Visuel'    },
+  // ── Juridique ───────────────────────────────────────────────────────────────
+  { type: 'clause',       label: 'Clause',         icon: <Scale size={12}/>,        desc: 'Disposition juridique',     group: 'Juridique' },
+  { type: 'sign',         label: 'Signature',      icon: <PenTool size={12}/>,      desc: 'Zone de signature',         group: 'Juridique' },
 ]
 
-const GROUPS      = ['Structure', 'Données', 'Visuel', 'Juridique']
+const GROUPS = ['Titres', 'Listes', 'Structure', 'Données', 'Visuel', 'Juridique']
+
 const CONF_LEVELS = ['CONFIDENTIEL', 'USAGE INTERNE', 'PUBLIC', 'STRICTEMENT CONFIDENTIEL']
 
 // ── Document properties panel ─────────────────────────────────────────────────
@@ -133,10 +147,28 @@ function DocumentPropertiesPanel() {
 function BlockLibrary() {
   const { addBlock } = useDocument()
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
-    Object.fromEntries(GROUPS.map(g => [g, true]))
+    Object.fromEntries(GROUPS.map(g => [g, g === 'Titres' || g === 'Listes' || g === 'Structure']))
   )
   const toggle = (g: string) => setOpenGroups(p => ({ ...p, [g]: !p[g] }))
   const handleAdd = useCallback((type: BlockType) => addBlock(type), [addBlock])
+
+  // Group color accents
+  const groupAccent: Record<string, string> = {
+    Titres:    'rgba(27,79,216,.08)',
+    Listes:    'rgba(5,150,105,.08)',
+    Structure: 'transparent',
+    Données:   'transparent',
+    Visuel:    'transparent',
+    Juridique: 'transparent',
+  }
+  const groupIconColor: Record<string, string> = {
+    Titres:    '#1B4FD8',
+    Listes:    '#059669',
+    Structure: 'var(--accent)',
+    Données:   'var(--accent)',
+    Visuel:    'var(--accent)',
+    Juridique: 'var(--accent)',
+  }
 
   return (
     <div style={{ padding: '8px 10px' }}>
@@ -149,7 +181,8 @@ function BlockLibrary() {
               onClick={() => toggle(group)}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '6px 8px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'transparent',
+                padding: '6px 8px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                background: groupAccent[group] || 'transparent',
               }}
             >
               <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--text4)' }}>
@@ -180,7 +213,9 @@ function BlockLibrary() {
                       el.style.borderColor = 'var(--border)'; el.style.background = 'var(--surface)'
                     }}
                   >
-                    <span style={{ color: 'var(--accent)', flexShrink: 0 }}>{b.icon}</span>
+                    <span style={{ color: groupIconColor[group] || 'var(--accent)', flexShrink: 0, minWidth: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {b.icon}
+                    </span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', lineHeight: 1.2 }}>{b.label}</div>
                       <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 1 }}>{b.desc}</div>

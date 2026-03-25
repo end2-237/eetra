@@ -14,7 +14,9 @@ import type { CoverBlock } from '@/components/editor/cover/CoverPageEditor'
 
 type GradType = 'linear' | 'radial'
 type BorderStyle = 'solid' | 'dashed' | 'dotted' | 'double' | 'groove' | 'ridge'
-type PageBorderStyle = 'none' | 'simple' | 'double' | 'thick' | 'dashed' | 'ornate' | 'shadow' | 'inset'
+type PageBorderStyle =
+  | 'none' | 'simple' | 'double' | 'thick' | 'dashed' | 'ornate' | 'shadow' | 'inset'
+  | 'dotted' | 'wave' | 'glow' | 'ribbon' | 'frame3d' | 'blueprint' | 'neon'
 type PageBgType = 'solid' | 'gradient' | 'pattern'
 type PatternType = 'dots' | 'lines' | 'grid' | 'diagonal' | 'cross' | 'wave' | 'chevron'
 
@@ -220,15 +222,10 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   scroll_v: { special:'scroll_v' },
 
   // ── BANNERS VISUELS ────────────────────────────────────────────────────────
-  // 1. Bannière classique - corps arqué avec extrémités repliées (ruban décoratif)
   banner_cls:  { special:'banner_cls' },
-  // 2. Ruban 3D diagonal avec pli (ombre de profondeur)
   banner_3d:   { special:'banner_3d' },
-  // 3. Plaque / cadre décoratif avec double bordure intérieure
   banner_plate:{ special:'banner_plate' },
-  // 4. Ruban ondulé sinusoïdal
   banner_wavy: { path:'M2,40 C18,24 32,58 50,40 C68,22 82,56 98,40 L98,60 C82,76 68,42 50,60 C32,78 18,44 2,60 Z' },
-  // 5. Ruban plat avec encoches en V (style bannière pointue)
   banner_vcut: { path:'M2,28 L80,28 L98,50 L80,72 L2,72 L18,50 Z' },
 
   // ── CALLOUTS ───────────────────────────────────────────────────────────────
@@ -465,27 +462,18 @@ function ShapeSVG({ b, accent }: { b: ExtBlock; accent: string }) {
       </>}
       {/* ── BANNER SPECIALS ── */}
       {def.special==='banner_cls'&&<>
-        {/* Corps principal arqué */}
         <path d="M5,50 L16,30 L16,46 C30,40 42,35 50,35 C58,35 70,40 84,46 L84,30 L95,50 L84,70 L84,54 C70,60 58,65 50,65 C42,65 30,60 16,54 L16,70 Z" {...sp}/>
-        {/* Ombre pli gauche */}
         <path d="M5,50 L16,70 L16,54 L5,50 Z" fill={b.useGradient?'rgba(0,0,0,.22)':`${b.fill||accent}55`} stroke="none"/>
-        {/* Ombre pli droit */}
         <path d="M95,50 L84,70 L84,54 L95,50 Z" fill={b.useGradient?'rgba(0,0,0,.22)':`${b.fill||accent}55`} stroke="none"/>
       </>}
       {def.special==='banner_3d'&&<>
-        {/* Face principale diagonale */}
         <path d="M5,65 L5,42 L86,13 L95,36 L95,58 L14,87 Z" {...sp}/>
-        {/* Pli gauche (fond montrant l'épaisseur) */}
         <path d="M5,65 L14,87 L14,65 L5,42 Z" fill={b.useGradient?'rgba(0,0,0,.3)':`${b.fill||accent}55`} stroke="none"/>
-        {/* Pli droit */}
         <path d="M86,13 L95,36 L86,36 Z" fill={b.useGradient?'rgba(0,0,0,.3)':`${b.fill||accent}55`} stroke="none"/>
       </>}
       {def.special==='banner_plate'&&<>
-        {/* Rectangle extérieur */}
         <rect x="2" y="18" width="96" height="64" {...sp}/>
-        {/* Cadre intérieur épais */}
         <rect x="8" y="24" width="84" height="52" fill="none" stroke={bColor==='none'?`${b.fill||accent}cc`:bColor} strokeWidth={Math.max(bWidth,2)}/>
-        {/* Filet intérieur fin */}
         <rect x="12" y="28" width="76" height="44" fill="none" stroke={bColor==='none'?`${b.fill||accent}66`:bColor} strokeWidth={Math.max(bWidth*.4,.8)}/>
       </>}
       {def.special==='callout_oval'&&<>
@@ -534,8 +522,24 @@ const PALETTE=['#ffffff','#f8f9fa','#e9ecef','#dee2e6','#adb5bd','#6c757d','#495
   '#228be6','#1098ad','#0ca678','#37b24d','#74c0fc','#a9e34b','#ffa94d','#ff6b6b','#f783ac','#da77f2',
   '#1B4FD8','#059669','#DC2626','#7C3AED','#D97706','#0E7490','#EC4899','#F97316','#14B8A6','#6366F1']
 
-const PAGE_BORDER_STYLES=[{id:'none',l:'Aucun'},{id:'simple',l:'Simple'},{id:'double',l:'Double'},
-  {id:'thick',l:'Épais'},{id:'dashed',l:'Tirets'},{id:'ornate',l:'Orné'},{id:'shadow',l:'Ombre'},{id:'inset',l:'Inset'}]
+// ─── NEW: expanded page border styles ──────────────────────────────────────
+const PAGE_BORDER_STYLES=[
+  {id:'none',    l:'Aucun'},
+  {id:'simple',  l:'Simple'},
+  {id:'double',  l:'Double'},
+  {id:'thick',   l:'Épais'},
+  {id:'dashed',  l:'Tirets'},
+  {id:'dotted',  l:'Pointillés'},
+  {id:'ornate',  l:'Orné'},
+  {id:'shadow',  l:'Ombre'},
+  {id:'inset',   l:'Inset'},
+  {id:'wave',    l:'Vagues'},
+  {id:'glow',    l:'Lueur'},
+  {id:'ribbon',  l:'Ruban'},
+  {id:'frame3d', l:'Cadre 3D'},
+  {id:'blueprint',l:'Blueprint'},
+  {id:'neon',    l:'Néon'},
+]
 
 const PATTERNS=[{id:'dots',l:'Points'},{id:'lines',l:'Lignes'},{id:'grid',l:'Grille'},
   {id:'diagonal',l:'Diagonal'},{id:'cross',l:'Croisillon'},{id:'wave',l:'Vagues'},{id:'chevron',l:'Chevron'}]
@@ -575,23 +579,121 @@ function PageBackground({config}:{config:PageConfig}) {
   )
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE BORDER — extended with new styles
+// ─────────────────────────────────────────────────────────────────────────────
+
 function PageBorder({config}:{config:PageConfig}) {
   const {borderStyle:bs,borderColor:bc,borderWidth:bw}=config
   if (bs==='none') return null
-  const base: React.CSSProperties={position:'absolute',inset:0,pointerEvents:'none',zIndex:200}
-  if (bs==='simple') return <div style={{...base,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
-  if (bs==='double') return <div style={{...base,border:`${bw}px double ${bc}`,boxSizing:'border-box'}}/>
-  if (bs==='thick')  return <div style={{...base,border:`${bw*2}px solid ${bc}`,boxSizing:'border-box'}}/>
-  if (bs==='dashed') return <div style={{...base,border:`${bw}px dashed ${bc}`,boxSizing:'border-box'}}/>
-  if (bs==='shadow') return <div style={{...base,boxShadow:`inset 0 0 0 ${bw}px ${bc},inset 0 0 ${bw*3}px ${bc}40`,boxSizing:'border-box'}}/>
-  if (bs==='inset')  return <div style={{...base}}><div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw/2)}px solid ${bc}`,boxSizing:'border-box'}}/><div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/></div>
-  if (bs==='ornate') return <div style={{...base}}>
+
+  const base: React.CSSProperties={position:'absolute',inset:0,pointerEvents:'none',zIndex:200,boxSizing:'border-box'}
+
+  // ── existing styles ──
+  if (bs==='simple')  return <div style={{...base,border:`${bw}px solid ${bc}`}}/>
+  if (bs==='double')  return <div style={{...base,border:`${bw}px double ${bc}`}}/>
+  if (bs==='thick')   return <div style={{...base,border:`${bw*2}px solid ${bc}`}}/>
+  if (bs==='dashed')  return <div style={{...base,border:`${bw}px dashed ${bc}`}}/>
+  if (bs==='dotted')  return <div style={{...base,border:`${bw}px dotted ${bc}`}}/>
+  if (bs==='shadow')  return <div style={{...base,boxShadow:`inset 0 0 0 ${bw}px ${bc},inset 0 0 ${bw*3}px ${bc}40`}}/>
+  if (bs==='inset')   return <div style={{...base}}>
+    <div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw/2)}px solid ${bc}`,boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
+  </div>
+  if (bs==='ornate')  return <div style={{...base}}>
     <div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
     <div style={{position:'absolute',inset:bw+4,border:`${Math.max(1,bw/3)}px solid ${bc}`,boxSizing:'border-box',opacity:.5}}/>
     {[[bw/2-bw,bw/2-bw],[bw/2-bw,undefined],[undefined,bw/2-bw],[undefined,undefined]].map(([t,l],i)=>(
       <div key={i} style={{position:'absolute',width:bw*3,height:bw*3,background:bc,borderRadius:'50%',top:t!==undefined?t:undefined,bottom:t===undefined?bw/2-bw:undefined,left:l!==undefined?l:undefined,right:l===undefined?bw/2-bw:undefined}}/>
     ))}
   </div>
+
+  // ── new styles ──
+
+  // WAVE: SVG sinusoïdale sur chaque côté
+  if (bs==='wave') {
+    const amp=bw*1.2, freq=40
+    const W=PAGE_W, H=PAGE_H
+    // top wave path
+    const topPts=Array.from({length:Math.ceil(W/freq)+1},(_,i)=>`${i*freq},${amp*Math.sin(i*Math.PI)}`)
+    const botPts=Array.from({length:Math.ceil(W/freq)+1},(_,i)=>`${i*freq},${H-amp*Math.sin(i*Math.PI)}`)
+    const leftPts=Array.from({length:Math.ceil(H/freq)+1},(_,i)=>`${amp*Math.sin(i*Math.PI)},${i*freq}`)
+    const rightPts=Array.from({length:Math.ceil(H/freq)+1},(_,i)=>`${W-amp*Math.sin(i*Math.PI)},${i*freq}`)
+    return <svg style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:200,overflow:'visible'}} width={W} height={H}>
+      <polyline points={topPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
+      <polyline points={botPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
+      <polyline points={leftPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
+      <polyline points={rightPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
+    </svg>
+  }
+
+  // GLOW: lueur diffuse intérieure
+  if (bs==='glow') return <div style={{...base,
+    boxShadow:`inset 0 0 ${bw*2}px ${bc}, inset 0 0 ${bw*5}px ${bc}55, inset 0 0 ${bw*10}px ${bc}22`,
+    border:`1px solid ${bc}44`
+  }}/>
+
+  // RIBBON: bande colorée de chaque côté avec liseret central
+  if (bs==='ribbon') return <div style={{...base}}>
+    {/* 4 bandes colorées */}
+    <div style={{position:'absolute',top:0,left:0,right:0,height:bw,background:bc,boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',bottom:0,left:0,right:0,height:bw,background:bc,boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',top:0,left:0,bottom:0,width:bw,background:bc,boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',top:0,right:0,bottom:0,width:bw,background:bc,boxSizing:'border-box'}}/>
+    {/* liseret blanc central */}
+    <div style={{position:'absolute',top:Math.round(bw*.35),left:Math.round(bw*.35),right:Math.round(bw*.35),height:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',bottom:Math.round(bw*.35),left:Math.round(bw*.35),right:Math.round(bw*.35),height:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',left:Math.round(bw*.35),top:Math.round(bw*.35),bottom:Math.round(bw*.35),width:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
+    <div style={{position:'absolute',right:Math.round(bw*.35),top:Math.round(bw*.35),bottom:Math.round(bw*.35),width:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
+  </div>
+
+  // FRAME3D: effet biseau 3D avec clair/foncé
+  if (bs==='frame3d') {
+    const light='rgba(255,255,255,0.6)', dark='rgba(0,0,0,0.35)'
+    return <div style={{...base}}>
+      {/* outer shadow */}
+      <div style={{position:'absolute',inset:0,borderTop:`${bw}px solid ${light}`,borderLeft:`${bw}px solid ${light}`,borderBottom:`${bw}px solid ${dark}`,borderRight:`${bw}px solid ${dark}`,boxSizing:'border-box'}}/>
+      {/* colored fill ring */}
+      <div style={{position:'absolute',inset:bw,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
+      {/* inner highlight */}
+      <div style={{position:'absolute',inset:bw*2,borderTop:`${Math.max(1,bw*.5)}px solid ${dark}`,borderLeft:`${Math.max(1,bw*.5)}px solid ${dark}`,borderBottom:`${Math.max(1,bw*.5)}px solid ${light}`,borderRight:`${Math.max(1,bw*.5)}px solid ${light}`,boxSizing:'border-box'}}/>
+    </div>
+  }
+
+  // BLUEPRINT: style technique avec croix aux coins et pointillés
+  if (bs==='blueprint') {
+    const cross=bw*3
+    return <div style={{...base}}>
+      {/* border pointillé */}
+      <div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw*.5)}px dashed ${bc}`,boxSizing:'border-box',opacity:.5}}/>
+      <div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
+      {/* croix coins */}
+      {[
+        {top:-cross/2,  left:bw/2-cross/2},
+        {top:-cross/2,  right:bw/2-cross/2},
+        {bottom:-cross/2,left:bw/2-cross/2},
+        {bottom:-cross/2,right:bw/2-cross/2},
+      ].map((pos,i)=>(
+        <div key={i} style={{position:'absolute',...pos as any,width:cross,height:cross,pointerEvents:'none'}}>
+          <div style={{position:'absolute',top:'50%',left:0,right:0,height:Math.max(1,bw*.5),background:bc,transform:'translateY(-50%)'}}/>
+          <div style={{position:'absolute',left:'50%',top:0,bottom:0,width:Math.max(1,bw*.5),background:bc,transform:'translateX(-50%)'}}/>
+        </div>
+      ))}
+    </div>
+  }
+
+  // NEON: lueur colorée extérieure et intérieure style néon
+  if (bs==='neon') return <div style={{...base,
+    border:`${Math.max(1,bw*.4)}px solid ${bc}`,
+    boxShadow:[
+      `inset 0 0 ${bw}px ${bc}`,
+      `inset 0 0 ${bw*3}px ${bc}88`,
+      `0 0 ${bw}px ${bc}`,
+      `0 0 ${bw*3}px ${bc}88`,
+      `0 0 ${bw*6}px ${bc}44`,
+    ].join(',')
+  }}/>
+
   return null
 }
 
@@ -683,8 +785,8 @@ export function EditableCoverPage({zoom}:Props){
   const qrDataUrl=useQR({docId:'EETRA-DOC',title,entityName:profile.name})
 
   const [selIds,setSelIds]=useState<Set<string>>(new Set())
-  const [editId,setEditId]=useState<string|null>(null) // text block editing
-  const [innerEditId,setInnerEditId]=useState<string|null>(null) // inner text editing on shape
+  const [editId,setEditId]=useState<string|null>(null)
+  const [innerEditId,setInnerEditId]=useState<string|null>(null)
   const [panelTab,setPanelTab]=useState<PanelTab>('elements')
   const [showPanel,setShowPanel]=useState(false)
   const [guides,setGuides]=useState<{x?:number;y?:number}[]>([])
@@ -794,7 +896,11 @@ export function EditableCoverPage({zoom}:Props){
         const dx=(e.clientX-sx)/dW,dy=(e.clientY-sy)/dH
         const updated=blocks.map(b=>{
           const start=starts.find(s=>s.id===b.id);if(!start)return b
-          const nx=Math.max(0,Math.min(1-b.w,start.bx+dx)),ny=Math.max(0,Math.min(1-b.h,start.by+dy))
+          // ── FIX: clamp generously — allow blocks to approach/cross edges freely.
+          // Only prevent the anchor point from going wildly out of bounds (-0.5 .. 1.5).
+          // The old Math.min(1-b.w, ...) was clamping too aggressively for wide blocks.
+          const nx=Math.max(-0.5, Math.min(1.5, start.bx+dx))
+          const ny=Math.max(-0.5, Math.min(1.5, start.by+dy))
           if(ids.length===1){const{sx:snx,sy:sny}=computeSnap(b.id,nx,ny,b.w,b.h);return{...b,x:snx,y:sny}}
           return{...b,x:nx,y:ny}
         })
@@ -808,7 +914,9 @@ export function EditableCoverPage({zoom}:Props){
         if(handle.includes('s'))nh=Math.max(.005,bh+dy)
         if(handle.includes('w')){nx=bx+dx;nw=Math.max(.02,bw-dx)}
         if(handle.includes('n')){ny=by+dy;nh=Math.max(.005,bh-dy)}
-        nx=Math.max(0,nx);ny=Math.max(0,ny);nw=Math.min(1-nx,nw);nh=Math.min(1-ny,nh)
+        // ── FIX: don't over-clamp on right/bottom — allow resize across the centre-line
+        nx=Math.max(-0.5,nx);ny=Math.max(-0.5,ny)
+        nw=Math.min(2,nw);nh=Math.min(2,nh)
         upd(id,{x:nx,y:ny,w:nw,h:nh})
       }
     }
@@ -878,13 +986,11 @@ export function EditableCoverPage({zoom}:Props){
       let shapeEl: React.ReactNode=<ShapeSVG b={b} accent={accent}/>
       if(b.useBlur&&b.blur)shapeEl=<div style={{filter:`blur(${b.blur}px)`,width:'100%',height:'100%'}}>{shapeEl}</div>
 
-      // Inner text overlay
       const hasInner=b.innerText&&b.innerText.length>0
       const showInnerEdit=isInnerEdit
       content=(
         <div style={{position:'relative',width:'100%',height:'100%'}}>
           {shapeEl}
-          {/* Inner text — always show if has content or editing */}
           {(hasInner||showInnerEdit)&&(
             <div
               contentEditable={showInnerEdit}
@@ -907,7 +1013,6 @@ export function EditableCoverPage({zoom}:Props){
               dangerouslySetInnerHTML={showInnerEdit?undefined:{__html:(b.innerText||'').replace(/\n/g,'<br/>')}}
             />
           )}
-          {/* Inner text placeholder when selected but no content */}
           {!hasInner&&!showInnerEdit&&isSel&&(
             <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'none',opacity:.35}}>
               <span style={{fontSize:9*zoom,color:'var(--text4)',fontWeight:700,border:`1px dashed var(--border)`,padding:`${2*zoom}px ${5*zoom}px`,borderRadius:4*zoom}}>+ texte</span>
@@ -928,7 +1033,6 @@ export function EditableCoverPage({zoom}:Props){
           e.stopPropagation()
           if(b.type==='text'&&!b.locked){setEditId(b.id);setSelIds(new Set([b.id]))}
           else if(b.type!=='image'&&b.type!=='logo'&&!b.locked){
-            // Double-click on shape → edit inner text
             setInnerEditId(b.id);setSelIds(new Set([b.id]));setShowPanel(true);setPanelTab('inner')
           }
         }}
@@ -949,7 +1053,6 @@ export function EditableCoverPage({zoom}:Props){
 
   const renderPanel=()=>{
 
-    // ── ELEMENTS ──
     if(panelTab==='elements') return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:6}}>
         <input placeholder="🔍 Rechercher une forme…" value={shapeSearch} onChange={e=>setShapeSearch(e.target.value)} style={{...INP,fontSize:10}}/>
@@ -1048,7 +1151,6 @@ export function EditableCoverPage({zoom}:Props){
       </div>
     )
 
-    // ── TEXTE BLOC ──
     if(panelTab==='texte'&&isText) return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:6}}>
         <label style={LBL}>Contenu</label>
@@ -1116,7 +1218,6 @@ export function EditableCoverPage({zoom}:Props){
       </div>
     )
 
-    // ── TEXTE INTÉRIEUR ──
     if(panelTab==='inner'&&isShape&&sel) return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:7}}>
         <div style={{padding:'8px 10px',borderRadius:8,background:'var(--accentS)',border:`1px solid ${accent}30`,fontSize:10,color:accent,fontWeight:600,lineHeight:1.4}}>
@@ -1125,14 +1226,11 @@ export function EditableCoverPage({zoom}:Props){
         <label style={LBL}>Texte intérieur</label>
         <textarea rows={3} value={sel.innerText||''} onChange={e=>upd(sel.id,{innerText:e.target.value})}
           style={{...INP,height:56,resize:'vertical',lineHeight:1.4}} placeholder="Entrez le texte de la forme…"/>
-
         <label style={LBL}>Police</label>
         <select value={(sel as any).innerFontFamily||fontTitle} onChange={e=>upd(sel.id,{innerFontFamily:e.target.value})} style={INP}>
           {FONTS.map(f=><option key={f} value={f} style={{fontFamily:f}}>{f}</option>)}
         </select>
-
         <Slider label="Taille" min={6} max={200} value={sel.innerFontSize||16} onChange={(v:number)=>upd(sel.id,{innerFontSize:v})} accent={accent} unit="pt"/>
-
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
           <div>
             <label style={LBL}>Style</label>
@@ -1150,10 +1248,8 @@ export function EditableCoverPage({zoom}:Props){
             </div>
           </div>
         </div>
-
         <label style={LBL}>Couleur du texte</label>
         <ColorRow value={sel.innerColor||'#ffffff'} onChange={v=>upd(sel.id,{innerColor:v})}/>
-
         {sel.innerText&&<>
           <Divider/>
           <button onClick={()=>upd(sel.id,{innerText:''})} style={{...ICOBTN,width:'100%',padding:'6px',color:'#DC2626',borderColor:'rgba(220,38,38,.3)',background:'#FEF2F2',fontSize:10}}>Effacer le texte intérieur</button>
@@ -1161,7 +1257,6 @@ export function EditableCoverPage({zoom}:Props){
       </div>
     )
 
-    // ── COULEUR ──
     if(panelTab==='couleur'&&sel&&!isText) return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:7}}>
         {isShape&&<>
@@ -1193,7 +1288,6 @@ export function EditableCoverPage({zoom}:Props){
       </div>
     )
 
-    // ── EFFETS ──
     if(panelTab==='effets'&&sel) return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:7}}>
         <label style={LBL}>Ombre portée</label>
@@ -1241,7 +1335,6 @@ export function EditableCoverPage({zoom}:Props){
       </div>
     )
 
-    // ── PAGE ──
     if(panelTab==='page') return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:7}}>
         <label style={LBL}>Fond de page</label>
@@ -1264,10 +1357,23 @@ export function EditableCoverPage({zoom}:Props){
         </>}
         <Divider/>
         <label style={LBL}>Encadrement de page</label>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:3}}>
-          {PAGE_BORDER_STYLES.map(({id,l})=><button key={id} onClick={()=>saveConf({borderStyle:id as PageBorderStyle})} style={{padding:'6px',borderRadius:7,border:'1px solid',cursor:'pointer',fontSize:10,fontWeight:600,borderColor:pageConf.borderStyle===id?accent:'var(--border)',background:pageConf.borderStyle===id?`${accent}18`:'transparent',color:pageConf.borderStyle===id?accent:'var(--text4)'}}>{l}</button>)}
+        {/* ── Grid 3 columns for the expanded list ── */}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:3}}>
+          {PAGE_BORDER_STYLES.map(({id,l})=>(
+            <button key={id} onClick={()=>saveConf({borderStyle:id as PageBorderStyle})}
+              style={{padding:'5px 3px',borderRadius:6,border:'1px solid',cursor:'pointer',fontSize:9,fontWeight:600,lineHeight:1.2,textAlign:'center',
+                borderColor:pageConf.borderStyle===id?accent:'var(--border)',
+                background:pageConf.borderStyle===id?`${accent}18`:'transparent',
+                color:pageConf.borderStyle===id?accent:'var(--text4)'}}>
+              {l}
+            </button>
+          ))}
         </div>
-        {pageConf.borderStyle!=='none'&&<><label style={LBL}>Couleur cadre</label><ColorRow value={pageConf.borderColor} onChange={v=>saveConf({borderColor:v})}/><Slider label="Épaisseur" min={2} max={40} value={pageConf.borderWidth} onChange={(v:number)=>saveConf({borderWidth:v})} accent={accent} unit="px"/></>}
+        {pageConf.borderStyle!=='none'&&<>
+          <label style={LBL}>Couleur cadre</label>
+          <ColorRow value={pageConf.borderColor} onChange={v=>saveConf({borderColor:v})}/>
+          <Slider label="Épaisseur" min={2} max={40} value={pageConf.borderWidth} onChange={(v:number)=>saveConf({borderWidth:v})} accent={accent} unit="px"/>
+        </>}
         <Divider/>
         <label style={LBL}>QR Code</label>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -1278,7 +1384,6 @@ export function EditableCoverPage({zoom}:Props){
       </div>
     )
 
-    // ── CALQUES ──
     if(panelTab==='calques') return(
       <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:3}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
@@ -1355,7 +1460,6 @@ export function EditableCoverPage({zoom}:Props){
 
       {/* CANVAS + PANEL */}
       <div style={{display:'flex',alignItems:'flex-start'}}>
-        {/* Wrapper clips the scaled canvas to the visible display size */}
         <div style={{width:dW,height:dH,position:'relative',flexShrink:0,overflow:'hidden'}}>
         <div id="eetra-page-cover" ref={canvasRef}
           style={{
@@ -1370,16 +1474,10 @@ export function EditableCoverPage({zoom}:Props){
           {/* ── DEFAULT PREVIEW (no custom blocks) ── */}
           {!hasBlocks&&(
             <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:3,display:'flex',flexDirection:'column',boxSizing:'border-box'}}>
-
-              {/* Bande accent gauche */}
               <div style={{position:'absolute',left:0,top:0,width:6,height:'100%',background:accent}}/>
               <div style={{position:'absolute',left:6,top:0,width:1.5,height:'100%',background:`${accent}22`}}/>
-
-              {/* Déco top-right */}
               <div style={{position:'absolute',top:-80,right:-80,width:240,height:240,borderRadius:'50%',background:`${accent}07`}}/>
               <div style={{position:'absolute',top:-30,right:-30,width:120,height:120,borderRadius:'50%',background:`${accent}05`}}/>
-
-              {/* EN-TÊTE logo + badge */}
               <div style={{padding:'44px 56px 0 68px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexShrink:0}}>
                 {profile.logoDataUrl?(
                   <img src={profile.logoDataUrl} alt="logo" style={{height:46,maxWidth:155,objectFit:'contain'}}/>
@@ -1401,8 +1499,6 @@ export function EditableCoverPage({zoom}:Props){
                   </div>
                 )}
               </div>
-
-              {/* CORPS central */}
               <div style={{flex:1,padding:'0 56px 0 68px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
                 <div style={{maxWidth:580}}>
                   {subtitle&&(
@@ -1437,8 +1533,6 @@ export function EditableCoverPage({zoom}:Props){
                   )}
                 </div>
               </div>
-
-              {/* PIED */}
               <div style={{padding:'24px 56px 36px 68px',flexShrink:0}}>
                 <div style={{height:1,background:`linear-gradient(90deg,${accent}44 0%,transparent 70%)`,marginBottom:20}}/>
                 <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
@@ -1469,8 +1563,8 @@ export function EditableCoverPage({zoom}:Props){
           )}
           {pageConf.showQr&&qrDataUrl&&hasBlocks&&<div style={{position:'absolute',bottom:6,right:6,pointerEvents:'none',zIndex:205}}><img src={qrDataUrl} alt="QR" style={{width:32,height:32}}/></div>}
           {showWatermark&&hasBlocks&&<div style={{position:'absolute',bottom:5,left:8,fontSize:6,color:'#ccc',pointerEvents:'none',zIndex:205}}>Généré par EETRA</div>}
-        </div>{/* end #eetra-page-cover */}
-        </div>{/* end scale wrapper */}
+        </div>
+        </div>
 
         {showPanel&&(
           <div className="pdf-hidden" style={{width:240,height:dH,background:'var(--surface)',borderLeft:'1px solid var(--border)',display:'flex',flexDirection:'column',flexShrink:0,overflow:'hidden'}}>

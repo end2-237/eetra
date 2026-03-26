@@ -47,6 +47,7 @@ export function EditorLayout() {
     pages, addPage, addBlock, setSelectedTemplate, docStyle, docId,
     title, subtitle, ref: docRef, destination, confidentiality,
     setPageBlocks, setDocStyle, setCoverStyle, currentPageIndex, modified, markSaved,
+    activeTab, setActiveTab, orientationZone,
   } = useDocument()
 
   const { profile }           = useProfile()
@@ -58,8 +59,6 @@ export function EditorLayout() {
   const canvasRef             = useRef<HTMLDivElement>(null)
 
   const [showExport, setShowExport] = useState(false)
-  const [showPanel, setShowPanel] = useState(false)
-  const [activePanel, setActivePanel] = useState<'blocks' | 'templates' | 'analytics' | 'comments' | 'layout' | 'orientation'>('blocks')
   const initDone = useRef(false)
 
   // ── Join realtime channel for this document ──────────────────────────────

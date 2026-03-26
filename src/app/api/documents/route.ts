@@ -7,13 +7,12 @@ export async function GET() {
   const session = await getServerSession(authOptions)
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const document = await prisma.document.findFirst({
+  const documents = await prisma.document.findMany({
     where: { userId: session.user.id },
     orderBy: { updatedAt: 'desc' },
+    take: 100,
   })
-  
-  // Retourner un tableau avec un seul document ou vide
-  return NextResponse.json(document ? [document] : [])
+  return NextResponse.json(documents)
 }
 
 export async function POST(req: NextRequest) {
@@ -21,17 +20,6 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
   const body = await req.json()
-  
-  // Chercher le document existant de cet utilisateur
-  const existing = await prisma.document.findFirst({
-    where: { userId: session.user.id },
-  })
-  
-  // Si un document existe, le supprimer et en créer un nouveau
-  if (existing) {
-    await prisma.document.delete({ where: { id: existing.id } })
-  }
-  
   const doc = await prisma.document.create({
     data: { ...body, userId: session.user.id },
   })

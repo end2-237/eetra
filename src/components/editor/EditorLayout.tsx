@@ -120,7 +120,7 @@ export function EditorLayout() {
       if (!hasContent) return
 
       saveDocument({
-        id:             'current',
+        id:             docId,
         title:          s.title || 'Sans titre',
         subtitle:       s.subtitle,
         ref:            s.docRef,
@@ -144,7 +144,7 @@ export function EditorLayout() {
     doSave()
 
     return () => clearInterval(interval)
-  }, [saveDocument, markSaved]) // stable deps — saveRef keeps everything else
+  }, [docId, saveDocument, markSaved]) // stable deps — saveRef keeps everything else
 
   // ── Mobile layout ─────────────────────────────────────────────────────────
   if (isMobile) {

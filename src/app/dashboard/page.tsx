@@ -101,22 +101,43 @@ const CSS = `
 
   /* Mobile overlay sidebar */
   .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; }
+  .db-hamburger { display:none; }
+  .db-mobile-close { display:none; }
 
+  /* Tablet breakpoint (640-767px) */
+  @media (max-width:1023px) {
+    .db-side { width:200px; }
+    .db-search { display: none; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+  }
+
+  /* Mobile breakpoint (max 767px) */
   @media (max-width:767px) {
+    .db {
+      height: 100dvh;
+      flex-direction: column;
+    }
+    
     .db-side {
       position: fixed; top:0; left:0; bottom:0; z-index:50;
+      width: 228px;
       transform: translateX(-100%);
       box-shadow: 4px 0 24px rgba(0,0,0,.15);
+      transition: transform .25s cubic-bezier(.23,1,.32,1);
     }
     .db-side.open { transform: translateX(0); }
     .db-side-overlay { display: block; }
+    .db-hamburger { display: flex !important; }
 
+    .db-main { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+    .db-body { flex: 1; overflow-y: auto; }
     .db-right { display: none; }
     .db-center { padding: 14px !important; }
 
     .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
     .tpl-grid  { grid-template-columns: 1fr 1fr !important; }
 
+    .db-top { padding: 0 12px; height: 48px; }
     .db-search { display: none; }
 
     .db-th span:nth-child(3),
@@ -124,6 +145,26 @@ const CSS = `
     .db-tr > span:nth-child(3),
     .db-tr > span:nth-child(4) { display: none; }
     .db-th, .db-tr { grid-template-columns: 1fr 80px !important; }
+  }
+
+  /* Extra small phones */
+  @media (max-width:479px) {
+    .db-center { padding: 12px !important; }
+    .db-top { padding: 0 10px; height: 44px; gap: 6px; }
+    
+    .db-logo-name { display: none; }
+    .db-nav-label { font-size: 9px !important; padding: 8px 6px 2px !important; }
+    .db-nav-btn { padding: 6px 7px !important; gap: 7px !important; font-size: 12px !important; }
+    
+    .stat-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
+    .stat-card { padding: 10px 12px !important; }
+    .stat-val { font-size: 18px !important; }
+    .stat-label { font-size: 10px !important; }
+    
+    .db-block-head { padding: 8px 12px !important; }
+    .db-block-title { font-size: 11px !important; }
+    .db-th, .db-tr { padding: 6px 10px !important; gap: 6px !important; }
+    .db-th span { font-size: 9px !important; }
   }
 `
 

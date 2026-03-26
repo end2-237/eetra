@@ -20,12 +20,25 @@ import type { DocBlock }      from '@/types'
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false)
+  const [isMobileInit, setIsMobileInit] = useState(false)
+  
   useEffect(() => {
-    const check = () => setMobile(window.innerWidth < 768)
+    const check = () => {
+      // Use 1024px breakpoint for better tablet support
+      const isMobileView = window.innerWidth < 1024
+      setMobile(isMobileView)
+    }
+    
     check()
-    window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
+    setIsMobileInit(true)
+    
+    const resizeListener = () => check()
+    window.addEventListener('resize', resizeListener, { passive: true })
+    return () => window.removeEventListener('resize', resizeListener)
   }, [])
+  
+  // Prevent hydration mismatch
+  if (!isMobileInit) return false
   return mobile
 }
 

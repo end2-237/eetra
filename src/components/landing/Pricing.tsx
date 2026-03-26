@@ -62,11 +62,20 @@ const CSS = `
   @media (max-width: 1023px) {
     .pricing-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
   }
-  @media (max-width: 599px) {
+  @media (max-width: 640px) {
     .pricing-grid { grid-template-columns:1fr; gap:12px; }
-    .pricing-section { padding:64px 0!important; }
+    .pricing-section { padding:56px 0!important; }
     .pricing-inner { padding:0 20px!important; }
     .pricing-toggle { flex-direction:column; gap:6px; align-items:center; }
+  }
+  @media (max-width: 479px) {
+    .pricing-section { padding:40px 0!important; }
+    .pricing-inner { padding:0 16px!important; }
+    .pricing-inner > div:first-child { margin-bottom:32px!important; }
+    .pricing-inner > div:first-child h2 { font-size:clamp(22px,5vw,32px)!important; }
+    .pricing-inner > div:first-child p { font-size:12px; }
+    .pricing-toggle { padding:3px !important; }
+    .pricing-toggle button { padding:6px 14px!important; font-size:12px!important; }
   }
 `
 

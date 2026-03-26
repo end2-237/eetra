@@ -43,6 +43,12 @@ const CSS = `
     .faq-section { padding:64px 0; }
     .faq-inner { padding:0 20px; gap:28px; }
   }
+  @media (max-width: 479px) {
+    .faq-section { padding:48px 0; }
+    .faq-inner { padding:0 16px; gap:24px; }
+    .faq-sticky h2 { font-size:clamp(22px,5vw,32px)!important; }
+    .faq-sticky p { font-size:13px; }
+  }
 `
 
 export function FAQ() {

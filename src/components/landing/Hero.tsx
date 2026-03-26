@@ -106,7 +106,12 @@ const CSS = `
   }
   @media (max-width: 479px) {
     .hero-doc-wrap { display:none; }
-    .hero-grid { grid-template-columns:1fr; }
+    .hero-grid { grid-template-columns:1fr; gap:24px; padding-bottom:32px; }
+    .hero-section { padding:32px 16px 0; }
+    .hero-h1 { font-size:clamp(24px,5vw,42px); line-height:1.1; }
+    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -16px; padding:16px; gap:0; }
+    .hero-stats > div { padding:14px 10px; }
+    .hero-stats > div span:first-child { font-size:clamp(20px,3.5vw,28px); }
   }
 `
 

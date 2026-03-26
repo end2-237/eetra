@@ -41,12 +41,19 @@ const CSS = `
     .nav-micro-right { display:none; }
     .nav-micro-left span:last-child { display:none; }
     .nav-main    { padding:0 16px; height:60px; }
+    .nav-main > a > div:last-child { display:none; }
     .nav-links   { display:none; }
     .nav-hamburger { display:flex; }
     .nav-actions .btn-ghost { display:none; }
     .nav-actions .btn-primary { font-size:12px; padding:8px 14px; }
   }
   @media (max-width: 479px) {
+    .nav-micro   { padding:0 12px; height:28px; font-size:10px; }
+    .nav-micro-left span:first-child { display:none; }
+    .nav-main    { padding:0 12px; height:56px; gap:8px; }
+    .nav-main > a { gap:6px; }
+    .nav-main > a > div:first-child { width:28px; height:28px; }
+    .nav-actions .btn-primary { font-size:11px; padding:6px 10px; }
     .nav-actions .btn-primary span { display:none; }
   }
 `

@@ -705,7 +705,7 @@ function SnapGuides({guides,zoom}:{guides:{x?:number;y?:number}[];zoom:number}) 
   )}</>
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────��──
 // UI HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -988,6 +988,7 @@ export function EditableCoverPage({zoom}:Props){
 
       const hasInner=b.innerText&&b.innerText.length>0
       const showInnerEdit=isInnerEdit
+      const minPadding=Math.max(12,4*zoom)
       content=(
         <div style={{position:'relative',width:'100%',height:'100%'}}>
           {shapeEl}
@@ -1002,7 +1003,7 @@ export function EditableCoverPage({zoom}:Props){
                 pointerEvents:showInnerEdit?'text':'none',
                 cursor:showInnerEdit?'text':'inherit',
                 outline:'none',overflow:'hidden',
-                padding:`${4*zoom}px`,textAlign:b.innerAlign||'center',
+                padding:`${minPadding}px`,textAlign:b.innerAlign||'center',
                 fontSize:innerFs,fontWeight:b.innerBold?700:400,
                 fontStyle:b.innerItalic?'italic':'normal',
                 color:b.innerColor||'#ffffff',

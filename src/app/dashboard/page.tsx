@@ -106,15 +106,8 @@ const CSS = `
   .db-hamburger { display:none; }
   .db-mobile-close { display:none; }
 
-  /* Tablet breakpoint (640-767px) */
+  /* Tablet/Mobile breakpoint (max 1023px) */
   @media (max-width:1023px) {
-    .db-side { width:200px; }
-    .db-search { display: none; }
-    .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-  }
-
-  /* Mobile breakpoint (max 767px) */
-  @media (max-width:767px) {
     .db {
       height: 100dvh;
       flex-direction: column;
@@ -129,25 +122,27 @@ const CSS = `
       overflow-y: auto;
     }
     .db-side.open { transform: translateX(0); }
-    .db-side-overlay { display: block; }
+    .db-side-overlay { display: block !important; }
     .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; }
-
+    
+    .db-search { display: none !important; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
     .db-main { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
     .db-body { flex: 1; overflow-y: auto; }
     .db-right { display: none; }
     .db-center { padding: 14px !important; }
-
-    .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
     .tpl-grid  { grid-template-columns: 1fr 1fr !important; }
-
     .db-top { padding: 0 12px; height: 48px; gap: 6px !important; }
-    .db-search { display: none; }
-
     .db-th span:nth-child(3),
     .db-th span:nth-child(4),
     .db-tr > span:nth-child(3),
     .db-tr > span:nth-child(4) { display: none; }
     .db-th, .db-tr { grid-template-columns: 1fr 80px !important; }
+  }
+
+  /* Mobile breakpoint (max 767px) */
+  @media (max-width:767px) {
+    .stat-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
   }
 
   /* Extra small phones */
@@ -275,7 +270,11 @@ export default function DashboardPage() {
         <Sidebar />
 
         {/* Mobile sidebar overlay */}
-        {sideOpen && <div className="db-side-overlay" onClick={() => setSideOpen(false)} />}
+        <div 
+          className={`db-side-overlay${sideOpen ? ' open' : ''}`} 
+          onClick={() => setSideOpen(false)} 
+          style={{ display: sideOpen ? 'block' : 'none' }}
+        />
 
         {/* Main */}
         <div className="db-main">
@@ -285,8 +284,8 @@ export default function DashboardPage() {
             <div className="db-top-left">
               {/* Hamburger - mobile only */}
               <button onClick={() => setSideOpen(v => !v)}
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'none' }}
-                className="db-hamburger">
+                className="db-hamburger"
+                title="Menu">
                 <Menu size={20} />
               </button>
               <div className="db-search">

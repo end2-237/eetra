@@ -33,7 +33,7 @@ export function EditorLayout() {
   const {
     pages, addPage, addBlock, setSelectedTemplate, docStyle, docId,
     title, subtitle, ref: docRef, destination, confidentiality,
-    setPageBlocks, setDocStyle, setCoverStyle, currentPageIndex,
+    setPageBlocks, setDocStyle, setCoverStyle, currentPageIndex, modified, markSaved,
   } = useDocument()
 
   const { profile }           = useProfile()
@@ -95,27 +95,56 @@ export function EditorLayout() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-save ────────────────────────────────────────────────────────────
+  // ── Auto-save: robust interval-based approach ────────────────────────────
+  // Uses a ref to always access the latest state without re-creating the interval.
+  // Saves every 3 seconds IF the document has been modified.
+  const saveRef = useRef({
+    pages, title, subtitle, docRef, destination, confidentiality,
+    profile, docStyle, modified,
+  })
+
+  // Keep ref in sync with latest state on every render
   useEffect(() => {
-    const hasContent = title || pages.some(p => p.blocks.length > 0)
-    if (!hasContent) return
-    const timer = setTimeout(() => {
+    saveRef.current = {
+      pages, title, subtitle, docRef, destination, confidentiality,
+      profile, docStyle, modified,
+    }
+  })
+
+  useEffect(() => {
+    const doSave = () => {
+      const s = saveRef.current
+      // Only save if there is content and the document has been modified
+      if (!s.modified) return
+      const hasContent = s.title || s.pages.some(p => p.blocks.length > 0)
+      if (!hasContent) return
+
       saveDocument({
         id:             'current',
-        title:          title || 'Sans titre',
-        subtitle,
-        ref:            docRef,
-        destination,
-        confidentiality,
-        entityName:     profile.name,
-        pages,
-        docStyle,
-        pageCount:      pages.length,
-        blockCount:     pages.reduce((c, p) => c + p.blocks.length, 0),
+        title:          s.title || 'Sans titre',
+        subtitle:       s.subtitle,
+        ref:            s.docRef,
+        destination:    s.destination,
+        confidentiality: s.confidentiality,
+        entityName:     s.profile.name,
+        pages:          s.pages,
+        docStyle:       s.docStyle,
+        pageCount:      s.pages.length,
+        blockCount:     s.pages.reduce((c, p) => c + p.blocks.length, 0),
       })
-    }, 2000)
-    return () => clearTimeout(timer)
-  }, [title, pages, docStyle]) // eslint-disable-line react-hooks/exhaustive-deps
+      // Mark as saved so we don't re-save unchanged content
+      markSaved()
+    }
+
+    // Save every 3 seconds
+    const interval = setInterval(doSave, 3000)
+
+    // Also save immediately when the component mounts if there's content
+    // (covers the case where the user refreshes)
+    doSave()
+
+    return () => clearInterval(interval)
+  }, [saveDocument, markSaved]) // stable deps — saveRef keeps everything else
 
   // ── Mobile layout ─────────────────────────────────────────────────────────
   if (isMobile) {

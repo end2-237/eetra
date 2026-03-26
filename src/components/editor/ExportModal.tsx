@@ -26,7 +26,7 @@ const A4_W_MM = 210
 const A4_H_MM = 297
 
 export function ExportModal({ onClose }: Props) {
-  const { title, subtitle, pages, docId, markSaved } = useDocument()
+  const { title, subtitle, pages, docId, markSaved, zoom: currentZoom, setZoom } = useDocument()
   const { profile } = useProfile()
   const { addEntry } = useHistory()
   const { addNotification } = useNotifications()
@@ -59,6 +59,15 @@ export function ExportModal({ onClose }: Props) {
 
       setProgress(15)
 
+      // ── FIX: Force zoom to 100% before capture ─────────────────────────────
+      // Save current zoom and set to 1 so all pages render at full A4 size
+      const savedZoom = currentZoom
+      setZoom(1)
+
+      // Wait for React to re-render with zoom=1
+      await new Promise(r => setTimeout(r, 300))
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+
       document.body.classList.add('pdf-exporting')
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
       await new Promise(r => setTimeout(r, 150))
@@ -71,6 +80,12 @@ export function ExportModal({ onClose }: Props) {
       })
 
       const scale = quality === 'high' ? 2 : 1.5
+
+      // ── Build page IDs list ────────────────────────────────────────────────
+      // Cover: #eetra-page-cover is the outer wrapper from DocumentViewer.
+      // Its first child div is the scaled canvas (width=PAGE_W, transform=scale(zoom)).
+      // Since we forced zoom=1, transform=scale(1) = no transform.
+      // Content pages: id="eetra-page-${idx}" — same structure.
       const pageIds = [
         'eetra-page-cover',
         ...Array.from({ length: pages.length }, (_, i) => `eetra-page-${i}`),
@@ -84,25 +99,28 @@ export function ExportModal({ onClose }: Props) {
         const outerEl = document.getElementById(pageIds[i])
         if (!outerEl) continue
 
-        // ── FIX: trouver l'élément A4 réel (794×1123) ──────────────────────
-        // Pour la cover, #eetra-page-cover EST le wrapper outer, et son
-        // premier enfant DIV est le div zoomé. On cherche #eetra-cover-static
-        // qui est toujours rendu à PAGE_W × PAGE_H dans le DOM.
-        // Pour les pages de contenu, outerEl contient un div zoomé en first child.
-
+        // ── Find the A4 element to capture ────────────────────────────────
+        // For the cover page: EditableCoverPage renders a wrapper div (dW×dH)
+        // containing an inner div with id="eetra-page-cover" that has
+        // transform:scale(zoom). After forcing zoom=1, the inner div IS the
+        // 794×1123 element. We look for #eetra-cover-static inside it first
+        // (used by the static CoverPage component), then fall back to the
+        // first child element (used by EditableCoverPage's canvas div).
         let captureEl: HTMLElement
+
         const staticCover = outerEl.querySelector('#eetra-cover-static') as HTMLElement | null
 
         if (staticCover) {
-          // Cover page — capturer directement le div A4 non-zoomé
           captureEl = staticCover
         } else {
-          // Content pages — le premier enfant est le div zoomé via CSS transform
+          // EditableCoverPage: outerEl IS the wrapper with overflow:hidden.
+          // Its first child is the div with id="eetra-page-cover" (the scaled inner canvas).
+          // Since we set zoom=1, transform=scale(1), so dimensions are correct.
           const innerEl = outerEl.firstElementChild as HTMLElement
           captureEl = innerEl || outerEl
         }
 
-        // Sauvegarder et neutraliser le transform CSS pour le rendu
+        // Temporarily neutralize any remaining transform for safety
         const savedTransform = captureEl.style.transform
         const savedMarginBottom = captureEl.style.marginBottom
         const savedWidth = captureEl.style.width
@@ -110,7 +128,6 @@ export function ExportModal({ onClose }: Props) {
 
         captureEl.style.transform = 'none'
         captureEl.style.marginBottom = '0'
-        // S'assurer que les dimensions sont bien A4
         captureEl.style.width = `${PAGE_W}px`
         captureEl.style.height = `${PAGE_H}px`
 
@@ -126,11 +143,10 @@ export function ExportModal({ onClose }: Props) {
           windowWidth: PAGE_W,
           windowHeight: PAGE_H,
           logging: false,
-          // Ignorer les éléments pdf-hidden
           ignoreElements: (el) => el.classList?.contains('pdf-hidden'),
         })
 
-        // Restaurer les styles
+        // Restore styles
         captureEl.style.transform = savedTransform
         captureEl.style.marginBottom = savedMarginBottom
         captureEl.style.width = savedWidth
@@ -148,6 +164,10 @@ export function ExportModal({ onClose }: Props) {
       }
 
       document.body.classList.remove('pdf-exporting')
+
+      // ── FIX: Restore original zoom after capture ───────────────────────────
+      setZoom(savedZoom)
+
       setProgress(95)
       setProgressLabel('Finalisation…')
 
@@ -175,6 +195,8 @@ export function ExportModal({ onClose }: Props) {
       setStep('done')
     } catch (err: any) {
       document.body.classList.remove('pdf-exporting')
+      // Restore zoom even on error
+      try { setZoom(currentZoom) } catch {}
       setErrorMsg(err?.message || 'Erreur lors de la génération PDF. Réessayez.')
       setStep('error')
     }
@@ -197,7 +219,7 @@ export function ExportModal({ onClose }: Props) {
       setProgress(20)
       setProgressLabel('Génération des sections…')
 
-      const FONT     = 'Times New Roman'
+      const FONT = 'Times New Roman'
       const accentHex = (profile.color || '#1B4FD8').replace('#', '')
 
       const docChildren: any[] = []
@@ -347,9 +369,9 @@ export function ExportModal({ onClose }: Props) {
       setProgressLabel('Téléchargement…')
 
       const blob = await Packer.toBlob(doc)
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href     = url
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
       a.download = `EETRA_${docName}_${new Date().toISOString().slice(0, 10)}.docx`
       a.click()
       URL.revokeObjectURL(url)
@@ -440,6 +462,16 @@ export function ExportModal({ onClose }: Props) {
                   </div>
                 </div>
               )}
+
+              {/* Zoom notice */}
+              {/* {currentZoom !== 1 && (
+                <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(27,79,216,.06)', border: '1px solid rgba(27,79,216,.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14 }}>🔍</span>
+                  <div style={{ fontSize: 11, color: 'var(--accent)', lineHeight: 1.4 }}>
+                    Le zoom ({Math.round(currentZoom * 100)}%) sera automatiquement mis à 100% pendant l'export puis restauré.
+                  </div>
+                </div>
+              )} */}
 
               <Button variant="primary" fullWidth size="lg" onClick={handleExport}>
                 <Download size={14} />

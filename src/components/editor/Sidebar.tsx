@@ -5,7 +5,7 @@ import Image from 'next/image'
 import logo from '../../app/icon.png'
 import {
   Layers, LayoutGrid, Layout, BarChart2, MessageSquare,
-  BookOpen, Download, Settings, LogOut,
+  BookOpen, Download, Settings, BookMarked,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile }  from '@/contexts/ProfileContext'
@@ -18,22 +18,25 @@ const CSS = `
   .sb-btn { width:36px; height:36px; border-radius:7px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s,color .12s; background:transparent; color:var(--text4); }
   .sb-btn:hover { background:var(--bg3); color:var(--text2); }
   .sb-btn.active { background:var(--accentS); color:var(--accent); }
+  .sb-btn.active-oz { background:rgba(124,58,237,.1); color:#7C3AED; }
+  .sb-btn.active-oz:hover { background:rgba(124,58,237,.18); }
   .sb-divider { width:24px; height:1px; background:var(--border); margin:5px 0; flex-shrink:0; }
   .sb-avatar { width:26px; height:26px; border-radius:6px; background:var(--accentS); display:flex; align-items:center; justify-content:center; overflow:hidden; }
 `
 
 const TABS = [
-  { id:'editor',    Icon:Layers,        tip:'Blocs'        },
-  { id:'templates', Icon:LayoutGrid,    tip:'Templates'    },
-  { id:'layout',    Icon:Layout,        tip:'Mise en page' },
-  { id:'analytics', Icon:BarChart2,     tip:'Analyse'      },
-  { id:'comments',  Icon:MessageSquare, tip:'Notes'        },
+  { id:'editor',      Icon:Layers,       tip:'Blocs'              },
+  { id:'templates',   Icon:LayoutGrid,   tip:'Templates'          },
+  { id:'layout',      Icon:Layout,       tip:'Mise en page'       },
+  { id:'analytics',   Icon:BarChart2,    tip:'Analyse'            },
+  { id:'comments',    Icon:MessageSquare,tip:'Notes'              },
+  { id:'orientation', Icon:BookMarked,   tip:"Zone d'Orientation" },
 ]
 
 interface Props { onExport: () => void }
 
 export function Sidebar({ onExport }: Props) {
-  const { activeTab, setActiveTab } = useDocument()
+  const { activeTab, setActiveTab, orientationZone } = useDocument()
   const { profile }  = useProfile()
   const { planId }   = usePlan()
   const router       = useRouter()
@@ -52,16 +55,31 @@ export function Sidebar({ onExport }: Props) {
 
         {/* Tab nav */}
         <div style={{ display:'flex', flexDirection:'column', gap:2, flex:1, width:'100%', padding:'0 8px' }}>
-          {TABS.map(({ id, Icon, tip }) => (
-            <button
-              key={id}
-              className={`sb-btn${activeTab === id ? ' active' : ''}`}
-              title={tip}
-              onClick={() => setActiveTab(id as any)}
-            >
-              <Icon size={16}/>
-            </button>
-          ))}
+          {TABS.map(({ id, Icon, tip }) => {
+            const isActive = activeTab === id
+            const isOZ = id === 'orientation'
+            const ozActive = isOZ && isActive
+            const ozEnabled = isOZ && orientationZone?.enabled && !isActive
+            return (
+              <button
+                key={id}
+                className={`sb-btn${isActive && !isOZ ? ' active' : ''}${ozActive ? ' active-oz' : ''}`}
+                title={tip}
+                onClick={() => setActiveTab(id as any)}
+                style={ozEnabled ? { position: 'relative' } : {}}
+              >
+                <Icon size={16}/>
+                {/* Dot indicator when OZ is enabled but tab not active */}
+                {ozEnabled && (
+                  <div style={{
+                    position: 'absolute', top: 4, right: 4,
+                    width: 6, height: 6, borderRadius: '50%',
+                    background: '#7C3AED',
+                  }} />
+                )}
+              </button>
+            )
+          })}
         </div>
 
         {/* Bottom actions */}

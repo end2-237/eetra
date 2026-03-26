@@ -100,7 +100,7 @@ export interface CompanyProfile {
   watermark: boolean
 }
 
-export type TabName = 'editor' | 'templates' | 'layout' | 'analytics' | 'comments'
+export type TabName = 'editor' | 'templates' | 'layout' | 'analytics' | 'comments' | 'orientation'
 
 export interface TeamMember {
   id: string
@@ -212,4 +212,55 @@ export const STYLE_PRESETS: Record<string, DocumentStyle> = {
     fontBody: 'DM Sans',
     accentColor: '#1B4FD8',
   },
+}
+
+// ─── Orientation Zone ─────────────────────────────────────────────────────────
+
+/** A single entry in the Table of Contents */
+export interface TOCEntry {
+  level: number           // 1=H1/Section, 2=H2, 3=H3, 4=H4
+  number: string          // e.g. "1." or "1.2" or "A."
+  label: string           // heading text
+  page: number            // absolute page number in the final document
+}
+
+/** Configuration for the Orientation Zone (TOC area) */
+export interface OrientationZoneConfig {
+  enabled: boolean
+
+  /** Where to insert the zone in the document */
+  position: 'after-cover' | 'after-page' | 'end'
+
+  /** When position='after-page', which content page index (0-based) to insert after */
+  afterPageIndex: number | null
+
+  // ── Table of Contents ──
+  showTOC: boolean
+  tocLevels: number[]           // which heading levels to include (1,2,3,4)
+  numberStyle: 'numeric' | 'roman' | 'alpha'
+  showPageNumbers: boolean
+  tocTitle: string
+
+  // ── List of Tables ──
+  showTableList: boolean
+  tableListTitle: string
+
+  // ── List of Illustrations ──
+  showIllustrationList: boolean
+  illustrationListTitle: string
+}
+
+export const DEFAULT_ORIENTATION_ZONE: OrientationZoneConfig = {
+  enabled: false,
+  position: 'after-cover',
+  afterPageIndex: null,
+  showTOC: true,
+  tocLevels: [1, 2, 3],
+  numberStyle: 'numeric',
+  showPageNumbers: true,
+  tocTitle: 'Table des Matières',
+  showTableList: false,
+  tableListTitle: 'Liste des Tableaux',
+  showIllustrationList: false,
+  illustrationListTitle: 'Liste des Illustrations',
 }

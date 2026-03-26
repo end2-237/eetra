@@ -179,26 +179,27 @@ export function EditorLayout() {
         height: '100vh', 
         overflow: 'hidden', 
         background: 'var(--bg)',
-        flexDirection: isMobile ? 'column' : 'row',
+        flexDirection: 'row',
       }}>
         <Sidebar onExport={() => setShowExport(true)} />
         
-        {/* Desktop panel (hidden on tablet/mobile) */}
-        {!isMobile && (
-          <div style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <EditorPanel />
-          </div>
-        )}
+        {/* Desktop panel (visible on desktop, hidden on tablet/mobile) */}
+        <div className="editor-side-panel" style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <EditorPanel />
+        </div>
         
-        {/* Mobile/Tablet panel overlay */}
-        {isMobile && (activeTab !== 'editor') && (
-          <div style={{
+        {/* Mobile/Tablet panel overlay (shown when activeTab is not editor) */}
+        {activeTab !== 'editor' && (
+          <div className="editor-panel-modal-overlay" style={{
             position: 'fixed', 
             inset: 0, 
             background: 'rgba(0,0,0,.3)', 
             zIndex: 99,
             display: 'flex',
             alignItems: 'flex-end',
+            opacity: 0,
+            visibility: 'hidden',
+            transition: 'opacity .25s, visibility .25s',
           }} onClick={() => setActiveTab('editor')} >
             <div style={{
               width: '100%',
@@ -238,8 +239,17 @@ export function EditorLayout() {
           from { opacity: 0; transform: translateY(100%); }
           to { opacity: 1; transform: translateY(0); }
         }
+        
+        /* Desktop: show side panel, hide mobile modal */
+        @media (min-width: 1024px) {
+          .editor-side-panel { display: flex !important; }
+          .editor-panel-modal-overlay { display: none !important; }
+        }
+        
+        /* Tablet/Mobile: hide side panel, show mobile modal */
         @media (max-width: 1023px) {
-          [class^="sb-"] { max-width: 100% !important; }
+          .editor-side-panel { display: none !important; }
+          .editor-panel-modal-overlay { display: flex !important; opacity: 1; visibility: visible; }
         }
       `}</style>
     </PageLayoutProvider>

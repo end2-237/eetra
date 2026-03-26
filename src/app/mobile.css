@@ -1,34 +1,43 @@
 /*
  * Mobile-responsive additions for EETRA
- * Append this content to src/app/globals.css
+ * Comprehensive responsive CSS for all device sizes
  *
  * Breakpoints:
- *   xs:  < 480px  (small phones)
- *   sm:  < 640px  (phones)
- *   md:  < 768px  (tablets/large phones)
- *   lg: >= 768px  (desktop)
+ *   xs:  320px   (small phones)
+ *   sm:  480px   (phones)
+ *   md:  640px   (tablets/large phones)
+ *   lg:  768px   (iPad/small desktop)
+ *   xl:  1024px  (desktop)
+ *   2xl: 1280px  (large desktop)
  */
 
-/* ── Safe area insets (notch phones) ──────────────────────────────────────── */
-:root {
-  --safe-top:    env(safe-area-inset-top,    0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left:   env(safe-area-inset-left,   0px);
-  --safe-right:  env(safe-area-inset-right,  0px);
-}
-
-/* ── Touch targets ────────────────────────────────────────────────────────── */
+/* ── Touch targets (44px minimum for accessibility) ─────────────────────── */
 @media (max-width: 767px) {
   button, a, [role="button"] {
     min-height: 44px;
-    min-width:  44px;
+    min-width: 44px;
   }
 
-  /* But let small icon buttons stay smaller */
-  .sb-btn, .act-btn, .tb-icon-btn, .tpl-act-btn {
+  /* Exception: small icon buttons */
+  .sb-btn, .act-btn, .tb-icon-btn, .tpl-act-btn,
+  .db-icon-btn, .close-btn, .icon-btn {
     min-height: unset;
-    min-width:  unset;
+    min-width: unset;
   }
+}
+
+/* ── Extra small phones (320-479px) ───────────────────────────────────── */
+@media (max-width: 479px) {
+  html, body {
+    font-size: 14px;
+  }
+  
+  h1 { font-size: clamp(1.25rem, 4vw, 1.75rem) !important; }
+  h2 { font-size: clamp(1.125rem, 3.5vw, 1.5rem) !important; }
+  h3 { font-size: clamp(1rem, 3vw, 1.25rem) !important; }
+  
+  /* Padding/margin scaling */
+  .container { padding-left: 12px !important; padding-right: 12px !important; }
 }
 
 /* ── Landing page ─────────────────────────────────────────────────────────── */
@@ -204,4 +213,348 @@
     width: 100% !important;
     max-height: 100dvh !important;
   }
+}
+
+/* ── Tablet optimizations (640px-767px) ─────────────────────────────────── */
+@media (min-width: 640px) and (max-width: 767px) {
+  .db-side { width: 180px !important; }
+  .db-center { padding: 16px !important; }
+  .stat-grid { grid-template-columns: 1fr 1fr !important; }
+  
+  h1 { font-size: clamp(1.25rem, 2.5vw, 1.75rem) !important; }
+  h2 { font-size: clamp(1.125rem, 2.5vw, 1.5rem) !important; }
+}
+
+/* ── XS phones modal & input optimizations ────────────────────────────────── */
+@media (max-width: 479px) {
+  /* Modal full screen on XS */
+  [role="dialog"],
+  .modal,
+  .dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+    position: fixed !important;
+    inset: 0 !important;
+  }
+  
+  /* Input fields full width on XS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea,
+  select {
+    width: 100% !important;
+    font-size: 16px !important; /* Prevent zoom on iOS */
+  }
+  
+  /* Buttons full width in modals */
+  .modal button,
+  .dialog button {
+    width: 100% !important;
+  }
+}
+
+/* ── Content editable improvements ──────────────────────────────────────── */
+@media (max-width: 767px) {
+  [contenteditable] {
+    padding: 12px !important;
+    min-height: 44px !important;
+    line-height: 1.5 !important;
+  }
+}
+
+/* ── Table responsivity ──────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  table, [role="table"] {
+    font-size: 12px !important;
+  }
+  
+  th, td, [role="columnheader"], [role="cell"] {
+    padding: 8px 6px !important;
+  }
+}
+
+/* ── Flex wrapping for mobile ────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  [style*="display: flex"] {
+    flex-wrap: wrap !important;
+  }
+}
+
+/* ── Editor specific styles ──────────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  /* Mobile editor layout */
+  .editor-layout { 
+    flex-direction: column !important; 
+    height: 100dvh !important;
+  }
+  
+  .editor-sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 240px !important;
+    z-index: 40 !important;
+    transform: translateX(-100%) !important;
+    transition: transform .25s cubic-bezier(.23,1,.32,1) !important;
+    box-shadow: 4px 0 24px rgba(0,0,0,.15) !important;
+  }
+  
+  .editor-sidebar.open {
+    transform: translateX(0) !important;
+  }
+  
+  .editor-main {
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+  
+  .editor-toolbar {
+    height: 48px !important;
+    padding: 0 12px !important;
+  }
+  
+  .editor-canvas {
+    padding: 12px !important;
+  }
+  
+  /* Document viewer responsive */
+  .doc-viewer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .doc-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    zoom: 0.7 !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .editor-sidebar {
+    width: 200px !important;
+  }
+  
+  .doc-page {
+    zoom: 0.6 !important;
+  }
+}
+
+@media (max-width: 479px) {
+  .editor-sidebar {
+    width: 180px !important;
+  }
+  
+  .editor-toolbar {
+    height: 44px !important;
+    padding: 0 10px !important;
+    gap: 6px !important;
+  }
+  
+  .editor-toolbar button {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+  }
+  
+  .doc-page {
+    zoom: 0.5 !important;
+  }
+}
+
+/* ── Comprehensive page layouts ──────────────────────────────────────────────── */
+@media (max-width: 1023px) {
+  /* Documents page */
+  .docs-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+  .docs-filter-bar { flex-wrap: wrap !important; }
+  
+  /* Templates page */
+  .tpl-header { flex-direction: column !important; gap: 12px !important; }
+  .tpl-selector { overflow-x: auto !important; white-space: nowrap !important; }
+  
+  /* Designs page */
+  .designs-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; }
+  
+  /* Team page */
+  .team-header { flex-direction: column !important; }
+  .team-table { font-size: 12px !important; }
+  
+  /* Settings page */
+  .settings-nav { flex-wrap: wrap !important; }
+  .settings-form { max-width: 100% !important; }
+  
+  /* Analytics page */
+  .chart-container { flex-direction: column !important; }
+}
+
+@media (max-width: 767px) {
+  /* Documents page responsive */
+  .docs-header { padding: 16px 12px !important; }
+  .docs-list { 
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  .docs-item { flex-direction: column !important; }
+  
+  /* Templates page responsive */
+  .tpl-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .tpl-card { padding: 12px !important; }
+  
+  /* Designs page responsive */
+  .designs-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) !important; gap: 8px !important; }
+  
+  /* Team page responsive */
+  .team-members { grid-template-columns: 1fr !important; }
+  .team-member-card { flex-direction: column !important; }
+  
+  /* Settings responsive */
+  .settings-content { grid-template-columns: 1fr !important; gap: 16px !important; }
+  .settings-group { gap: 12px !important; }
+  
+  /* Analytics responsive */
+  .analytics-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .chart-container { height: auto !important; }
+  
+  /* History/Analytics tables */
+  .analytics-table tbody tr {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 479px) {
+  /* All grids to single column on XS */
+  [class*="-grid"] { grid-template-columns: 1fr !important; }
+  
+  /* Cards and items */
+  [class*="-card"],
+  [class*="-item"],
+  [class*="-container"] {
+    padding: 12px !important;
+  }
+  
+  /* Forms */
+  form { gap: 12px !important; }
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    padding: 10px !important;
+    font-size: 16px !important;
+    border-radius: 8px !important;
+  }
+  
+  /* Headers */
+  h1 { font-size: clamp(18px, 5vw, 24px) !important; }
+  h2 { font-size: clamp(16px, 4vw, 22px) !important; }
+  h3 { font-size: clamp(14px, 3.5vw, 20px) !important; }
+}
+
+/* ── Orientation fixes ───────────────────────────────────────────────────────── */
+@media (max-width: 767px) and (orientation: landscape) {
+  body { height: auto !important; }
+  .db { height: auto !important; }
+  .editor-layout { height: auto !important; }
+}
+
+/* ── Print styles for mobile ────────────────────────────────────────────────────── */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+  
+  .no-print,
+  .db-side,
+  .db-top,
+  .editor-toolbar,
+  .editor-sidebar,
+  nav {
+    display: none !important;
+  }
+}
+
+/* ── Mobile focus & interaction improvements ──────────────────────────────── */
+@media (max-width: 767px) {
+  /* Prevent iOS zoom on input focus */
+  input, 
+  textarea, 
+  select {
+    font-size: 16px !important;
+  }
+  
+  /* Better focus states for mobile */
+  button:focus,
+  a:focus,
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: 2px !important;
+  }
+  
+  /* Prevent double-tap zoom on buttons */
+  button, a { touch-action: manipulation; }
+  
+  /* Better hover states on touch devices */
+  @media (hover: none) {
+    button:hover,
+    a:hover {
+      background: inherit !important;
+    }
+  }
+  
+  /* Active states */
+  button:active,
+  a:active {
+    opacity: 0.7 !important;
+  }
+}
+
+/* ── Accessibility improvements ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Dark mode automatically handled by --dark class */
+}
+
+/* ── High contrast mode ──────────────────────────────────────────────────────── */
+@media (prefers-contrast: more) {
+  :root {
+    --text: #000000;
+    --text2: #1a1a1a;
+    --border: #333333;
+  }
+  
+  .dark {
+    --text: #ffffff;
+    --text2: #e8e8e8;
+    --border: #cccccc;
+  }
+}
+
+/* ── Ensure readable text sizes ──────────────────────────────────────────────── */
+body {
+  font-size: clamp(14px, 2.5vw, 16px);
+  line-height: 1.5;
+}
+
+/* ── Ensure visible focus indicators for keyboard users ──────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

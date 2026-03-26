@@ -54,6 +54,19 @@ const CSS = `
     .footer-bottom { flex-direction:column; align-items:flex-start; gap:12px; }
     .footer-bottom-links { flex-wrap:wrap; }
   }
+  @media (max-width: 479px) {
+    .footer-cta { padding:48px 0; }
+    .footer-cta-inner { padding:0 16px; }
+    .footer-cta-inner h2 { font-size:clamp(24px,5vw,40px)!important; }
+    .footer-cta-inner p { font-size:13px; }
+    .footer-cta-btns { gap:10px; }
+    .footer-cta-btns button { padding:12px 20px!important; font-size:12px!important; }
+    .footer-pay-badges { gap:6px; margin-top:16px; }
+    .footer-pay-badges > div { padding:4px 10px!important; font-size:10px; }
+    .footer-main { padding:40px 0 20px; }
+    .footer-main-inner { padding:0 16px; }
+    .footer-bottom { gap:8px; }
+  }
 `
 
 export function Footer() {

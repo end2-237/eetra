@@ -268,24 +268,25 @@ export function DocumentViewer({ onExport }: Props) {
         background: 'var(--surface)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 16px', gap: 12,
+        minWidth: 0,
       }}>
         {/* Left — title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', minWidth: 0 }}>
             {title || 'Document sans titre'}
           </span>
           {modified && (
-            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(217,119,6,.1)', color: '#D97706', letterSpacing: '.06em' }}>
+            <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(217,119,6,.1)', color: '#D97706', letterSpacing: '.06em', display: 'none' }} className="show-sm">
               Non sauvegardé
             </span>
           )}
-          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'var(--accentS)', color: 'var(--accent)', letterSpacing: '.06em', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'var(--accentS)', color: 'var(--accent)', letterSpacing: '.06em', textTransform: 'uppercase', display: 'none' }} className="show-md">
             {coverStyle?.layout || 'classic'}
           </span>
           {orientationZone?.enabled && (
             <span
               onClick={() => setActiveTab('orientation')}
-              style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,.1)', color: '#7C3AED', letterSpacing: '.06em', cursor: 'pointer' }}
+              style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'rgba(124,58,237,.1)', color: '#7C3AED', letterSpacing: '.06em', cursor: 'pointer', display: 'none' }} className="show-md"
               title="Zone d'orientation active"
             >
               📑 TdM
@@ -296,42 +297,52 @@ export function DocumentViewer({ onExport }: Props) {
         {/* Centre — controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button onClick={undo} disabled={!canUndo}
-            style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: canUndo ? 'pointer' : 'not-allowed', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: canUndo ? 'var(--text3)' : 'var(--border2)' }}>
+            style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: canUndo ? 'pointer' : 'not-allowed', background: 'transparent', display: 'none', alignItems: 'center', justifyContent: 'center', color: canUndo ? 'var(--text3)' : 'var(--border2)' }} className="show-md">
             <RotateCcw size={13} />
           </button>
           <button onClick={redo} disabled={!canRedo}
-            style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: canRedo ? 'pointer' : 'not-allowed', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: canRedo ? 'var(--text3)' : 'var(--border2)' }}>
+            style={{ width: 32, height: 32, borderRadius: 8, border: 'none', cursor: canRedo ? 'pointer' : 'not-allowed', background: 'transparent', display: 'none', alignItems: 'center', justifyContent: 'center', color: canRedo ? 'var(--text3)' : 'var(--border2)' }} className="show-md">
             <RotateCw size={13} />
           </button>
 
-          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
+          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px', display: 'none' }} className="show-md" />
 
           <button onClick={handleZoomOut}
-            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }}>
+            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg2)', display: 'none', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }} className="show-md">
             <ZoomOut size={12} />
           </button>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text4)', minWidth: 40, textAlign: 'center' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text4)', minWidth: 40, textAlign: 'center', display: 'none' }} className="show-md">
             {Math.round(zoom * 100)}%
           </span>
           <button onClick={handleZoomIn}
-            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }}>
+            style={{ width: 28, height: 28, borderRadius: 7, border: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg2)', display: 'none', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)' }} className="show-md">
             <ZoomIn size={12} />
           </button>
 
-          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px' }} />
+          <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 6px', display: 'none' }} className="show-md" />
 
-          <span style={{ fontSize: 11, color: 'var(--text4)', fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg3)' }}>
+          <span style={{ fontSize: 11, color: 'var(--text4)', fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg3)', display: 'none' }} className="show-md">
             {pages.length + 1 + (orientationZone?.enabled ? ozPageCount : 0)} page{pages.length + 1 > 1 ? 's' : ''}
           </span>
         </div>
 
         {/* Right */}
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button variant="ghost" size="sm" onClick={onExport}>
+          <Button variant="ghost" size="sm" onClick={onExport} style={{ display: 'none' }} className="show-sm">
+            <Download size={13} />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onExport} style={{ display: 'none' }} className="show-md">
             <Download size={13} /> Exporter PDF
           </Button>
         </div>
       </div>
+      
+      <style>{`
+        .show-sm { display: none !important; }
+        .show-md { display: none !important; }
+        @media (max-width: 767px) { .show-sm { display: flex !important; } }
+        @media (min-width: 1024px) { .show-md { display: flex !important; } }
+      `}</style>
 
       {/* ── Canvas ── */}
       <div

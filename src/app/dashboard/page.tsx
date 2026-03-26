@@ -58,7 +58,9 @@ const CSS = `
   .plan-track { height:3px; border-radius:99px; background:var(--border); overflow:hidden; margin-top:7px; }
   .plan-fill  { height:100%; border-radius:99px; transition:width 1s ease; }
   .db-main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
-  .db-top { height:52px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 18px; gap:10px; }
+  .db-top { height:52px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 18px; gap:10px; min-width:0; flex-wrap:nowrap; }
+  .db-top-left { display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+  .db-top-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
   .db-search { display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:6px; padding:4px 10px; background:var(--bg); transition:border-color .15s; height:28px; }
   .db-search:focus-within { border-color:var(--accent); }
   .db-search input { border:none; outline:none; background:transparent; font-size:12px; color:var(--text); width:176px; }
@@ -124,10 +126,11 @@ const CSS = `
       transform: translateX(-100%);
       box-shadow: 4px 0 24px rgba(0,0,0,.15);
       transition: transform .25s cubic-bezier(.23,1,.32,1);
+      overflow-y: auto;
     }
     .db-side.open { transform: translateX(0); }
     .db-side-overlay { display: block; }
-    .db-hamburger { display: flex !important; }
+    .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; }
 
     .db-main { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
     .db-body { flex: 1; overflow-y: auto; }
@@ -137,7 +140,7 @@ const CSS = `
     .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
     .tpl-grid  { grid-template-columns: 1fr 1fr !important; }
 
-    .db-top { padding: 0 12px; height: 48px; }
+    .db-top { padding: 0 12px; height: 48px; gap: 6px !important; }
     .db-search { display: none; }
 
     .db-th span:nth-child(3),
@@ -150,11 +153,17 @@ const CSS = `
   /* Extra small phones */
   @media (max-width:479px) {
     .db-center { padding: 12px !important; }
-    .db-top { padding: 0 10px; height: 44px; gap: 6px; }
+    .db-top { padding: 0 10px; height: 44px; gap: 4px; }
+    .db-top-left { min-width: 0 !important; }
+    .db-top-right { gap: 6px !important; }
     
+    .db-search { display: none; }
     .db-logo-name { display: none; }
     .db-nav-label { font-size: 9px !important; padding: 8px 6px 2px !important; }
     .db-nav-btn { padding: 6px 7px !important; gap: 7px !important; font-size: 12px !important; }
+    
+    .db-avatar-btn { padding: 3px 6px !important; }
+    .db-avatar-btn span { display: none; }
     
     .stat-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
     .stat-card { padding: 10px 12px !important; }
@@ -273,7 +282,7 @@ export default function DashboardPage() {
 
           {/* Topbar */}
           <header className="db-top">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="db-top-left">
               {/* Hamburger - mobile only */}
               <button onClick={() => setSideOpen(v => !v)}
                 style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'none' }}
@@ -285,7 +294,7 @@ export default function DashboardPage() {
                 <input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div className="db-top-right">
               <ThemeToggle />
               <div style={{ position: 'relative' }}>
                 <button className="db-icon-btn" onClick={() => setShowNotifs(v => !v)}>

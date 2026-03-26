@@ -58,6 +58,8 @@ export function EditorLayout() {
   const canvasRef             = useRef<HTMLDivElement>(null)
 
   const [showExport, setShowExport] = useState(false)
+  const [showPanel, setShowPanel] = useState(false)
+  const [activePanel, setActivePanel] = useState<'blocks' | 'templates' | 'analytics' | 'comments' | 'layout' | 'orientation'>('blocks')
   const initDone = useRef(false)
 
   // ── Join realtime channel for this document ──────────────────────────────
@@ -172,12 +174,56 @@ export function EditorLayout() {
   // ── Desktop layout ────────────────────────────────────────────────────────
   return (
     <PageLayoutProvider>
-      <div ref={canvasRef as any} style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+      <div ref={canvasRef as any} style={{ 
+        display: 'flex', 
+        height: '100vh', 
+        overflow: 'hidden', 
+        background: 'var(--bg)',
+        flexDirection: isMobile ? 'column' : 'row',
+      }}>
         <Sidebar onExport={() => setShowExport(true)} />
-        <div style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <EditorPanel />
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        
+        {/* Desktop panel (hidden on tablet/mobile) */}
+        {!isMobile && (
+          <div style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <EditorPanel />
+          </div>
+        )}
+        
+        {/* Mobile/Tablet panel overlay */}
+        {isMobile && (activeTab !== 'editor') && (
+          <div style={{
+            position: 'fixed', 
+            inset: 0, 
+            background: 'rgba(0,0,0,.3)', 
+            zIndex: 99,
+            display: 'flex',
+            alignItems: 'flex-end',
+          }} onClick={() => setActiveTab('editor')} >
+            <div style={{
+              width: '100%',
+              maxHeight: '80vh',
+              background: 'var(--surface)',
+              borderTop: '1px solid var(--border)',
+              overflow: 'auto',
+              borderRadius: '12px 12px 0 0',
+              animation: 'slideUp .25s cubic-bezier(.23,1,.32,1)',
+            }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                  {activeTab === 'templates' && 'Templates'}
+                  {activeTab === 'analytics' && 'Analyse'}
+                  {activeTab === 'comments' && 'Notes'}
+                  {activeTab === 'layout' && 'Mise en page'}
+                  {activeTab === 'orientation' && 'Zone d\'orientation'}
+                </div>
+              </div>
+              <EditorPanel />
+            </div>
+          </div>
+        )}
+        
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <DocumentViewer onExport={() => setShowExport(true)} />
         </div>
 
@@ -186,6 +232,16 @@ export function EditorLayout() {
 
         {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       </div>
+      
+      <style>{`
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(100%); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 1023px) {
+          [class^="sb-"] { max-width: 100% !important; }
+        }
+      `}</style>
     </PageLayoutProvider>
   )
 }

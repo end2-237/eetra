@@ -22,6 +22,15 @@ const CSS = `
   .sb-btn.active-oz:hover { background:rgba(124,58,237,.18); }
   .sb-divider { width:24px; height:1px; background:var(--border); margin:5px 0; flex-shrink:0; }
   .sb-avatar { width:26px; height:26px; border-radius:6px; background:var(--accentS); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  
+  @media (max-width:1023px) {
+    .sidebar { width:100%; height:auto; flex-direction:row; padding:8px; border-right:none; border-top:1px solid var(--border); order:3; align-items:center; }
+    .sb-top { display:none !important; }
+    .sb-nav { flex:1; display:flex !important; gap:2; overflow-x:auto; padding-right:4px; flex-direction:row !important; }
+    .sb-bottom { display:flex !important; gap:2; flex-direction:row !important; }
+    .sb-btn { width:32px !important; height:32px !important; font-size:12px; }
+    .sb-divider { width:1px !important; height:20px !important; margin:0 4px !important; }
+  }
 `
 
 const TABS = [
@@ -48,13 +57,13 @@ export function Sidebar({ onExport }: Props) {
       <style dangerouslySetInnerHTML={{ __html: CSS }}/>
 
       <div className="sidebar">
-        {/* Logo */}
-        <button className="sb-btn" style={{ marginBottom:8 }} title="Tableau de bord" onClick={() => router.push('/dashboard')}>
+        {/* Logo - hidden on mobile */}
+        <button className="sb-btn sb-top" style={{ marginBottom:8 }} title="Tableau de bord" onClick={() => router.push('/dashboard')}>
           <Image src={logo} alt="EETRA" width={22} height={22} style={{ borderRadius:5 }}/>
         </button>
 
         {/* Tab nav */}
-        <div style={{ display:'flex', flexDirection:'column', gap:2, flex:1, width:'100%', padding:'0 8px' }}>
+        <div className="sb-nav" style={{ display:'flex', flexDirection:'column', gap:2, flex:1, width:'100%', padding:'0 8px' }}>
           {TABS.map(({ id, Icon, tip }) => {
             const isActive = activeTab === id
             const isOZ = id === 'orientation'
@@ -83,8 +92,8 @@ export function Sidebar({ onExport }: Props) {
         </div>
 
         {/* Bottom actions */}
-        <div style={{ display:'flex', flexDirection:'column', gap:2, alignItems:'center', padding:'0 8px', width:'100%' }}>
-          <button className="sb-btn" title="Mes documents" onClick={() => router.push('/documents')}>
+        <div className="sb-bottom" style={{ display:'flex', flexDirection:'column', gap:2, alignItems:'center', padding:'0 8px', width:'100%' }}>
+          <button className="sb-btn sb-top" title="Mes documents" onClick={() => router.push('/documents')}>
             <BookOpen size={15}/>
           </button>
 
@@ -96,18 +105,18 @@ export function Sidebar({ onExport }: Props) {
             <Download size={15}/>
           </button>
 
-          <div className="sb-divider"/>
+          <div className="sb-divider sb-top"/>
 
           <div style={{ display:'flex', justifyContent:'center' }}>
             <ThemeToggle/>
           </div>
 
-          <button className="sb-btn" title="Paramètres" onClick={() => router.push('/settings')}>
+          <button className="sb-btn sb-top" title="Paramètres" onClick={() => router.push('/settings')}>
             <Settings size={15}/>
           </button>
 
           {/* Avatar */}
-          <button className="sb-btn" title={profile.name || 'Profil'} onClick={() => router.push('/onboarding')}
+          <button className="sb-btn sb-top" title={profile.name || 'Profil'} onClick={() => router.push('/onboarding')}
             style={{ background:'transparent', padding:0, border:'none', cursor:'pointer' }}>
             <div className="sb-avatar" style={{ border:`1.5px solid ${planColor}30` }}>
               {profile.logoDataUrl

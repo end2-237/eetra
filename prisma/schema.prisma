@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id    String   @id @default(cuid())
   email     String   @unique
   password  String
   name      String?
@@ -20,12 +20,16 @@ model User {
   documents      Document[]
   exports        Export[]
   templates      CustomTemplate[]
-  teamMembers    TeamMember[]
+  ownedTeams     Team[]             @relation("TeamOwner")
+  teamMembers    TeamMember[]       @relation("TeamMemberUser")
+  documentPerms  DocumentPermission[] @relation("DocumentPermissionUser")
   notifications  Notification[]
   layoutConfig   LayoutConfig?
   accounts       Account[]
   sessions       Session[]
   payments       Payment[]
+
+  @@index([email])
 }
 
 // NextAuth — requis pour PrismaAdapter
@@ -98,8 +102,15 @@ model Document {
   coverStyle      Json     @default("{}")
   pageCount       Int      @default(0)
   blockCount      Int      @default(0)
+  teamProjectId   String?
+  teamProject     TeamProject? @relation(fields: [teamProjectId], references: [id], onDelete: SetNull)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  permissions     DocumentPermission[]
+
+  @@index([userId])
+  @@index([teamProjectId])
 }
 
 model Export {
@@ -135,15 +146,73 @@ model CustomTemplate {
   updatedAt   DateTime @updatedAt
 }
 
+// Team management models
+model Team {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  description String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members       TeamMember[]
+  projects      TeamProject[]
+  permissions   DocumentPermission[]
+
+  @@index([ownerId])
+}
+
 model TeamMember {
   id      String   @id @default(cuid())
   userId  String
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation("TeamMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+  teamId  String
+  team    Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   name    String
   email   String
   role    String   @default("editor")
   avatar  String   @default("👤")
   addedAt DateTime @default(now())
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model TeamProject {
+  id          String   @id @default(cuid())
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  name        String
+  description String   @default("")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  documents Document[]
+
+  @@index([teamId])
+}
+
+model DocumentPermission {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  // Either teamId (entire team) or userId (specific user)
+  teamId      String?
+  team        Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation("DocumentPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Permission level
+  permission  String   @default("VIEW") // VIEW, EDIT
+  createdAt   DateTime @default(now())
+
+  @@unique([documentId, teamId, userId])
+  @@index([documentId])
+  @@index([teamId])
+  @@index([userId])
 }
 
 model Notification {

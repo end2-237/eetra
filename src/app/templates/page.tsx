@@ -287,8 +287,10 @@ export default function TemplatesPage() {
     refreshCommunity,
   } = useCustomTemplates()
   const { toast, showToast } = useToast()
-  const { canCreateDocument, checkDocumentLimit, plan, getRemainingDocs } = usePlan()
-  const limitReached = !canCreateDocument()
+  const { canCreateDocument, checkDocumentLimit, plan, getRemainingDocs, loading } = usePlan()
+  const limitReached = !loading && !canCreateDocument()
+  
+  console.log('[v0] Templates - plan:', plan?.id, 'loading:', loading, 'canCreate:', canCreateDocument(), 'remaining:', getRemainingDocs(), 'limitReached:', limitReached)
 
   const [search,  setSearch]  = useState('')
   const [cat,     setCat]     = useState('Tous')
@@ -302,7 +304,9 @@ export default function TemplatesPage() {
   })
 
   const useTpl = async (id: string) => {
+    console.log('[v0] useTpl called with id:', id)
     const allowed = await checkDocumentLimit()
+    console.log('[v0] useTpl checkDocumentLimit result:', allowed)
     if (!allowed) return
     try { localStorage.removeItem(STORAGE_DRAFT); sessionStorage.setItem('eetra-pending-template', id) } catch {}
     router.push('/editor')

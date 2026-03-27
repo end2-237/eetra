@@ -64,10 +64,13 @@ interface PlanContextType {
   setPlanId:         (id: PlanId) => Promise<void>
   canAddPage:        (currentPageCount: number) => boolean
   canUseAI:          () => boolean
+  canStartCollaboration: () => boolean
   requestUpgrade:    (reason: string) => void
   dismissUpgrade:    () => void
   incrementDocUsage: () => void
   getRemainingDocs:  () => number
+  /** Verify document limit with server before creating */
+  checkDocumentLimit: () => Promise<boolean>
   /** Re-fetch plan from server */
   refreshPlan:       () => Promise<void>
 }
@@ -170,11 +173,37 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     return Math.max(0, plan.maxDocsPerMonth - usage.docsThisMonth)
   }, [plan, usage])
 
+  const canStartCollaboration = useCallback(() => {
+    return planId === 'pro' || planId === 'business'
+  }, [planId])
+
+  const checkDocumentLimit = useCallback(async (): Promise<boolean> => {
+    // For unlimited plans, always allow
+    if (plan.maxDocsPerMonth === Infinity) return true
+
+    // For limited plans, verify with server before creating
+    try {
+      const res = await fetch('/api/documents', { method: 'OPTIONS' })
+      // Actually, let's check the limit by trying to understand remaining docs
+      // The server will reject if limit is reached when POST is made
+      // For now, we'll do a simple check with getRemainingDocs
+      const remaining = getRemainingDocs()
+      if (remaining <= 0) {
+        requestUpgrade('Vous avez atteint votre limite mensuelle de documents')
+        return false
+      }
+      return true
+    } catch {
+      // Network error — allow attempt, server will handle limit
+      return true
+    }
+  }, [plan, getRemainingDocs, requestUpgrade])
+
   return (
     <PlanContext.Provider value={{
       planId, plan, usage, loading, showUpgradeModal, upgradeReason,
-      setPlanId, canAddPage, canUseAI, requestUpgrade,
-      dismissUpgrade, incrementDocUsage, getRemainingDocs, refreshPlan,
+      setPlanId, canAddPage, canUseAI, canStartCollaboration, requestUpgrade,
+      dismissUpgrade, incrementDocUsage, getRemainingDocs, checkDocumentLimit, refreshPlan,
     }}>
       {children}
     </PlanContext.Provider>

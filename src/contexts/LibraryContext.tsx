@@ -13,10 +13,10 @@ export interface SavedDocument {
 interface LibraryContextType {
   documents: SavedDocument[]
   currentDocId: string | null
-  saveDocument: (doc: Omit<SavedDocument, 'createdAt' | 'updatedAt'>) => void
+  saveDocument: (doc: Omit<SavedDocument, 'createdAt' | 'updatedAt'>) => Promise<{ success: boolean; error?: string }>
   loadDocument: (id: string) => SavedDocument | null
   deleteDocument: (id: string) => void
-  duplicateDocument: (id: string) => SavedDocument | null
+  duplicateDocument: (id: string) => Promise<SavedDocument | null>
   setCurrentDocId: (id: string | null) => void
 }
 
@@ -69,23 +69,48 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(docs)) } catch {}
   }
 
-  const saveDocument = useCallback((doc: Omit<SavedDocument, 'createdAt' | 'updatedAt'>) => {
-    setDocuments(prev => {
+  const saveDocument = useCallback(async (doc: Omit<SavedDocument, 'createdAt' | 'updatedAt'>) => {
+    try {
       const now = new Date().toISOString()
-      const existing = prev.find(d => d.id === doc.id)
+      const existing = documents.find(d => d.id === doc.id)
       const full = existing
         ? { ...doc, createdAt: existing.createdAt, updatedAt: now }
         : { ...doc, id: doc.id || genId(), createdAt: now, updatedAt: now }
-      const updated = existing
-        ? prev.map(d => d.id === doc.id ? full : d)
-        : [full, ...prev]
-      const trimmed = updated.slice(0, 100)
-      persist(trimmed)
-      // Sync cloud si connecté
-      if (session?.user?.id) debouncedPush(full, !existing || !cloudIds.has(full.id))
-      return trimmed
-    })
-  }, [session?.user?.id, cloudIds])
+
+      // ── For new documents, check server limit before saving ────────────────────
+      if (!existing && session?.user?.id) {
+        try {
+          const testRes = await apiFetch('/api/documents', {
+            method: 'POST',
+            body: JSON.stringify(full),
+          })
+          if (!testRes) {
+            return { success: false, error: 'Erreur serveur lors de la sauvegarde' }
+          }
+        } catch (err: any) {
+          // Server rejected the document (likely limit reached)
+          const errorMsg = err?.message || 'Impossible de créer le document'
+          return { success: false, error: errorMsg }
+        }
+      }
+
+      // ── Update local state ─────────────────────────────────────────────────────
+      setDocuments(prev => {
+        const updated = existing
+          ? prev.map(d => d.id === doc.id ? full : d)
+          : [full, ...prev]
+        const trimmed = updated.slice(0, 100)
+        persist(trimmed)
+        // Sync cloud updates (PUT requests don't fail on limit)
+        if (session?.user?.id && existing) debouncedPush(full, false)
+        return trimmed
+      })
+
+      return { success: true }
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Erreur lors de la sauvegarde' }
+    }
+  }, [session?.user?.id, documents, cloudIds])
 
   const loadDocument = useCallback((id: string) => documents.find(d => d.id === id) || null, [documents])
 
@@ -98,7 +123,7 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
     })
   }, [session?.user?.id])
 
-  const duplicateDocument = useCallback((id: string): SavedDocument | null => {
+  const duplicateDocument = useCallback(async (id: string): Promise<SavedDocument | null> => {
     const source = documents.find(d => d.id === id)
     if (!source) return null
     const now = new Date().toISOString()
@@ -107,10 +132,22 @@ export function LibraryProvider({ children }: { children: React.ReactNode }) {
       pages: source.pages.map(p => ({ ...p, id: Math.random().toString(36).slice(2, 10) })),
       createdAt: now, updatedAt: now,
     }
+
+    // ── Check server limit before duplicating ──────────────────────────────────
+    if (session?.user?.id) {
+      try {
+        await apiFetch('/api/documents', { method: 'POST', body: JSON.stringify(newDoc) })
+      } catch (err: any) {
+        // Server rejected (limit reached)
+        console.error('[v0] Duplicate failed:', err?.message)
+        return null
+      }
+    }
+
+    // ── Update local state ─────────────────────────────────────────────────────
     setDocuments(prev => {
       const updated = [newDoc, ...prev].slice(0, 100)
       persist(updated)
-      if (session?.user?.id) apiFetch('/api/documents', { method: 'POST', body: JSON.stringify(newDoc) })
       return updated
     })
     return newDoc

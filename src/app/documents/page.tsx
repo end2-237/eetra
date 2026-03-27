@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useLibrary } from '@/contexts/LibraryContext'
 import { useProfile } from '@/contexts/ProfileContext'
+import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 const STORAGE_DRAFT = 'eetra-document-draft'
@@ -83,10 +84,12 @@ export default function DocumentsPage() {
   const router = useRouter()
   const { documents, deleteDocument, duplicateDocument } = useLibrary()
   const { profile } = useProfile()
+  const { getRemainingDocs, requestUpgrade } = usePlan()
 
   const [search,  setSearch]  = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [creatingDoc, setCreatingDoc] = useState(false)
 
   const toggleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -108,8 +111,30 @@ export default function DocumentsPage() {
     })
 
   const newDoc = () => {
+    const remaining = getRemainingDocs()
+    if (remaining === 0) {
+      requestUpgrade('Vous avez atteint votre limite mensuelle de documents. Passez au Pro pour créer plus de documents.')
+      return
+    }
     try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
     router.push('/editor')
+  }
+
+  const handleDuplicate = async (docId: string) => {
+    setCreatingDoc(true)
+    try {
+      const remaining = getRemainingDocs()
+      if (remaining === 0) {
+        requestUpgrade('Vous avez atteint votre limite mensuelle de documents. Passez au Pro pour dupliquer.')
+        return
+      }
+      const result = await duplicateDocument(docId)
+      if (!result) {
+        alert('Impossible de dupliquer le document. Vérifiez votre limite.')
+      }
+    } finally {
+      setCreatingDoc(false)
+    }
   }
 
   const openDoc = (docId: string) => {
@@ -253,7 +278,7 @@ export default function DocumentsPage() {
 
                     {/* Actions */}
                     <div className="docs-row-actions" onClick={e => e.stopPropagation()}>
-                      <button className="act-btn" title="Dupliquer" onClick={() => duplicateDocument(doc.id)}>
+                      <button className="act-btn" title="Dupliquer" onClick={() => handleDuplicate(doc.id)} disabled={creatingDoc}>
                         <Copy size={11}/>
                       </button>
                       <button className="act-btn danger" title="Supprimer"

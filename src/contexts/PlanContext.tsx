@@ -1,30 +1,22 @@
 'use client'
 
-/**
- * PlanContext — Server-verified plan.
- *
- * The plan is fetched from /api/plan/current (which reads from the DB) on mount
- * and after every login. Client storage (sessionStorage) is no longer trusted
- * as the source of truth for AI / page limits.
- *
- * The old signed-token flow is kept as fallback for offline/unauthenticated
- * sessions, but the DB value always wins when the user is authenticated.
- */
-
 import { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 
-export type PlanId = 'starter' | 'pro' | 'business'
+export type PlanId = 'starter' | 'student' | 'pro' | 'business'
 
 export interface PlanConfig {
-  id:                 PlanId
-  label:              string
-  maxPagesPerDoc:     number
-  maxDocsPerMonth:    number
-  ai:                 boolean
-  canRemoveWatermark: boolean
-  price:              string
-  color:              string
+  id:                     PlanId
+  label:                  string
+  maxPagesPerDoc:         number
+  maxDocsPerMonth:        number
+  ai:                     boolean
+  canRemoveWatermark:     boolean
+  canUseBuiltinTemplates: boolean   // NEW — accès aux 23+ templates intégrés
+  canUseCommunityTpls:    boolean   // NEW — accès galerie communautaire
+  canUseCustomTemplates:  boolean   // NEW — accès à ses propres templates
+  price:                  string
+  color:                  string
 }
 
 export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
@@ -32,18 +24,36 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
     id: 'starter', label: 'Starter',
     maxPagesPerDoc: 2, maxDocsPerMonth: 5,
     ai: false, canRemoveWatermark: false,
+    canUseBuiltinTemplates: false,   // ← bloqué
+    canUseCommunityTpls: false,
+    canUseCustomTemplates: false,
     price: 'Gratuit', color: '#6B7280',
+  },
+  student: {
+    id: 'student', label: 'Étudiant',
+    maxPagesPerDoc: 2, maxDocsPerMonth: 20,
+    ai: false, canRemoveWatermark: false,
+    canUseBuiltinTemplates: true,    // ← accès templates intégrés
+    canUseCommunityTpls: false,
+    canUseCustomTemplates: true,
+    price: '2 000 FCFA/mois', color: '#059669',
   },
   pro: {
     id: 'pro', label: 'Pro',
     maxPagesPerDoc: Infinity, maxDocsPerMonth: Infinity,
     ai: true, canRemoveWatermark: true,
+    canUseBuiltinTemplates: true,
+    canUseCommunityTpls: true,
+    canUseCustomTemplates: true,
     price: '14 900 FCFA/mois', color: '#1B4FD8',
   },
   business: {
     id: 'business', label: 'Business',
     maxPagesPerDoc: Infinity, maxDocsPerMonth: Infinity,
     ai: true, canRemoveWatermark: true,
+    canUseBuiltinTemplates: true,
+    canUseCommunityTpls: true,
+    canUseCustomTemplates: true,
     price: '39 900 FCFA/mois', color: '#059669',
   },
 }
@@ -55,32 +65,34 @@ interface UsageData {
 }
 
 interface PlanContextType {
-  planId:            PlanId
-  plan:              PlanConfig
-  usage:             UsageData
-  loading:           boolean
-  showUpgradeModal:  boolean
-  upgradeReason:     string
-  setPlanId:         (id: PlanId) => Promise<void>
-  canAddPage:        (currentPageCount: number) => boolean
-  canUseAI:          () => boolean
+  planId:             PlanId
+  plan:               PlanConfig
+  usage:              UsageData
+  loading:            boolean
+  showUpgradeModal:   boolean
+  upgradeReason:      string
+  upgradeContext:     'template' | 'document' | 'community'
+  setPlanId:          (id: PlanId) => Promise<void>
+  canAddPage:         (currentPageCount: number) => boolean
+  canUseAI:           () => boolean
   canStartCollaboration: () => boolean
-  requestUpgrade:    (reason: string) => void
-  dismissUpgrade:    () => void
-  incrementDocUsage: () => void
-  getRemainingDocs:  () => number
-  /** Verify document limit with server before creating */
-  checkDocumentLimit: () => Promise<boolean>
-  /** Re-fetch plan from server */
-  refreshPlan:       () => Promise<void>
-  /** Check if user can create documents (limit not reached) */
-  canCreateDocument: () => boolean
-  /** Check if user can use community templates */
+  /** Templates intégrés (bibliothèque EETRA) */
+  canUseTemplates:    () => boolean
+  /** Templates de la communauté */
   canUseCommunityTemplates: () => boolean
+  /** Ses propres templates personnalisés */
+  canUseCustomTemplates: () => boolean
+  requestUpgrade:     (reason: string, context?: 'template' | 'document' | 'community') => void
+  dismissUpgrade:     () => void
+  incrementDocUsage:  () => void
+  getRemainingDocs:   () => number
+  checkDocumentLimit: () => Promise<boolean>
+  refreshPlan:        () => Promise<void>
+  canCreateDocument:  () => boolean
 }
 
 const PlanContext = createContext<PlanContextType>({} as PlanContextType)
-const KEY_USAGE   = 'eetra-usage'
+const KEY_USAGE = 'eetra-usage'
 
 export function PlanProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
@@ -93,13 +105,13 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   })
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeReason,    setUpgradeReason]    = useState('')
+  const [upgradeContext,   setUpgradeContext]   = useState<'template' | 'document' | 'community'>('template')
 
-  // ── Load usage from localStorage ────────────────────────────────────────────
   useEffect(() => {
     try {
       const raw = localStorage.getItem(KEY_USAGE)
       if (raw) {
-        const p   = JSON.parse(raw) as UsageData
+        const p = JSON.parse(raw) as UsageData
         const now = new Date()
         if (p.month !== now.getMonth() || p.year !== now.getFullYear()) {
           setUsage({ docsThisMonth: 0, month: now.getMonth(), year: now.getFullYear() })
@@ -110,7 +122,6 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, [])
 
-  // ── Fetch plan from server ──────────────────────────────────────────────────
   const refreshPlan = useCallback(async () => {
     setLoading(true)
     try {
@@ -121,44 +132,51 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
           setPlanIdState(data.planId as PlanId)
         }
       }
-    } catch {
-      // Network error — keep current plan
-    } finally {
-      setLoading(false)
-    }
+    } catch {}
+    finally { setLoading(false) }
   }, [])
 
-  // Fetch on auth state change
   useEffect(() => {
     if (status === 'loading') return
     refreshPlan()
   }, [status, session?.user?.id, refreshPlan])
 
-  // ── setPlanId: hits the server first ────────────────────────────────────────
   const setPlanId = useCallback(async (id: PlanId) => {
     try {
       const res = await fetch('/api/plan/current', {
-        method:  'PUT',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ planId: id }),
+        body: JSON.stringify({ planId: id }),
       })
       if (res.ok) setPlanIdState(id)
     } catch {
-      // Optimistic update as fallback (demo/offline)
       setPlanIdState(id)
     }
   }, [])
 
   const plan = PLAN_CONFIGS[planId]
 
-  const canAddPage = useCallback((n: number) => n < plan.maxPagesPerDoc, [plan])
-  const canUseAI   = useCallback(() => plan.ai, [plan])
+  const canAddPage  = useCallback((n: number) => n < plan.maxPagesPerDoc, [plan])
+  const canUseAI    = useCallback(() => plan.ai, [plan])
 
-  const requestUpgrade = useCallback((reason: string) => {
-    setUpgradeReason(reason); setShowUpgradeModal(true)
+  // ── Template access helpers ─────────────────────────────────────────────────
+  const canUseTemplates         = useCallback(() => plan.canUseBuiltinTemplates,  [plan])
+  const canUseCommunityTemplates = useCallback(() => plan.canUseCommunityTpls,     [plan])
+  const canUseCustomTemplates   = useCallback(() => plan.canUseCustomTemplates,   [plan])
+
+  const canStartCollaboration = useCallback(() =>
+    planId === 'pro' || planId === 'business'
+  , [planId])
+
+  const requestUpgrade = useCallback((reason: string, context: 'template' | 'document' | 'community' = 'template') => {
+    setUpgradeReason(reason)
+    setUpgradeContext(context)
+    setShowUpgradeModal(true)
   }, [])
+
   const dismissUpgrade = useCallback(() => {
-    setShowUpgradeModal(false); setUpgradeReason('')
+    setShowUpgradeModal(false)
+    setUpgradeReason('')
   }, [])
 
   const incrementDocUsage = useCallback(() => {
@@ -177,48 +195,28 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     return Math.max(0, plan.maxDocsPerMonth - usage.docsThisMonth)
   }, [plan, usage])
 
-  const canStartCollaboration = useCallback(() => {
-    return planId === 'pro' || planId === 'business'
-  }, [planId])
-
-  const canCreateDocument = useCallback(() => {
-    const remaining = getRemainingDocs()
-    return remaining > 0
-  }, [getRemainingDocs])
-
-  const canUseCommunityTemplates = useCallback(() => {
-    // Only pro and business plans can use community templates
-    return planId === 'pro' || planId === 'business'
-  }, [planId])
+  const canCreateDocument = useCallback(() => getRemainingDocs() > 0, [getRemainingDocs])
 
   const checkDocumentLimit = useCallback(async (): Promise<boolean> => {
-    // For unlimited plans, always allow
     if (plan.maxDocsPerMonth === Infinity) return true
-
-    // For limited plans, verify with server before creating
-    try {
-      const res = await fetch('/api/documents', { method: 'OPTIONS' })
-      // Actually, let's check the limit by trying to understand remaining docs
-      // The server will reject if limit is reached when POST is made
-      // For now, we'll do a simple check with getRemainingDocs
-      const remaining = getRemainingDocs()
-      if (remaining <= 0) {
-        requestUpgrade('Vous avez atteint votre limite mensuelle de documents')
-        return false
-      }
-      return true
-    } catch {
-      // Network error — allow attempt, server will handle limit
-      return true
+    const remaining = getRemainingDocs()
+    if (remaining <= 0) {
+      requestUpgrade(
+        `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} documents/mois sur le plan ${plan.label}.`,
+        'document'
+      )
+      return false
     }
+    return true
   }, [plan, getRemainingDocs, requestUpgrade])
 
   return (
     <PlanContext.Provider value={{
-      planId, plan, usage, loading, showUpgradeModal, upgradeReason,
-      setPlanId, canAddPage, canUseAI, canStartCollaboration, requestUpgrade,
-      dismissUpgrade, incrementDocUsage, getRemainingDocs, checkDocumentLimit, refreshPlan,
-      canCreateDocument, canUseCommunityTemplates,
+      planId, plan, usage, loading, showUpgradeModal, upgradeReason, upgradeContext,
+      setPlanId, canAddPage, canUseAI, canStartCollaboration,
+      canUseTemplates, canUseCommunityTemplates, canUseCustomTemplates,
+      requestUpgrade, dismissUpgrade, incrementDocUsage, getRemainingDocs,
+      checkDocumentLimit, refreshPlan, canCreateDocument,
     }}>
       {children}
     </PlanContext.Provider>

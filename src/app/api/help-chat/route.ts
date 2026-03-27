@@ -1,9 +1,4 @@
-import {
-  consumeStream,
-  convertToModelMessages,
-  streamText,
-  UIMessage,
-} from 'ai'
+import { convertToModelMessages, streamText, UIMessage } from 'ai'
 
 export const maxDuration = 30
 
@@ -23,17 +18,26 @@ Si tu ne connais pas la réponse, invite l'utilisateur à contacter le support.
 Sois amical et utilise un ton professionnel mais accessible.`
 
 export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json()
+  try {
+    const { messages }: { messages: UIMessage[] } = await req.json()
+    console.log('[v0] Help chat received messages:', messages.length)
 
-  const result = streamText({
-    model: 'openai/gpt-4o-mini',
-    system: SYSTEM_PROMPT,
-    messages: await convertToModelMessages(messages),
-    abortSignal: req.signal,
-  })
+    const convertedMessages = await convertToModelMessages(messages)
+    console.log('[v0] Converted messages:', convertedMessages.length)
 
-  return result.toUIMessageStreamResponse({
-    originalMessages: messages,
-    consumeSseStream: consumeStream,
-  })
+    const result = streamText({
+      model: 'openai/gpt-4o-mini',
+      system: SYSTEM_PROMPT,
+      messages: convertedMessages,
+    })
+
+    console.log('[v0] Streaming response...')
+    return result.toUIMessageStreamResponse()
+  } catch (error) {
+    console.error('[v0] Help chat error:', error)
+    return new Response(JSON.stringify({ error: 'Failed to process chat' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
 }

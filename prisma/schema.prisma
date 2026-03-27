@@ -100,6 +100,20 @@ model Document {
   blockCount      Int      @default(0)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  sharedWith      DocumentShare[]
+}
+
+model DocumentShare {
+  id          String   @id @default(cuid())
+  documentId  String
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  sharedWith  String   // Email of team member or user
+  permission  String   @default("view") // view | edit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([documentId, sharedWith])
 }
 
 model Export {

@@ -10,6 +10,7 @@ import { useCustomTemplates, type CustomTemplate } from '@/contexts/CustomTempla
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Toast }       from '@/components/ui/Toast'
 import { useToast }    from '@/hooks/useToast'
+import { CoverMini } from '@/components/ui/CoverMini'
 
 const STORAGE_DRAFT = 'eetra-document-draft'
 
@@ -168,48 +169,6 @@ function CoverContrat({ color }: { color: string }) {
   )
 }
 
-// ── Custom template cover mini ─────────────────────────────────────────────
-
-function CustomCoverMini({ tpl }: { tpl: CustomTemplate }) {
-  const layout = tpl.coverStyle?.layout || 'classic'
-  const accent = tpl.coverStyle?.accentColor || '#1B4FD8'
-  const initial = tpl.name.charAt(0).toUpperCase()
-  if (layout === 'bold') return (
-    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
-      <rect width="120" height="170" fill={accent}/>
-      <circle cx="108" cy="28" r="52" fill="rgba(255,255,255,.06)"/>
-      <rect x="12" y="16" width="26" height="26" rx="6" fill="rgba(255,255,255,.16)"/>
-      <text x="25" y="32" textAnchor="middle" fill="white" fontSize="12" fontWeight="900" fontFamily="Arial">{initial}</text>
-      <rect x="12" y="82" width="88" height="10" rx="5" fill="rgba(255,255,255,.92)"/>
-      <rect x="12" y="96" width="66" height="10" rx="5" fill="rgba(255,255,255,.88)"/>
-      <rect x="0" y="156" width="120" height="14" fill="rgba(0,0,0,.22)"/>
-    </svg>
-  )
-  if (layout === 'minimal') return (
-    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
-      <rect width="120" height="170" fill="#fff"/>
-      <rect x="0" y="167" width="120" height="3" fill={accent}/>
-      <rect x="12" y="68" width="96" height="11" rx="5.5" fill="#0D1117" opacity=".9"/>
-      <rect x="12" y="84" width="74" height="9" rx="4.5" fill="#0D1117" opacity=".82"/>
-    </svg>
-  )
-  if (layout === 'split') return (
-    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
-      <rect width="120" height="170" fill="#fff"/>
-      <rect x="0" y="0" width="54" height="170" fill={accent}/>
-      <text x="27" y="96" textAnchor="middle" fill="rgba(255,255,255,.9)" fontSize="9" fontWeight="900" fontFamily="Arial">{initial}</text>
-    </svg>
-  )
-  return (
-    <svg viewBox="0 0 120 170" style={{ width:'100%', height:'100%', display:'block' }}>
-      <rect width="120" height="170" fill="white"/>
-      <rect x="0" y="0" width="5" height="170" fill={accent}/>
-      <rect x="14" y="72" width="88" height="9" rx="4" fill="#0D1117" opacity=".88"/>
-      <rect x="14" y="86" width="70" height="8" rx="4" fill="#0D1117" opacity=".8"/>
-      <rect x="14" y="114" width="92" height="28" rx="5" fill="#F5F7FA"/>
-    </svg>
-  )
-}
 
 // ── CATALOGUE ─────────────────────────────────────────────────────────────────
 
@@ -518,7 +477,7 @@ export default function TemplatesPage() {
                       <div key={tpl.id} className="comm-card" onClick={() => useCustom(tpl)}>
                         <div className="tpl-card-cover">
                           <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(0,0,0,.03) 1px,transparent 1px)', backgroundSize:'14px 14px' }}/>
-                          <div className="tpl-card-cover-inner"><CustomCoverMini tpl={tpl}/></div>
+                          <div className="tpl-card-cover-inner"><CoverMini coverStyle={tpl.coverStyle} name={tpl.name} /></div>
                           {tpl.usageCount > 0 && (
                             <span style={{ position:'absolute', top:8, right:8, fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'rgba(0,0,0,.45)', color:'#fff' }}>
                               ×{tpl.usageCount}

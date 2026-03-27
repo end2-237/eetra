@@ -1,17 +1,20 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useRouter }          from 'next/navigation'
 import { useDocument }        from '@/contexts/DocumentContext'
 import { useProfile }         from '@/contexts/ProfileContext'
 import { useNotifications }   from '@/contexts/NotificationContext'
 import { useCustomTemplates } from '@/contexts/CustomTemplateContext'
 import { useLibrary }         from '@/contexts/LibraryContext'
 import { useRealtime }        from '@/contexts/RealtimeContext'
+import { usePlan }            from '@/contexts/PlanContext'
 import { PageLayoutProvider } from '@/contexts/PageLayoutContext'
 import { Sidebar }            from './Sidebar'
 import { EditorPanel }        from './panels/EditorPanel'
 import { DocumentViewer }     from './document/DocumentViewer'
 import { ExportModal }        from './ExportModal'
+import { PlanUpgradeModal }   from './PlanUpgradeModal'
 import { LiveCursors }        from './LiveCursors'
 import { MobileEditor }       from './MobileEditor'
 import { TEMPLATES }          from '@/lib/templates'
@@ -23,26 +26,20 @@ function useIsMobile() {
   const [isMobileInit, setIsMobileInit] = useState(false)
   
   useEffect(() => {
-    const check = () => {
-      // Use 1024px breakpoint for better tablet support
-      const isMobileView = window.innerWidth < 1024
-      setMobile(isMobileView)
-    }
-    
+    const check = () => setMobile(window.innerWidth < 1024)
     check()
     setIsMobileInit(true)
-    
     const resizeListener = () => check()
     window.addEventListener('resize', resizeListener, { passive: true })
     return () => window.removeEventListener('resize', resizeListener)
   }, [])
   
-  // Prevent hydration mismatch
   if (!isMobileInit) return false
   return mobile
 }
 
 export function EditorLayout() {
+  const router = useRouter()
   const {
     pages, addPage, addBlock, setSelectedTemplate, docStyle, docId,
     title, subtitle, ref: docRef, destination, confidentiality,
@@ -50,23 +47,51 @@ export function EditorLayout() {
     activeTab, setActiveTab, orientationZone,
   } = useDocument()
 
-  const { profile }           = useProfile()
-  const { addNotification }   = useNotifications()
-  const { getTemplate }       = useCustomTemplates()
-  const { saveDocument }      = useLibrary()
-  const { joinDocument }      = useRealtime()
-  const isMobile              = useIsMobile()
-  const canvasRef             = useRef<HTMLDivElement>(null)
+  const { profile }                      = useProfile()
+  const { addNotification }              = useNotifications()
+  const { getTemplate }                  = useCustomTemplates()
+  const { saveDocument }                 = useLibrary()
+  const { joinDocument }                 = useRealtime()
+  const { checkDocumentLimit, canCreateDocument } = usePlan()
+  const isMobile                         = useIsMobile()
+  const canvasRef                        = useRef<HTMLDivElement>(null)
 
   const [showExport, setShowExport] = useState(false)
   const initDone = useRef(false)
+  const limitChecked = useRef(false)
 
-  // ── Join realtime channel for this document ──────────────────────────────
+  // ── Join realtime channel ──────────────────────────────────────────────────
   useEffect(() => {
     if (docId) joinDocument(docId)
   }, [docId, joinDocument])
 
-  // ── Template initialisation ──────────────────────────────────────────────
+  // ── Block new document creation if limit reached ───────────────────────────
+  useEffect(() => {
+    if (limitChecked.current) return
+    limitChecked.current = true
+
+    // Only check if this is a NEW document (no existing pages loaded from draft)
+    const draftRaw = (() => { try { return localStorage.getItem('eetra-document-draft') } catch { return null } })()
+    const draft = draftRaw ? (() => { try { return JSON.parse(draftRaw) } catch { return null } })() : null
+    const hasDraftContent = draft && (draft.title || (draft.pages && draft.pages.length > 0))
+
+    // If there's already draft content, user is editing existing — allow
+    if (hasDraftContent) return
+
+    // Check for pending template (also a new doc creation)
+    const hasPendingTemplate = !!sessionStorage.getItem('eetra-pending-template') || !!sessionStorage.getItem('eetra-pending-custom-template')
+
+    if (!hasDraftContent || hasPendingTemplate) {
+      checkDocumentLimit().then(allowed => {
+        if (!allowed) {
+          // Redirect back to dashboard after short delay (modal shown by checkDocumentLimit)
+          setTimeout(() => router.push('/dashboard'), 300)
+        }
+      })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Template initialisation ────────────────────────────────────────────────
   useEffect(() => {
     if (initDone.current) return
     initDone.current = true
@@ -109,15 +134,12 @@ export function EditorLayout() {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Auto-save: robust interval-based approach ────────────────────────────
-  // Uses a ref to always access the latest state without re-creating the interval.
-  // Saves every 3 seconds IF the document has been modified.
+  // ── Auto-save ──────────────────────────────────────────────────────────────
   const saveRef = useRef({
     pages, title, subtitle, docRef, destination, confidentiality,
     profile, docStyle, modified,
   })
 
-  // Keep ref in sync with latest state on every render
   useEffect(() => {
     saveRef.current = {
       pages, title, subtitle, docRef, destination, confidentiality,
@@ -128,7 +150,6 @@ export function EditorLayout() {
   useEffect(() => {
     const doSave = () => {
       const s = saveRef.current
-      // Only save if there is content and the document has been modified
       if (!s.modified) return
       const hasContent = s.title || s.pages.some(p => p.blocks.length > 0)
       if (!hasContent) return
@@ -146,33 +167,29 @@ export function EditorLayout() {
         pageCount:      s.pages.length,
         blockCount:     s.pages.reduce((c, p) => c + p.blocks.length, 0),
       })
-      // Mark as saved so we don't re-save unchanged content
       markSaved()
     }
 
-    // Save every 3 seconds
     const interval = setInterval(doSave, 3000)
-
-    // Also save immediately when the component mounts if there's content
-    // (covers the case where the user refreshes)
     doSave()
-
     return () => clearInterval(interval)
-  }, [docId, saveDocument, markSaved]) // stable deps — saveRef keeps everything else
+  }, [docId, saveDocument, markSaved])
 
-  // ── Mobile layout ─────────────────────────────────────────────────────────
+  // ── Mobile layout ──────────────────────────────────────────────────────────
   if (isMobile) {
     return (
       <PageLayoutProvider>
+        <PlanUpgradeModal />
         <MobileEditor onExport={() => setShowExport(true)} />
         {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       </PageLayoutProvider>
     )
   }
 
-  // ── Desktop layout ────────────────────────────────────────────────────────
+  // ── Desktop layout ─────────────────────────────────────────────────────────
   return (
     <PageLayoutProvider>
+      <PlanUpgradeModal />
       <div ref={canvasRef as any} style={{ 
         display: 'flex', 
         height: '100vh', 
@@ -182,32 +199,19 @@ export function EditorLayout() {
       }}>
         <Sidebar onExport={() => setShowExport(true)} />
         
-        {/* Desktop panel (visible on desktop, hidden on tablet/mobile) */}
         <div className="editor-side-panel" style={{ width: 240, flexShrink: 0, borderRight: '1px solid var(--border)', background: 'var(--surface)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <EditorPanel />
         </div>
         
-        {/* Mobile/Tablet panel overlay (shown when activeTab is not editor) */}
         {activeTab !== 'editor' && (
           <div className="editor-panel-modal-overlay" style={{
-            position: 'fixed', 
-            inset: 0, 
-            background: 'rgba(0,0,0,.3)', 
-            zIndex: 99,
-            display: 'flex',
-            alignItems: 'flex-end',
-            opacity: 0,
-            visibility: 'hidden',
-            transition: 'opacity .25s, visibility .25s',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)', zIndex: 99,
+            display: 'flex', alignItems: 'flex-end', opacity: 0, visibility: 'hidden', transition: 'opacity .25s, visibility .25s',
           }} onClick={() => setActiveTab('editor')} >
             <div style={{
-              width: '100%',
-              maxHeight: '80vh',
-              background: 'var(--surface)',
-              borderTop: '1px solid var(--border)',
-              overflow: 'auto',
-              borderRadius: '12px 12px 0 0',
-              animation: 'slideUp .25s cubic-bezier(.23,1,.32,1)',
+              width: '100%', maxHeight: '80vh', background: 'var(--surface)',
+              borderTop: '1px solid var(--border)', overflow: 'auto',
+              borderRadius: '12px 12px 0 0', animation: 'slideUp .25s cubic-bezier(.23,1,.32,1)',
             }} onClick={(e) => e.stopPropagation()}>
               <div style={{ padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
@@ -215,7 +219,7 @@ export function EditorLayout() {
                   {activeTab === 'analytics' && 'Analyse'}
                   {activeTab === 'comments' && 'Notes'}
                   {activeTab === 'layout' && 'Mise en page'}
-                  {activeTab === 'orientation' && 'Zone d\'orientation'}
+                  {activeTab === 'orientation' && "Zone d'orientation"}
                 </div>
               </div>
               <EditorPanel />
@@ -227,7 +231,6 @@ export function EditorLayout() {
           <DocumentViewer onExport={() => setShowExport(true)} />
         </div>
 
-        {/* Live cursors overlay */}
         <LiveCursors containerRef={canvasRef} />
 
         {showExport && <ExportModal onClose={() => setShowExport(false)} />}
@@ -238,14 +241,10 @@ export function EditorLayout() {
           from { opacity: 0; transform: translateY(100%); }
           to { opacity: 1; transform: translateY(0); }
         }
-        
-        /* Desktop: show side panel, hide mobile modal */
         @media (min-width: 1024px) {
           .editor-side-panel { display: flex !important; }
           .editor-panel-modal-overlay { display: none !important; }
         }
-        
-        /* Tablet/Mobile: hide side panel, show mobile modal */
         @media (max-width: 1023px) {
           .editor-side-panel { display: none !important; }
           .editor-panel-modal-overlay { display: flex !important; opacity: 1; visibility: visible; }

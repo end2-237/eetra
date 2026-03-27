@@ -12,9 +12,9 @@ export interface PlanConfig {
   maxDocsPerMonth:        number
   ai:                     boolean
   canRemoveWatermark:     boolean
-  canUseBuiltinTemplates: boolean   // NEW — accès aux 23+ templates intégrés
-  canUseCommunityTpls:    boolean   // NEW — accès galerie communautaire
-  canUseCustomTemplates:  boolean   // NEW — accès à ses propres templates
+  canUseBuiltinTemplates: boolean
+  canUseCommunityTpls:    boolean
+  canUseCustomTemplates:  boolean
   price:                  string
   color:                  string
 }
@@ -24,7 +24,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
     id: 'starter', label: 'Starter',
     maxPagesPerDoc: 2, maxDocsPerMonth: 5,
     ai: false, canRemoveWatermark: false,
-    canUseBuiltinTemplates: false,   // ← bloqué
+    canUseBuiltinTemplates: true,   // ✅ Smart templates gratuits pour tous
     canUseCommunityTpls: false,
     canUseCustomTemplates: false,
     price: 'Gratuit', color: '#6B7280',
@@ -33,7 +33,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
     id: 'student', label: 'Étudiant',
     maxPagesPerDoc: 2, maxDocsPerMonth: 20,
     ai: false, canRemoveWatermark: false,
-    canUseBuiltinTemplates: true,    // ← accès templates intégrés
+    canUseBuiltinTemplates: true,
     canUseCommunityTpls: false,
     canUseCustomTemplates: true,
     price: '2 000 FCFA/mois', color: '#059669',
@@ -76,11 +76,8 @@ interface PlanContextType {
   canAddPage:         (currentPageCount: number) => boolean
   canUseAI:           () => boolean
   canStartCollaboration: () => boolean
-  /** Templates intégrés (bibliothèque EETRA) */
   canUseTemplates:    () => boolean
-  /** Templates de la communauté */
   canUseCommunityTemplates: () => boolean
-  /** Ses propres templates personnalisés */
   canUseCustomTemplates: () => boolean
   requestUpgrade:     (reason: string, context?: 'template' | 'document' | 'community') => void
   dismissUpgrade:     () => void
@@ -158,15 +155,10 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
 
   const canAddPage  = useCallback((n: number) => n < plan.maxPagesPerDoc, [plan])
   const canUseAI    = useCallback(() => plan.ai, [plan])
-
-  // ── Template access helpers ─────────────────────────────────────────────────
   const canUseTemplates         = useCallback(() => plan.canUseBuiltinTemplates,  [plan])
   const canUseCommunityTemplates = useCallback(() => plan.canUseCommunityTpls,     [plan])
   const canUseCustomTemplates   = useCallback(() => plan.canUseCustomTemplates,   [plan])
-
-  const canStartCollaboration = useCallback(() =>
-    planId === 'pro' || planId === 'business'
-  , [planId])
+  const canStartCollaboration = useCallback(() => planId === 'pro' || planId === 'business', [planId])
 
   const requestUpgrade = useCallback((reason: string, context: 'template' | 'document' | 'community' = 'template') => {
     setUpgradeReason(reason)
@@ -195,14 +187,17 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     return Math.max(0, plan.maxDocsPerMonth - usage.docsThisMonth)
   }, [plan, usage])
 
-  const canCreateDocument = useCallback(() => getRemainingDocs() > 0, [getRemainingDocs])
+  const canCreateDocument = useCallback(() => {
+    if (plan.maxDocsPerMonth === Infinity) return true
+    return getRemainingDocs() > 0
+  }, [plan, getRemainingDocs])
 
   const checkDocumentLimit = useCallback(async (): Promise<boolean> => {
     if (plan.maxDocsPerMonth === Infinity) return true
     const remaining = getRemainingDocs()
     if (remaining <= 0) {
       requestUpgrade(
-        `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} documents/mois sur le plan ${plan.label}.`,
+        `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
         'document'
       )
       return false

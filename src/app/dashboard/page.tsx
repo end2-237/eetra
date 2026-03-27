@@ -9,7 +9,7 @@ import {
   BookOpen, Download, Bell, Settings,
   FolderOpen, ChevronRight, History, LogOut, Search,
   LayoutDashboard, Layers, TrendingUp, ExternalLink,
-  CheckCircle2, PenLine, Menu, X,
+  CheckCircle2, PenLine, Menu, X, Lock,
 } from 'lucide-react'
 import { useProfile }         from '@/contexts/ProfileContext'
 import { useLibrary }         from '@/contexts/LibraryContext'
@@ -19,6 +19,7 @@ import { useNotifications }   from '@/contexts/NotificationContext'
 import { usePlan }            from '@/contexts/PlanContext'
 import { ThemeToggle }        from '@/components/ui/ThemeToggle'
 import { NotificationCenter } from '@/components/ui/NotificationCenter'
+import { PlanUpgradeModal }   from '@/components/editor/PlanUpgradeModal'
 import { getInitials }        from '@/lib/utils'
 
 const STORAGE_DRAFT = 'eetra-document-draft'
@@ -97,34 +98,21 @@ const CSS = `
   .icon-box { width:26px; height:26px; border-radius:5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
   .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
   .btn-primary:hover { opacity:.88; }
+  .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
   .btn-sm { padding:4px 10px; font-size:11px; }
   .btn-full { width:100%; justify-content:center; }
   .bdg { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; font-weight:600; }
 
-  /* Mobile overlay sidebar */
   .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; }
   .db-hamburger { display:none; }
   .db-mobile-close { display:none; }
 
-  /* Tablet/Mobile breakpoint (max 1023px) */
   @media (max-width:1023px) {
-    .db {
-      height: 100dvh;
-      flex-direction: column;
-    }
-    
-    .db-side {
-      position: fixed; top:0; left:0; bottom:0; z-index:50;
-      width: 228px;
-      transform: translateX(-100%);
-      box-shadow: 4px 0 24px rgba(0,0,0,.15);
-      transition: transform .25s cubic-bezier(.23,1,.32,1);
-      overflow-y: auto;
-    }
+    .db { height: 100dvh; flex-direction: column; }
+    .db-side { position: fixed; top:0; left:0; bottom:0; z-index:50; width: 228px; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,.15); transition: transform .25s cubic-bezier(.23,1,.32,1); overflow-y: auto; }
     .db-side.open { transform: translateX(0); }
     .db-side-overlay { display: block !important; }
     .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; }
-    
     .db-search { display: none !important; }
     .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
     .db-main { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
@@ -133,42 +121,18 @@ const CSS = `
     .db-center { padding: 14px !important; }
     .tpl-grid  { grid-template-columns: 1fr 1fr !important; }
     .db-top { padding: 0 12px; height: 48px; gap: 6px !important; }
-    .db-th span:nth-child(3),
-    .db-th span:nth-child(4),
-    .db-tr > span:nth-child(3),
-    .db-tr > span:nth-child(4) { display: none; }
+    .db-th span:nth-child(3), .db-th span:nth-child(4), .db-tr > span:nth-child(3), .db-tr > span:nth-child(4) { display: none; }
     .db-th, .db-tr { grid-template-columns: 1fr 80px !important; }
   }
 
-  /* Mobile breakpoint (max 767px) */
   @media (max-width:767px) {
     .stat-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
   }
 
-  /* Extra small phones */
   @media (max-width:479px) {
     .db-center { padding: 12px !important; }
     .db-top { padding: 0 10px; height: 44px; gap: 4px; }
-    .db-top-left { min-width: 0 !important; }
-    .db-top-right { gap: 6px !important; }
-    
-    .db-search { display: none; }
     .db-logo-name { display: none; }
-    .db-nav-label { font-size: 9px !important; padding: 8px 6px 2px !important; }
-    .db-nav-btn { padding: 6px 7px !important; gap: 7px !important; font-size: 12px !important; }
-    
-    .db-avatar-btn { padding: 3px 6px !important; }
-    .db-avatar-btn span { display: none; }
-    
-    .stat-grid { grid-template-columns: 1fr !important; gap: 6px !important; }
-    .stat-card { padding: 10px 12px !important; }
-    .stat-val { font-size: 18px !important; }
-    .stat-label { font-size: 10px !important; }
-    
-    .db-block-head { padding: 8px 12px !important; }
-    .db-block-title { font-size: 11px !important; }
-    .db-th, .db-tr { padding: 6px 10px !important; gap: 6px !important; }
-    .db-th span { font-size: 9px !important; }
   }
 `
 
@@ -179,18 +143,19 @@ export default function DashboardPage() {
   const { entries }      = useHistory()
   const { members }      = useTeam()
   const { unreadCount }  = useNotifications()
-  const { plan, planId } = usePlan()
+  const { plan, planId, canCreateDocument, checkDocumentLimit, requestUpgrade } = usePlan()
 
   const [showNotifs, setShowNotifs] = useState(false)
   const [search,     setSearch]     = useState('')
   const [sideOpen,   setSideOpen]   = useState(false)
 
-  const planColor = ({ starter: '#6B7280', pro: '#1B4FD8', business: '#059669' } as any)[planId] ?? '#1B4FD8'
+  const planColor = ({ starter: '#6B7280', pro: '#1B4FD8', student: '#059669', business: '#059669' } as any)[planId] ?? '#1B4FD8'
   const planMax   = plan.maxDocsPerMonth === Infinity ? 9999 : plan.maxDocsPerMonth
   const planPct   = Math.min(100, (documents.length / (planMax || 1)) * 100)
   const scoreAvg  = Math.min(100, documents.length * 12 + 40)
   const recentDocs = documents.slice(0, 6)
   const recentExports = entries.slice(0, 5)
+  const limitReached = !canCreateDocument()
 
   const activity = [
     ...documents.slice(0, 3).map(d => ({ label: d.title || 'Sans titre', action: 'Modifié', time: new Date(d.updatedAt), color: '#1B4FD8', Icon: PenLine })),
@@ -199,15 +164,22 @@ export default function DashboardPage() {
 
   const go = (path: string) => { router.push(path); setSideOpen(false) }
 
-  const newDoc = () => {
+  const newDoc = async () => {
+    const allowed = await checkDocumentLimit()
+    if (!allowed) return // upgrade modal shown automatically
     try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
     router.push('/editor')
   }
+
   const openDoc = (doc: any) => {
+    // Opening an EXISTING document — no limit check needed
     try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify({ title: doc.title, subtitle: doc.subtitle, ref: doc.ref, destination: doc.destination, confidentiality: doc.confidentiality, pages: doc.pages, docStyle: doc.docStyle })) } catch {}
     router.push('/editor')
   }
-  const useTpl = (id: string) => {
+
+  const useTpl = async (id: string) => {
+    const allowed = await checkDocumentLimit()
+    if (!allowed) return // upgrade modal shown automatically
     try { localStorage.removeItem(STORAGE_DRAFT); sessionStorage.setItem('eetra-pending-template', id) } catch {}
     router.push('/editor')
   }
@@ -217,7 +189,6 @@ export default function DashboardPage() {
       <div className="db-logo-row" onClick={() => go('/')}>
         <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius: 6 }} />
         <span className="db-logo-name">EETRA</span>
-        {/* Close button on mobile */}
         <button onClick={e => { e.stopPropagation(); setSideOpen(false) }}
           style={{ marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text4)', display: 'flex' }}
           className="db-mobile-close">
@@ -245,13 +216,14 @@ export default function DashboardPage() {
             <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Plan {plan.label}</span>
             <span className="bdg" style={{ background: `${planColor}12`, color: planColor }}>{planId}</span>
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text4)' }}>
+          <div style={{ fontSize: 11, color: limitReached ? '#DC2626' : 'var(--text4)', fontWeight: limitReached ? 700 : 400 }}>
             {documents.length} / {planMax === 9999 ? '∞' : planMax} documents
+            {limitReached && ' — limite atteinte'}
           </div>
           <div className="plan-track">
-            <div className="plan-fill" style={{ width: `${planPct}%`, background: planColor }} />
+            <div className="plan-fill" style={{ width: `${planPct}%`, background: limitReached ? '#DC2626' : planColor }} />
           </div>
-          {planId === 'starter' && (
+          {(planId === 'starter' || planId === 'student') && (
             <button className="btn-primary btn-sm btn-full" style={{ marginTop: 9 }} onClick={() => go('/settings#plan')}>
               <Zap size={10} /> Passer au Plan Pro
             </button>
@@ -266,26 +238,23 @@ export default function DashboardPage() {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <style>{`.db-mobile-close { display: none; } @media(max-width:767px){ .db-mobile-close { display:flex!important; } }`}</style>
 
+      {/* Plan upgrade modal — rendered at root level of page */}
+      <PlanUpgradeModal />
+
       <div className="db">
         <Sidebar />
 
-        {/* Mobile sidebar overlay */}
         <div 
           className={`db-side-overlay${sideOpen ? ' open' : ''}`} 
           onClick={() => setSideOpen(false)} 
           style={{ display: sideOpen ? 'block' : 'none' }}
         />
 
-        {/* Main */}
         <div className="db-main">
 
-          {/* Topbar */}
           <header className="db-top">
             <div className="db-top-left">
-              {/* Hamburger - mobile only */}
-              <button onClick={() => setSideOpen(v => !v)}
-                className="db-hamburger"
-                title="Menu">
+              <button onClick={() => setSideOpen(v => !v)} className="db-hamburger" title="Menu">
                 <Menu size={20} />
               </button>
               <div className="db-search">
@@ -325,12 +294,28 @@ export default function DashboardPage() {
             </div>
           </header>
 
-          {/* Body */}
           <div className="db-body">
             <div className="db-inner">
               <div className="db-center">
 
-                {/* Title row */}
+                {/* Limit banner */}
+                {limitReached && (
+                  <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Lock size={14} color="#DC2626" />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#DC2626' }}>Limite de documents atteinte</div>
+                      <div style={{ fontSize: 11, color: 'var(--text4)' }}>
+                        Vous avez utilisé vos {planMax} documents/{planId === 'student' ? 'mois' : 'mois'} inclus dans le plan {plan.label}.
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => requestUpgrade(`Limite de ${planMax} documents atteinte sur le plan ${plan.label}.`, 'document')}
+                      style={{ padding: '5px 12px', borderRadius: 7, background: '#DC2626', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      Upgrader →
+                    </button>
+                  </div>
+                )}
+
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                   <div>
                     <h1 style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--text)', margin: 0 }}>
@@ -340,13 +325,21 @@ export default function DashboardPage() {
                       {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
-                  <button className="btn-primary" onClick={newDoc}><Plus size={13} /> Nouveau document</button>
+                  <button
+                    className="btn-primary"
+                    onClick={newDoc}
+                    disabled={limitReached}
+                    title={limitReached ? 'Limite de documents atteinte' : 'Nouveau document'}
+                    style={{ opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
+                  >
+                    {limitReached ? <Lock size={13} /> : <Plus size={13} />}
+                    {limitReached ? 'Limite atteinte' : 'Nouveau document'}
+                  </button>
                 </div>
 
-                {/* Stats */}
                 <div className="stat-grid">
                   {[
-                    { label: 'Documents',   value: documents.length,  sub: `${planMax === 9999 ? '∞' : planMax - documents.length} restants`, Icon: FileText   },
+                    { label: 'Documents',   value: documents.length,  sub: planMax === 9999 ? 'Illimité' : `${Math.max(0, planMax - documents.length)} restant${planMax - documents.length > 1 ? 's' : ''}`, Icon: FileText   },
                     { label: 'Exports',     value: entries.length,    sub: 'PDF et Word générés',                                            Icon: Download   },
                     { label: 'Membres',     value: members.length,    sub: 'Collaborateurs actifs',                                          Icon: Users      },
                     { label: 'Score moyen', value: `${scoreAvg}%`,    sub: 'Complétude des blocs',                                           Icon: TrendingUp },
@@ -357,7 +350,9 @@ export default function DashboardPage() {
                         <Icon size={13} color="var(--text4)" />
                       </div>
                       <div className="stat-val">{value}</div>
-                      <div className="stat-sub">{sub}</div>
+                      <div className="stat-sub" style={{ color: label === 'Documents' && limitReached ? '#DC2626' : undefined }}>
+                        {sub}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -372,7 +367,15 @@ export default function DashboardPage() {
                     <div style={{ padding: '36px 16px', textAlign: 'center' }}>
                       <FolderOpen size={24} color="var(--text4)" style={{ marginBottom: 10 }} />
                       <p style={{ fontSize: 12, color: 'var(--text3)', margin: '0 0 12px' }}>Aucun document — créez-en un pour commencer.</p>
-                      <button className="btn-primary btn-sm" onClick={newDoc}><Plus size={11} /> Créer un document</button>
+                      <button
+                        className="btn-primary btn-sm"
+                        onClick={newDoc}
+                        disabled={limitReached}
+                        style={{ opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
+                      >
+                        {limitReached ? <Lock size={11} /> : <Plus size={11} />}
+                        {limitReached ? 'Limite atteinte' : 'Créer un document'}
+                      </button>
                     </div>
                   ) : (
                     <>
@@ -404,14 +407,30 @@ export default function DashboardPage() {
                     <span className="db-block-title">Démarrage rapide</span>
                     <button className="db-block-link" onClick={() => go('/templates')}>Tous les templates <ChevronRight size={11} /></button>
                   </div>
+                  {limitReached && (
+                    <div style={{ padding: '8px 14px', background: 'rgba(220,38,38,.04)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Lock size={10} color="#DC2626" />
+                      <span style={{ fontSize: 10, color: '#DC2626', fontWeight: 600 }}>Création bloquée — limite de documents atteinte</span>
+                    </div>
+                  )}
                   <div className="tpl-grid">
                     {TEMPLATES.map((tpl, i) => (
-                      <button key={tpl.id} className="tpl-cell" onClick={() => useTpl(tpl.id)} style={{
-                        borderRight:  i % 3 !== 2 ? '1px solid var(--border)' : 'none',
-                        borderBottom: i < 3       ? '1px solid var(--border)' : 'none',
-                      }}>
+                      <button
+                        key={tpl.id}
+                        className="tpl-cell"
+                        onClick={() => useTpl(tpl.id)}
+                        disabled={limitReached}
+                        style={{
+                          borderRight:  i % 3 !== 2 ? '1px solid var(--border)' : 'none',
+                          borderBottom: i < 3       ? '1px solid var(--border)' : 'none',
+                          opacity: limitReached ? .45 : 1,
+                          cursor: limitReached ? 'not-allowed' : 'pointer',
+                        }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
-                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: tpl.color, flexShrink: 0 }} />
+                          {limitReached
+                            ? <Lock size={7} color="#aaa" />
+                            : <div style={{ width: 7, height: 7, borderRadius: '50%', background: tpl.color, flexShrink: 0 }} />
+                          }
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{tpl.name}</span>
                         </div>
                         <span style={{ fontSize: 11, color: 'var(--text4)', paddingLeft: 14 }}>{tpl.desc}</span>
@@ -450,7 +469,6 @@ export default function DashboardPage() {
 
                 <div style={{ height: 1, background: 'var(--border)' }} />
 
-                {/* Activity */}
                 <div>
                   <div className="rp-label">Activité</div>
                   {activity.length === 0
@@ -476,7 +494,6 @@ export default function DashboardPage() {
 
                 <div style={{ height: 1, background: 'var(--border)' }} />
 
-                {/* Plan quick view */}
                 <div>
                   <div className="rp-label">Votre plan</div>
                   {[
@@ -490,7 +507,7 @@ export default function DashboardPage() {
                       <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)' }}>{value}</span>
                     </div>
                   ))}
-                  {planId === 'starter' && (
+                  {(planId === 'starter' || planId === 'student') && (
                     <button className="btn-primary btn-sm btn-full" style={{ marginTop: 12 }} onClick={() => go('/settings#plan')}>
                       <Zap size={11} /> Passer au Plan Pro
                     </button>
@@ -502,7 +519,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Mobile hamburger show */}
       <style>{`@media(max-width:767px){ .db-hamburger { display:flex!important; } }`}</style>
     </>
   )

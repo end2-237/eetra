@@ -241,21 +241,13 @@ export function TemplatesPanel({ showToast }: Props) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {filteredCommunity.map(tpl => {
                   const isSel = selectedCustomId === tpl.id
-                  const canUse = canUseCommunityTemplates()
                   return (
-                    <div key={tpl.id} onClick={() => canUse && setSelectedCustomId(isSel ? null : tpl.id)}
-                      style={{ borderRadius: 10, border: '2px solid', borderColor: isSel ? 'var(--accent)' : 'var(--border)', background: isSel ? 'var(--accentS)' : 'var(--surface)', cursor: canUse ? 'pointer' : 'not-allowed', transition: 'all .15s', overflow: 'hidden', opacity: canUse ? 1 : 0.6 }}>
+                    <div key={tpl.id} onClick={() => setSelectedCustomId(isSel ? null : tpl.id)}
+                      style={{ borderRadius: 10, border: '2px solid', borderColor: isSel ? 'var(--accent)' : 'var(--border)', background: isSel ? 'var(--accentS)' : 'var(--surface)', cursor: 'pointer', transition: 'all .15s', overflow: 'hidden' }}>
                       <div style={{ aspectRatio: '.707', background: 'var(--bg3)', overflow: 'hidden', position: 'relative' }}>
                         <CoverMini coverStyle={tpl.coverStyle} name={tpl.name} />
                         {tpl.usageCount > 0 && (
                           <div style={{ position: 'absolute', top: 4, right: 4, fontSize: 8, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(0,0,0,.5)', color: '#fff' }}>×{tpl.usageCount}</div>
-                        )}
-                        {!canUse && (
-                          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <div style={{ fontSize: 8, fontWeight: 700, padding: '4px 8px', borderRadius: 4, background: 'rgba(0,0,0,.8)', color: '#fff', textAlign: 'center', lineHeight: 1.2 }}>
-                              Upgrade<br/>required
-                            </div>
-                          </div>
                         )}
                       </div>
                       <div style={{ padding: '7px 8px' }}>
@@ -300,8 +292,6 @@ export function TemplatesPanel({ showToast }: Props) {
           const tpl = activeTab === 'mine'
             ? myTemplates.find(t => t.id === selectedCustomId)
             : communityTemplates.find(t => t.id === selectedCustomId)
-          const isCommunityOnly = activeTab === 'community' && tpl && !myTemplates.find(m => m.id === tpl.id)
-          const canApply = !isCommunityOnly || canUseCommunityTemplates()
           
           return tpl ? (
             <>
@@ -313,20 +303,13 @@ export function TemplatesPanel({ showToast }: Props) {
                   accentColor={tpl.coverStyle?.accentColor || '#1B4FD8'}
                 />
               </div>
-              {!canApply && (
-                <div style={{ padding: '10px', background: 'rgba(220, 38, 38, 0.1)', border: '1px solid #FCA5A5', borderRadius: '6px', marginBottom: '10px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: '#DC2626', margin: '0 0 6px' }}>Accès limité</p>
-                  <p style={{ fontSize: 9, color: '#991B1B', margin: 0, lineHeight: 1.4 }}>Ce template communautaire est réservé aux plans Pro et Business</p>
-                </div>
-              )}
               <Button 
                 variant="primary" 
                 fullWidth 
-                onClick={() => canApply ? applyCustomTemplate(tpl) : requestUpgrade('Passez au plan Pro pour accéder aux templates communautaires')}
+                onClick={() => applyCustomTemplate(tpl)}
                 size="sm" 
-                style={{ opacity: canApply ? 1 : 0.6 }}
               >
-                {canApply ? `Appliquer "${tpl.name}" →` : 'Upgrade pour utiliser'}
+                Appliquer "{tpl.name}" →
               </Button>
             </>
           ) : null

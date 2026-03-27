@@ -8,16 +8,13 @@ import type { CoverStyle } from '@/contexts/CustomTemplateContext'
 import type { CoverBlock } from '@/components/editor/cover/CoverPageEditor'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// A4 dimensions fixes — toujours rendu à cette taille dans le DOM
-// Le scaling visuel est géré par CSS transform dans le wrapper
-// Cela garantit que html2canvas capture toujours une image 794×1123px
+// A4 dimensions — toujours rendu à cette taille dans le DOM
 // ─────────────────────────────────────────────────────────────────────────────
 const PAGE_W = 794
 const PAGE_H = 1123
 
 interface Props {
   coverStyle?: CoverStyle
-  /** Facteur de zoom pour l'affichage — le contenu reste 794×1123 dans le DOM */
   zoom?: number
 }
 
@@ -178,21 +175,14 @@ function Footer({ showQr, qrDataUrl, showWatermark, light }: { showQr: boolean; 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WRAPPER — clippe visuellement à dW×dH, mais le div interne
-// id="eetra-cover-static" reste toujours PAGE_W×PAGE_H dans le DOM
-// → html2canvas capture 794×1123px quelle que soit le zoom d'affichage
+// WRAPPER — clips visually to dW×dH, inner div always PAGE_W×PAGE_H
 // ─────────────────────────────────────────────────────────────────────────────
 function CoverWrapper({ zoom, children }: { zoom: number; children: React.ReactNode }) {
   const dW = PAGE_W * zoom
   const dH = PAGE_H * zoom
-  if (zoom === 1) {
-    // Pas de scaling — rendu direct, id directement sur le div interne
-    return <>{children}</>
-  }
+  if (zoom === 1) return <>{children}</>
   return (
-    // Wrapper qui occupe l'espace visuel affiché
     <div style={{ width: dW, height: dH, overflow: 'hidden', position: 'relative', flexShrink: 0 }}>
-      {/* Div interne toujours 794×1123, CSS transform uniquement pour l'affichage */}
       <div style={{
         width: PAGE_W, height: PAGE_H,
         position: 'absolute', top: 0, left: 0,
@@ -206,10 +196,271 @@ function CoverWrapper({ zoom, children }: { zoom: number; children: React.ReactN
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COVER PAGE
+// INVOICE LAYOUT — compact single-page style for factures/devis
+// ─────────────────────────────────────────────────────────────────────────────
+function InvoiceLayout({ cv, profile, fontTitle, fontBody, accent, titleSize, showWatermark, qrDataUrl, title, subtitle, docRef, destination, confidentiality, date }: any) {
+  return (
+    <div id="eetra-cover-static" style={{ width: PAGE_W, height: PAGE_H, position: 'relative', overflow: 'hidden', boxSizing: 'border-box', fontFamily: `'${fontBody}',sans-serif`, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      {/* Top colored bar */}
+      <div style={{ background: accent, padding: '28px 52px 24px', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', right: -60, top: -60, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,.07)', pointerEvents: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          {/* Company info */}
+          <div>
+            <Brand profile={profile} fontTitle={fontTitle} accent={accent} light />
+            {profile.address && (
+              <div style={{ marginTop: 10, fontSize: 10, color: 'rgba(255,255,255,.6)', lineHeight: 1.6 }}>
+                {profile.address}{profile.city ? ` — ${profile.city}` : ''}
+                {profile.email && <><br />{profile.email}</>}
+                {profile.web && <><br />{profile.web}</>}
+              </div>
+            )}
+          </div>
+          {/* Document type */}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: titleSize * 0.55, fontWeight: 900, color: '#fff', letterSpacing: '-.02em', lineHeight: 1 }}>
+              {title || 'FACTURE'}
+            </div>
+            {docRef && (
+              <div style={{ marginTop: 8, fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,.7)', letterSpacing: '.05em', fontFamily: 'monospace' }}>
+                N° {docRef}
+              </div>
+            )}
+            {confidentiality && confidentiality !== 'CONFIDENTIEL' && (
+              <div style={{ marginTop: 6 }}>
+                <ConfiBadge text={confidentiality} accent={accent} light />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Info strip */}
+      <div style={{ background: '#F8F9FB', borderBottom: '1px solid #E8ECF0', padding: '18px 52px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, flexShrink: 0 }}>
+        <div>
+          <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.2em', textTransform: 'uppercase', color: '#a8b4c4', marginBottom: 5 }}>Date</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#0A0F1E' }}>{date}</div>
+        </div>
+        {docRef && (
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.2em', textTransform: 'uppercase', color: '#a8b4c4', marginBottom: 5 }}>Référence</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: accent, fontFamily: 'monospace' }}>{docRef}</div>
+          </div>
+        )}
+        {destination && (
+          <div>
+            <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.2em', textTransform: 'uppercase', color: '#a8b4c4', marginBottom: 5 }}>Facturé à</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#0A0F1E', lineHeight: 1.4 }}>{destination}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Content area — large empty zone for the invoice table blocks */}
+      <div style={{ flex: 1, padding: '32px 52px 24px', display: 'flex', flexDirection: 'column' }}>
+        {subtitle && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 11, color: '#888', lineHeight: 1.6 }}>{subtitle}</div>
+          </div>
+        )}
+        {/* Placeholder lines to indicate where the table goes */}
+        <div style={{ flex: 1, border: `1.5px dashed ${accent}30`, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', opacity: .25 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#666', letterSpacing: '.1em', textTransform: 'uppercase' }}>Tableau de facturation</div>
+            <div style={{ fontSize: 10, color: '#999', marginTop: 4 }}>Ajoutez un bloc Tableau depuis l'éditeur</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom totals area */}
+      <div style={{ padding: '16px 52px 28px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20 }}>
+          {[['Sous-total HT', ''], ['TVA (19.25%)', ''], ['Total TTC', '']].map(([label], i) => (
+            <div key={label} style={{
+              minWidth: 160, padding: '10px 14px',
+              background: i === 2 ? accent : '#F8F9FB',
+              borderRadius: i === 2 ? 8 : 6,
+              border: i === 2 ? 'none' : '1px solid #E8ECF0',
+            }}>
+              <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: i === 2 ? 'rgba(255,255,255,.7)' : '#a8b4c4', marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: i === 2 ? '#fff' : '#0A0F1E', fontFamily: 'monospace' }}>— FCFA</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '12px 52px 16px', borderTop: '1px solid #F0F0F0', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          {showWatermark && <span style={{ fontSize: 7, color: '#d0d8e4' }}>Généré par EETRA</span>}
+        </div>
+        {cv.showQr && qrDataUrl && (
+          <div style={{ padding: 5, borderRadius: 7, background: '#fff', border: '1px solid #edf2f7' }}>
+            <img src={qrDataUrl} alt="QR" style={{ width: 36, height: 36, display: 'block' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACADEMIC LAYOUT — for rapports de stage, mémoires, thèses, exposés
+// ─────────────────────────────────────────────────────────────────────────────
+function AcademicLayout({ cv, profile, fontTitle, fontBody, accent, titleSize, showWatermark, qrDataUrl, title, subtitle, docRef, destination, confidentiality, date }: any) {
+  return (
+    <div id="eetra-cover-static" style={{ width: PAGE_W, height: PAGE_H, position: 'relative', overflow: 'hidden', boxSizing: 'border-box', fontFamily: `'${fontBody}',sans-serif`, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      {/* Top institutional bar */}
+      <div style={{ background: accent, padding: '20px 56px', flexShrink: 0, textAlign: 'center', position: 'relative' }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.2em', textTransform: 'uppercase', color: 'rgba(255,255,255,.8)', marginBottom: 4 }}>
+          {profile.name || 'UNIVERSITÉ / INSTITUTION'}
+        </div>
+        {profile.sector && (
+          <div style={{ fontSize: 9, color: 'rgba(255,255,255,.6)', letterSpacing: '.1em' }}>{profile.sector}</div>
+        )}
+        {profile.tagline && (
+          <div style={{ fontSize: 8.5, color: 'rgba(255,255,255,.45)', marginTop: 3, fontStyle: 'italic' }}>{profile.tagline}</div>
+        )}
+      </div>
+
+      {/* Logo zone */}
+      {profile.logoDataUrl && (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0 0', flexShrink: 0 }}>
+          <img src={profile.logoDataUrl} alt="logo" style={{ height: 64, maxWidth: 200, objectFit: 'contain' }} />
+        </div>
+      )}
+
+      {/* Document type label */}
+      <div style={{ textAlign: 'center', padding: '28px 56px 0', flexShrink: 0 }}>
+        {subtitle && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: 4, border: `1.5px solid ${accent}`, background: `${accent}0E`, marginBottom: 18 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.3em', textTransform: 'uppercase', color: accent }}>{subtitle}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Main title */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 72px', textAlign: 'center' }}>
+        <div style={{ width: 48, height: 3, background: accent, borderRadius: 2, margin: '0 auto 20px' }} />
+        <h1 style={{ fontFamily: `'${fontTitle}',serif`, fontSize: titleSize, fontWeight: 900, letterSpacing: '-.025em', lineHeight: 1.1, color: '#0A0F1E', margin: 0, wordBreak: 'break-word', textTransform: 'uppercase' }}>
+          {title || 'TITRE DU DOCUMENT'}
+        </h1>
+        <div style={{ width: 48, height: 3, background: accent, borderRadius: 2, margin: '20px auto 0' }} />
+      </div>
+
+      {/* Author / metadata */}
+      <div style={{ padding: '24px 72px 0', flexShrink: 0, textAlign: 'center' }}>
+        {destination && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: '#a8b4c4', marginBottom: 5 }}>Présenté par</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0A0F1E' }}>{destination}</div>
+          </div>
+        )}
+        {docRef && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.2em', textTransform: 'uppercase', color: '#a8b4c4', marginBottom: 5 }}>Filière / Spécialité</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: accent }}>{docRef}</div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '20px 56px 28px', flexShrink: 0, borderTop: '1px solid #F0F0F0', marginTop: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: accent, marginBottom: 4 }}>{date}</div>
+            {showWatermark && <span style={{ fontSize: 7, color: '#d0d8e4' }}>Généré par EETRA</span>}
+          </div>
+          {cv.showQr && qrDataUrl && (
+            <div style={{ padding: 5, borderRadius: 7, background: '#fff', border: '1px solid #edf2f7' }}>
+              <img src={qrDataUrl} alt="QR" style={{ width: 38, height: 38, display: 'block' }} />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PV / MINUTES LAYOUT — procès-verbaux, comptes rendus
+// ─────────────────────────────────────────────────────────────────────────────
+function PVLayout({ cv, profile, fontTitle, fontBody, accent, titleSize, showWatermark, qrDataUrl, title, subtitle, docRef, destination, confidentiality, date }: any) {
+  return (
+    <div id="eetra-cover-static" style={{ width: PAGE_W, height: PAGE_H, position: 'relative', overflow: 'hidden', boxSizing: 'border-box', fontFamily: `'${fontBody}',sans-serif`, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      {/* Top thin accent bar */}
+      <div style={{ height: 6, background: accent, flexShrink: 0 }} />
+
+      {/* Header */}
+      <div style={{ padding: '32px 56px 24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0, borderBottom: '1px solid #F0F0F0' }}>
+        <Brand profile={profile} fontTitle={fontTitle} accent={accent} />
+        {confidentiality && <ConfiBadge text={confidentiality} accent={accent} />}
+      </div>
+
+      {/* Central title zone */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 72px', textAlign: 'center' }}>
+        {/* Document type pill */}
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 20px', borderRadius: 4, background: accent, marginBottom: 28 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.28em', textTransform: 'uppercase', color: '#fff' }}>
+            {subtitle || 'PROCÈS-VERBAL'}
+          </span>
+        </div>
+
+        <h1 style={{ fontFamily: `'${fontTitle}',serif`, fontSize: titleSize, fontWeight: 900, letterSpacing: '-.025em', lineHeight: 1.1, color: '#0A0F1E', margin: 0, wordBreak: 'break-word' }}>
+          {title || 'TITRE DE LA RÉUNION'}
+        </h1>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 22, marginBottom: 28 }}>
+          <div style={{ height: 1, width: 40, background: `${accent}40` }} />
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: accent }} />
+          <div style={{ height: 1, width: 40, background: `${accent}40` }} />
+        </div>
+
+        {docRef && (
+          <div style={{ fontSize: 12, fontWeight: 700, color: accent, fontFamily: 'monospace', letterSpacing: '.08em', marginBottom: 16 }}>
+            N° {docRef}
+          </div>
+        )}
+      </div>
+
+      {/* Info table */}
+      <div style={{ padding: '0 56px 32px', flexShrink: 0 }}>
+        <div style={{ border: '1px solid #E8ECF0', borderRadius: 10, overflow: 'hidden' }}>
+          {[
+            ['Date et heure', date],
+            ['Lieu', destination || profile.city || '—'],
+            ...(profile.address ? [['Adresse', profile.address]] : []),
+          ].map(([label, value], i) => (
+            <div key={label} style={{ display: 'grid', gridTemplateColumns: '180px 1fr', background: i % 2 ? '#F8F9FB' : '#fff' }}>
+              <div style={{ padding: '12px 16px', borderRight: '1px solid #E8ECF0' }}>
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#a8b4c4' }}>{label}</span>
+              </div>
+              <div style={{ padding: '12px 16px' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#0A0F1E' }}>{value}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div style={{ padding: '12px 56px 20px', borderTop: '1px solid #F0F0F0', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {showWatermark && <span style={{ fontSize: 7, color: '#d0d8e4' }}>Généré par EETRA</span>}
+        {!showWatermark && <span />}
+        {cv.showQr && qrDataUrl && (
+          <div style={{ padding: 5, borderRadius: 7, background: '#fff', border: '1px solid #edf2f7' }}>
+            <img src={qrDataUrl} alt="QR" style={{ width: 38, height: 38, display: 'block' }} />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COVER PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export function CoverPage({ coverStyle, zoom = 1 }: Props) {
-  const { title, subtitle, ref: docRef, destination, confidentiality, docStyle } = useDocument()
+  const { title, subtitle, ref: docRef, destination, confidentiality, docStyle, selectedTemplate } = useDocument()
   const { profile } = useProfile()
   const { planId } = usePlan()
   const qrDataUrl = useQR({ docId: 'EETRA-DOC', title, entityName: profile.name })
@@ -223,7 +474,8 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
   const blocks = cv.coverBlocks || []
   const date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
 
-  // Styles de base partagés par tous les layouts — dimensions fixes A4
+  const sharedProps = { cv, profile, fontTitle, fontBody, accent, titleSize, showWatermark, qrDataUrl, title, subtitle, docRef, destination, confidentiality, date }
+
   const pageBase: React.CSSProperties = {
     width: PAGE_W,
     height: PAGE_H,
@@ -248,28 +500,58 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
     )
   }
 
+  // ── SPECIAL LAYOUTS based on selectedTemplate or explicit layout key ───────
+  // Invoice templates: 'facture', 'facture-proforma', 'devis'
+  const isInvoice = selectedTemplate && ['facture', 'facture-proforma', 'devis'].includes(selectedTemplate)
+  if (isInvoice || cv.layout === 'invoice') {
+    return (
+      <CoverWrapper zoom={zoom}>
+        <InvoiceLayout {...sharedProps} />
+      </CoverWrapper>
+    )
+  }
+
+  // Academic templates
+  const isAcademic = selectedTemplate && [
+    'rapport-stage-licence', 'rapport-stage-master', 'rapport-td',
+    'memoire-master', 'these-doctorat', 'expose-licence', 'expose-master',
+  ].includes(selectedTemplate)
+  if (isAcademic || cv.layout === 'academic') {
+    return (
+      <CoverWrapper zoom={zoom}>
+        <AcademicLayout {...sharedProps} />
+      </CoverWrapper>
+    )
+  }
+
+  // PV / Minutes templates
+  const isPV = selectedTemplate && [
+    'pv-conseil', 'pv-ag', 'pv-reunion', 'compte-rendu', 'compte-rendu-visite', 'memo',
+  ].includes(selectedTemplate)
+  if (isPV || cv.layout === 'pv') {
+    return (
+      <CoverWrapper zoom={zoom}>
+        <PVLayout {...sharedProps} />
+      </CoverWrapper>
+    )
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // CLASSIC
   // ─────────────────────────────────────────────────────────────────────────
   if (cv.layout === 'classic') return (
     <CoverWrapper zoom={zoom}>
       <div id="eetra-cover-static" style={{ ...pageBase, background: '#fff', display: 'flex', flexDirection: 'column' }}>
-
-        {/* Bande accent gauche */}
         <div style={{ position: 'absolute', left: 0, top: 0, width: 6, height: '100%', background: accent }} />
         <div style={{ position: 'absolute', left: 6, top: 0, width: 1.5, height: '100%', background: `${accent}22` }} />
-
-        {/* Déco top-right */}
         <div style={{ position: 'absolute', top: -80, right: -80, width: 240, height: 240, borderRadius: '50%', background: `${accent}07`, pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, borderRadius: '50%', background: `${accent}05`, pointerEvents: 'none' }} />
 
-        {/* EN-TÊTE */}
         <div style={{ padding: '44px 56px 0 68px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexShrink: 0 }}>
           {cv.showLogo && <Brand profile={profile} fontTitle={fontTitle} accent={accent} />}
           {confidentiality && <ConfiBadge text={confidentiality} accent={accent} />}
         </div>
 
-        {/* CORPS */}
         <div style={{ flex: 1, padding: '0 56px 0 68px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div style={{ maxWidth: 580 }}>
             {subtitle && <Subtitle text={subtitle} accent={accent} />}
@@ -284,7 +566,6 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
           </div>
         </div>
 
-        {/* PIED */}
         <div style={{ padding: '24px 56px 36px 68px', flexShrink: 0 }}>
           <div style={{ height: 1, background: `linear-gradient(90deg,${accent}44 0%,transparent 70%)`, marginBottom: 20 }} />
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
@@ -302,7 +583,6 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
   if (cv.layout === 'bold') return (
     <CoverWrapper zoom={zoom}>
       <div id="eetra-cover-static" style={{ ...pageBase, background: accent, display: 'flex', flexDirection: 'column' }}>
-
         <div style={{ position: 'absolute', right: -90, top: -90, width: 360, height: 360, borderRadius: '50%', background: 'rgba(255,255,255,.07)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', right: 50, bottom: -80, width: 240, height: 240, borderRadius: '50%', background: 'rgba(255,255,255,.04)', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', left: -60, bottom: 240, width: 170, height: 170, borderRadius: '50%', background: 'rgba(255,255,255,.03)', pointerEvents: 'none' }} />
@@ -357,7 +637,6 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
   if (cv.layout === 'minimal') return (
     <CoverWrapper zoom={zoom}>
       <div id="eetra-cover-static" style={{ ...pageBase, background: '#fafbfc', display: 'flex', flexDirection: 'column' }}>
-
         <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 5, background: accent }} />
         <div style={{ position: 'absolute', bottom: 5, left: 0, right: 0, height: 1.5, background: `${accent}40` }} />
         <div style={{ position: 'absolute', bottom: 6.5, left: 0, right: 0, height: 1, background: `${accent}18` }} />
@@ -419,8 +698,6 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
     return (
       <CoverWrapper zoom={zoom}>
         <div id="eetra-cover-static" style={{ ...pageBase, display: 'flex' }}>
-
-          {/* ── PANNEAU GAUCHE ── */}
           <div style={{ width: leftW, background: accent, padding: '48px 38px', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
             <div style={{ position: 'absolute', right: -55, top: -55, width: 190, height: 190, borderRadius: '50%', background: 'rgba(255,255,255,.08)', pointerEvents: 'none' }} />
             <div style={{ position: 'absolute', left: -30, bottom: 100, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,.05)', pointerEvents: 'none' }} />
@@ -442,7 +719,6 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
             </div>
           </div>
 
-          {/* ── PANNEAU DROIT ── */}
           <div style={{ flex: 1, background: '#fff', display: 'flex', flexDirection: 'column', boxSizing: 'border-box', position: 'relative' }}>
             <div style={{ position: 'absolute', left: 0, top: 48, bottom: 48, width: 1, background: `${accent}18` }} />
             <div style={{ flex: 1, padding: '48px 44px', display: 'flex', flexDirection: 'column' }}>

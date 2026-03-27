@@ -353,3 +353,54 @@ export const PALETTE = [
   '#4A1D96', '#7C2D12', '#1E3A5F', '#374151',
   '#065F46', '#7F1D1D', '#B45309', '#0E7490',
 ]
+
+export const TEMPLATE_COVER_LAYOUT_MAP: Record<string, string> = {
+  // Business documents — classic sidebar style
+  'bp':              'classic',
+  'ao':              'classic',
+  'note-politique':  'classic',
+  'memo':            'pv',
+ 
+  // Audit — bold colored cover
+  'audit':                'bold',
+  'audit-financier':      'bold',
+  'audit-conformite':     'classic',
+ 
+  // Legal — split style
+  'contrat':              'split',
+  'contrat-bail':         'split',
+ 
+  // Invoice / billing — invoice style (compact, single-page optimized)
+  'facture':              'invoice',
+  'facture-proforma':     'invoice',
+  'devis':                'invoice',
+  'devis-professionnel':  'invoice',
+ 
+  // PV & Minutes — pv style
+  'pv-conseil':           'pv',
+  'pv-ag':                'pv',
+  'pv-reunion':           'pv',
+  'compte-rendu':         'pv',
+  'compte-rendu-visite':  'pv',
+ 
+  // Academic — academic style
+  'rapport-stage-licence': 'academic',
+  'rapport-stage-master':  'academic',
+  'rapport-td':            'academic',
+  'memoire-master':        'academic',
+  'these-doctorat':        'academic',
+  'expose-licence':        'academic',
+  'expose-master':         'academic',
+ 
+  // Research / publication
+  'article-recherche':    'bold',
+}
+export function applyLayoutOverrides<T extends { id: string; coverStyle?: any }>(templates: T[]): T[] {
+  return templates.map(t => ({
+    ...t,
+    coverStyle: {
+      ...t.coverStyle,
+      layout: TEMPLATE_COVER_LAYOUT_MAP[t.id] || t.coverStyle?.layout || 'classic',
+    },
+  }))
+}

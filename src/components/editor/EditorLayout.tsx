@@ -52,7 +52,7 @@ export function EditorLayout() {
   const { getTemplate }                  = useCustomTemplates()
   const { saveDocument }                 = useLibrary()
   const { joinDocument }                 = useRealtime()
-  const { checkDocumentLimit, canCreateDocument } = usePlan()
+  const { checkDocumentLimit, canCreateDocument, requestUpgrade, plan } = usePlan()
   const isMobile                         = useIsMobile()
   const canvasRef                        = useRef<HTMLDivElement>(null)
 
@@ -65,27 +65,32 @@ export function EditorLayout() {
     if (docId) joinDocument(docId)
   }, [docId, joinDocument])
 
-  // ── Block new document creation if limit reached ───────────────────────────
+  // ── HARD BLOCK: prevent new document creation if plan limit reached ─────────
   useEffect(() => {
     if (limitChecked.current) return
     limitChecked.current = true
 
-    // Only check if this is a NEW document (no existing pages loaded from draft)
+    // Detect if this is a NEW document attempt (no saved draft with content)
+    const hasPendingTemplate = (
+      !!sessionStorage.getItem('eetra-pending-template') ||
+      !!sessionStorage.getItem('eetra-pending-custom-template')
+    )
+
     const draftRaw = (() => { try { return localStorage.getItem('eetra-document-draft') } catch { return null } })()
     const draft = draftRaw ? (() => { try { return JSON.parse(draftRaw) } catch { return null } })() : null
     const hasDraftContent = draft && (draft.title || (draft.pages && draft.pages.length > 0))
 
-    // If there's already draft content, user is editing existing — allow
-    if (hasDraftContent) return
+    // Only check limit for truly new documents (no existing draft content, or pending template)
+    const isNewDoc = !hasDraftContent || hasPendingTemplate
 
-    // Check for pending template (also a new doc creation)
-    const hasPendingTemplate = !!sessionStorage.getItem('eetra-pending-template') || !!sessionStorage.getItem('eetra-pending-custom-template')
-
-    if (!hasDraftContent || hasPendingTemplate) {
+    if (isNewDoc) {
       checkDocumentLimit().then(allowed => {
         if (!allowed) {
-          // Redirect back to dashboard after short delay (modal shown by checkDocumentLimit)
-          setTimeout(() => router.push('/dashboard'), 300)
+          // Clean up pending template flags so they don't persist
+          try { sessionStorage.removeItem('eetra-pending-template') } catch {}
+          try { sessionStorage.removeItem('eetra-pending-custom-template') } catch {}
+          // Redirect back to dashboard after short delay (upgrade modal shown by checkDocumentLimit)
+          setTimeout(() => router.push('/dashboard'), 400)
         }
       })
     }
@@ -121,7 +126,7 @@ export function EditorLayout() {
         if (pages.length === 0) {
           addPage()
           setTimeout(() => {
-            const blocks: DocBlock[] = tpl.blocks.map(b => ({
+            const blocks: DocBlock[] = tpl.blocks.map((b: any) => ({
               id:      generateId(),
               type:    b.type,
               content: typeof b.content === 'string' ? b.content : JSON.stringify(b.content ?? {}),
@@ -148,13 +153,13 @@ export function EditorLayout() {
   })
 
   useEffect(() => {
-    const doSave = () => {
+    const doSave = async () => {
       const s = saveRef.current
       if (!s.modified) return
       const hasContent = s.title || s.pages.some(p => p.blocks.length > 0)
       if (!hasContent) return
 
-      saveDocument({
+      const result = await saveDocument({
         id:             docId,
         title:          s.title || 'Sans titre',
         subtitle:       s.subtitle,
@@ -167,13 +172,23 @@ export function EditorLayout() {
         pageCount:      s.pages.length,
         blockCount:     s.pages.reduce((c, p) => c + p.blocks.length, 0),
       })
-      markSaved()
+
+      if (result.success) {
+        markSaved()
+      } else if (result.code === 'LIMIT_REACHED') {
+        // Limit reached during auto-save (edge case) — show upgrade modal
+        requestUpgrade(
+          result.error || `Limite de documents atteinte sur le plan ${plan.label}.`,
+          'document'
+        )
+      }
     }
 
     const interval = setInterval(doSave, 3000)
+    // Run immediately on mount
     doSave()
     return () => clearInterval(interval)
-  }, [docId, saveDocument, markSaved])
+  }, [docId, saveDocument, markSaved, requestUpgrade, plan])
 
   // ── Mobile layout ──────────────────────────────────────────────────────────
   if (isMobile) {

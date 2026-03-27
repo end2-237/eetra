@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Users, Plus, Trash2, ArrowLeft, Crown, Edit3, Eye,
@@ -8,6 +8,7 @@ import {
   UserCheck, UserX, MoreHorizontal, RefreshCw,
 } from 'lucide-react'
 import { useTeam } from '@/contexts/TeamContext'
+import { usePlan } from '@/contexts/PlanContext'
 import { TeamMember } from '@/types'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
@@ -120,6 +121,7 @@ const CSS = `
 export default function TeamPage() {
   const router = useRouter()
   const { members, addMember, removeMember, updateRole } = useTeam()
+  const { planId, requestUpgrade } = usePlan()
 
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
@@ -127,6 +129,16 @@ export default function TeamPage() {
   const [loading,  setLoading]  = useState(false)
   const [success,  setSuccess]  = useState(false)
   const [filter,   setFilter]   = useState<'all' | TeamMember['role']>('all')
+  const [notAuthorized, setNotAuthorized] = useState(false)
+
+  // ── Check Pro plan on mount ──────────────────────────────────────────────────
+  useEffect(() => {
+    const isPro = planId === 'pro' || planId === 'business'
+    if (!isPro) {
+      setNotAuthorized(true)
+      requestUpgrade('La collaboration en équipe est réservée aux plans Pro et Business')
+    }
+  }, [planId, requestUpgrade])
 
   const filtered = members.filter(m => filter === 'all' || m.role === filter)
 
@@ -147,6 +159,55 @@ export default function TeamPage() {
   }
 
   const cols = '1fr 160px 100px 90px 80px'
+
+  // ── Show restricted message if not Pro ─────────────────────────────────────
+  if (notAuthorized) {
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{ __html: CSS }}/>
+        <div className="team-page">
+          <header className="team-top">
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <button className="team-back" onClick={() => router.push('/dashboard')}>
+                <ArrowLeft size={13}/> Tableau de bord
+              </button>
+              <span className="team-sep">/</span>
+              <span className="team-page-title">Équipe</span>
+            </div>
+            <ThemeToggle/>
+          </header>
+          <div className="team-body">
+            <div className="team-empty" style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16, paddingTop:64 }}>
+              <div style={{ width:56, height:56, borderRadius:8, background:'rgba(251,146,60,.1)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <AlertCircle size={28} color="#FB923C"/>
+              </div>
+              <div>
+                <h2 style={{ fontSize:18, fontWeight:700, color:'var(--text)', margin:0, marginBottom:8 }}>Accès réservé</h2>
+                <p style={{ fontSize:13, color:'var(--text4)', margin:0, marginBottom:12, maxWidth:300 }}>
+                  La gestion d&apos;équipe et la collaboration sont réservées aux plans Pro et Business.
+                </p>
+                <button 
+                  onClick={() => router.push('/dashboard')}
+                  style={{
+                    padding:'8px 16px',
+                    borderRadius:6,
+                    background:'var(--accent)',
+                    color:'#fff',
+                    border:'none',
+                    fontSize:12,
+                    fontWeight:600,
+                    cursor:'pointer',
+                  }}
+                >
+                  Retour au tableau de bord
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>

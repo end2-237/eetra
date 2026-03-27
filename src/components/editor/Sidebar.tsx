@@ -5,7 +5,7 @@ import Image from 'next/image'
 import logo from '../../app/icon.png'
 import {
   Layers, LayoutGrid, Layout, BarChart2, MessageSquare,
-  BookOpen, Download, Settings, BookMarked,
+  BookOpen, Download, Settings, BookMarked, Users,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile }  from '@/contexts/ProfileContext'
@@ -47,10 +47,19 @@ interface Props { onExport: () => void }
 export function Sidebar({ onExport }: Props) {
   const { activeTab, setActiveTab, orientationZone } = useDocument()
   const { profile }  = useProfile()
-  const { planId }   = usePlan()
+  const { planId, requestUpgrade }   = usePlan()
   const router       = useRouter()
 
   const planColor = ({ starter:'#6B7280', pro:'#1B4FD8', business:'#059669' } as Record<string,string>)[planId] ?? '#1B4FD8'
+
+  const handleTeamClick = () => {
+    const isPro = planId === 'pro' || planId === 'business'
+    if (!isPro) {
+      requestUpgrade('La collaboration en équipe est réservée aux plans Pro et Business.')
+      return
+    }
+    router.push('/team')
+  }
 
   return (
     <>
@@ -95,6 +104,18 @@ export function Sidebar({ onExport }: Props) {
         <div className="sb-bottom" style={{ display:'flex', flexDirection:'column', gap:2, alignItems:'center', padding:'0 8px', width:'100%' }}>
           <button className="sb-btn sb-top" title="Mes documents" onClick={() => router.push('/documents')}>
             <BookOpen size={15}/>
+          </button>
+
+          <button 
+            className="sb-btn sb-top" 
+            title="Équipe (Pro)" 
+            onClick={handleTeamClick}
+            style={{ 
+              opacity: (planId === 'pro' || planId === 'business') ? 1 : 0.5,
+              cursor: (planId === 'pro' || planId === 'business') ? 'pointer' : 'not-allowed'
+            }}
+          >
+            <Users size={15}/>
           </button>
 
           <button

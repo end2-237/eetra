@@ -7,6 +7,7 @@ import {
   Trash2, Copy, Edit3, Check, X, Globe, Lock, Loader2,
 } from 'lucide-react'
 import { useCustomTemplates, type CustomTemplate } from '@/contexts/CustomTemplateContext'
+import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Toast }       from '@/components/ui/Toast'
 import { useToast }    from '@/hooks/useToast'
@@ -286,6 +287,8 @@ export default function TemplatesPage() {
     refreshCommunity,
   } = useCustomTemplates()
   const { toast, showToast } = useToast()
+  const { canCreateDocument, checkDocumentLimit, plan, getRemainingDocs } = usePlan()
+  const limitReached = !canCreateDocument()
 
   const [search,  setSearch]  = useState('')
   const [cat,     setCat]     = useState('Tous')
@@ -298,12 +301,16 @@ export default function TemplatesPage() {
     const next = new Set(prev); val ? next.add(id) : next.delete(id); return next
   })
 
-  const useTpl = (id: string) => {
+  const useTpl = async (id: string) => {
+    const allowed = await checkDocumentLimit()
+    if (!allowed) return
     try { localStorage.removeItem(STORAGE_DRAFT); sessionStorage.setItem('eetra-pending-template', id) } catch {}
     router.push('/editor')
   }
 
-  const useCustom = (tpl: CustomTemplate) => {
+  const useCustom = async (tpl: CustomTemplate) => {
+    const allowed = await checkDocumentLimit()
+    if (!allowed) return
     incrementUsage(tpl.id)
     try { localStorage.removeItem(STORAGE_DRAFT); sessionStorage.setItem('eetra-pending-custom-template', tpl.id) } catch {}
     router.push('/editor')
@@ -399,11 +406,34 @@ export default function TemplatesPage() {
         </header>
 
         <div className="tpl-body">
+          {/* Limit banner */}
+          {limitReached && (
+            <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Lock size={14} color="#DC2626" />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#DC2626' }}>Limite de documents atteinte</div>
+                <div style={{ fontSize: 11, color: 'var(--text4)' }}>
+                  Vous avez utilisé vos {plan.maxDocsPerMonth === Infinity ? '∞' : plan.maxDocsPerMonth} documents/mois inclus dans le plan {plan.label}. Les templates sont temporairement indisponibles.
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/settings#plan')}
+                style={{ padding: '5px 12px', borderRadius: 7, background: '#DC2626', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                Upgrader
+              </button>
+            </div>
+          )}
+
           <div className="tpl-header">
             <div>
               <h1 className="tpl-h1">Templates</h1>
               <p className="tpl-sub">
                 {CATALOGUE.length} templates · {custom.length} personnalisés · {communityTemplates.length} communauté
+                {plan.maxDocsPerMonth !== Infinity && (
+                  <span style={{ marginLeft: 10, color: limitReached ? '#DC2626' : 'var(--text4)' }}>
+                    · {getRemainingDocs()}/{plan.maxDocsPerMonth} documents restants
+                  </span>
+                )}
               </p>
             </div>
             <button className="btn-primary" onClick={() => router.push('/templates/create')}>
@@ -474,7 +504,7 @@ export default function TemplatesPage() {
                   </div>
                   <div className="comm-grid">
                     {filterCommunity.map(tpl => (
-                      <div key={tpl.id} className="comm-card" onClick={() => useCustom(tpl)}>
+                      <div key={tpl.id} className="comm-card" style={{ opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }} onClick={() => !limitReached && useCustom(tpl)}>
                         <div className="tpl-card-cover">
                           <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(0,0,0,.03) 1px,transparent 1px)', backgroundSize:'14px 14px' }}/>
                           <div className="tpl-card-cover-inner"><CoverMini coverStyle={tpl.coverStyle} name={tpl.name} /></div>
@@ -492,7 +522,7 @@ export default function TemplatesPage() {
                               <span style={{ fontSize:9, color:'var(--text4)', fontWeight:500 }}>{tpl.author || 'Communauté'}</span>
                               <span style={{ fontSize:9, color:'var(--text4)' }}>{tpl.blocks.length} blocs{tpl.likes ? ` · ${tpl.likes} ♥` : ''}</span>
                             </div>
-                            <button className="tpl-use-btn" onClick={e => { e.stopPropagation(); useCustom(tpl) }}>Utiliser →</button>
+                            <button className="tpl-use-btn" disabled={limitReached} onClick={e => { e.stopPropagation(); useCustom(tpl) }}>{limitReached ? <Lock size={10}/> : 'Utiliser →'}</button>
                           </div>
                         </div>
                       </div>
@@ -554,7 +584,7 @@ export default function TemplatesPage() {
                           {tpl.createdAt ? new Date(tpl.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) : '—'}
                         </span>
                         <div style={{ display:'flex', gap:4 }} onClick={e => e.stopPropagation()}>
-                          <button className="tpl-use-btn" onClick={() => useCustom(tpl)}>Utiliser</button>
+                          <button className="tpl-use-btn" disabled={limitReached} onClick={() => useCustom(tpl)}>{limitReached ? <Lock size={10}/> : 'Utiliser'}</button>
 
                           {/* Bouton publish/unpublish */}
                           <button
@@ -623,7 +653,7 @@ export default function TemplatesPage() {
                 <div className="tpl-section-label">{groupCat}</div>
                 <div className="tpl-grid">
                   {items.map(tpl => (
-                    <div key={tpl.id} className="tpl-card" onClick={() => setPreview(tpl)}>
+                    <div key={tpl.id} className="tpl-card" style={{ opacity: limitReached ? .5 : 1 }} onClick={() => setPreview(tpl)}>
                       <div className="tpl-card-cover">
                         <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(0,0,0,.03) 1px,transparent 1px)', backgroundSize:'14px 14px' }}/>
                         <div className="tpl-card-cover-inner"><tpl.Cover color={tpl.color}/></div>
@@ -634,7 +664,7 @@ export default function TemplatesPage() {
                         <div className="tpl-card-desc">{tpl.desc}</div>
                         <div className="tpl-card-footer">
                           <span style={{ fontSize:10, color:'var(--text4)' }}>{tpl.blocs} blocs</span>
-                          <button className="tpl-use-btn" onClick={e => { e.stopPropagation(); useTpl(tpl.id) }}>Utiliser →</button>
+                          <button className="tpl-use-btn" disabled={limitReached} onClick={e => { e.stopPropagation(); useTpl(tpl.id) }}>{limitReached ? <Lock size={10}/> : 'Utiliser →'}</button>
                         </div>
                       </div>
                     </div>
@@ -685,8 +715,8 @@ export default function TemplatesPage() {
               </div>
               <div style={{ display:'flex', gap:8 }}>
                 <button className="btn-ghost" style={{ flex:1, justifyContent:'center' }} onClick={() => setPreview(null)}>Fermer</button>
-                <button className="btn-primary" style={{ flex:2, justifyContent:'center' }} onClick={() => { setPreview(null); useTpl(preview.id) }}>
-                  <Check size={12}/> Utiliser ce template
+                <button className="btn-primary" style={{ flex:2, justifyContent:'center', opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }} disabled={limitReached} onClick={() => { setPreview(null); useTpl(preview.id) }}>
+                  {limitReached ? <><Lock size={12}/> Limite atteinte</> : <><Check size={12}/> Utiliser ce template</>}
                 </button>
               </div>
             </div>

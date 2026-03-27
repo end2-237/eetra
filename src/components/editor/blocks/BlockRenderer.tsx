@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useRef, useLayoutEffect } from 'react'
 import { DocBlock, TableData, ChartBlockData, ImageBlockData } from '@/types'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Sparkles, Loader2, Check, X, Lock } from 'lucide-react'
+import { usePlan } from '@/contexts/PlanContext'
 import { SafeBlock } from '@/components/ErrorBoundary'
 import { sanitizeContent } from '@/lib/sanitize'
 import { ImageBlock } from './ImageBlock'
@@ -51,21 +52,221 @@ function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: str
   )
 }
 
-// ─── Text ─────────────────────────────────────────────────────────────────────
+// ─── Text with AI Assist ──────────────────────────────────────────────────────
 
 function TextBlock({ block, onUpdateContent, fontFamily }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent']; fontFamily?: string }) {
   const placeholder = 'Commencez à écrire votre paragraphe ici. Double-cliquez pour éditer ce texte et remplacez-le par votre contenu.'
   const ref = useEditableRef(block.content || '', block.id)
+  const { planId, requestUpgrade } = usePlan()
+  
+  const [isLoading, setIsLoading] = useState(false)
+  const [suggestion, setSuggestion] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [remaining, setRemaining] = useState<number | null>(null)
+  const [showTooltip, setShowTooltip] = useState(false)
+  
+  const canUseAI = planId !== 'starter'
+  
+  const handleAIAssist = async () => {
+    const currentText = ref.current?.textContent?.trim() || ''
+    if (!currentText || currentText.length < 5) {
+      setError('Écrivez au moins 5 caractères')
+      setTimeout(() => setError(null), 3000)
+      return
+    }
+    
+    if (!canUseAI) {
+      requestUpgrade('L\'assistance IA à l\'édition n\'est pas disponible sur le plan Gratuit. Passez au plan Étudiant ou supérieur.', 'document')
+      return
+    }
+    
+    setIsLoading(true)
+    setError(null)
+    setSuggestion(null)
+    
+    try {
+      const res = await fetch('/api/ai/edit-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: currentText, action: 'improve' }),
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        if (data.needsUpgrade) {
+          requestUpgrade(data.error, 'document')
+        } else {
+          setError(data.error || 'Erreur lors de l\'amélioration')
+        }
+        return
+      }
+      
+      setSuggestion(data.text)
+      if (data.remaining !== null) {
+        setRemaining(data.remaining)
+      }
+    } catch (err) {
+      setError('Erreur de connexion')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const acceptSuggestion = () => {
+    if (suggestion && ref.current) {
+      ref.current.textContent = suggestion
+      onUpdateContent?.(block.id, suggestion)
+      setSuggestion(null)
+    }
+  }
+  
+  const rejectSuggestion = () => {
+    setSuggestion(null)
+  }
+  
+  const getLimitLabel = () => {
+    if (planId === 'starter') return 'Non disponible'
+    if (planId === 'student') return '3/jour'
+    if (planId === 'pro') return '10/jour'
+    return 'Illimité'
+  }
+  
   return (
-    <p ref={ref} contentEditable suppressContentEditableWarning
-      data-placeholder={placeholder}
-      onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-      style={{
-        fontFamily: fontFamily || 'inherit',
-        fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0,
-        textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap',
-        cursor: 'text', minHeight: 20,
-      }} />
+    <div style={{ position: 'relative' }}>
+      {/* AI Assist Button */}
+      <div className="pdf-hidden" style={{ position: 'absolute', top: -8, right: 0, zIndex: 10 }}>
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={handleAIAssist}
+            disabled={isLoading}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              padding: '4px 8px', borderRadius: 6,
+              border: canUseAI ? '1px solid #E0E7FF' : '1px solid #E5E7EB',
+              background: canUseAI ? 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)' : '#F9FAFB',
+              color: canUseAI ? '#4F46E5' : '#9CA3AF',
+              fontSize: 10, fontWeight: 600,
+              cursor: isLoading ? 'wait' : canUseAI ? 'pointer' : 'not-allowed',
+              transition: 'all .15s',
+              opacity: isLoading ? 0.7 : 1,
+            }}
+          >
+            {isLoading ? (
+              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : canUseAI ? (
+              <Sparkles size={12} />
+            ) : (
+              <Lock size={10} />
+            )}
+            <span>{isLoading ? 'Amélioration...' : 'Améliorer'}</span>
+          </button>
+          
+          {/* Tooltip */}
+          {showTooltip && !isLoading && (
+            <div style={{
+              position: 'absolute', top: '100%', right: 0, marginTop: 4,
+              padding: '6px 10px', borderRadius: 6,
+              background: '#1F2937', color: '#fff',
+              fontSize: 10, whiteSpace: 'nowrap', zIndex: 20,
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>Assistance IA à l&apos;édition</div>
+              <div style={{ color: '#9CA3AF' }}>Clarté • Fautes • Cohérence • Style</div>
+              <div style={{ color: canUseAI ? '#10B981' : '#F59E0B', marginTop: 4 }}>
+                {canUseAI ? `Limite: ${getLimitLabel()}` : 'Passez à Étudiant+'}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Error Message */}
+      {error && (
+        <div className="pdf-hidden" style={{
+          position: 'absolute', top: -28, left: 0, right: 60,
+          padding: '4px 8px', borderRadius: 4,
+          background: '#FEF2F2', color: '#DC2626',
+          fontSize: 10, fontWeight: 500,
+        }}>
+          {error}
+        </div>
+      )}
+      
+      {/* Suggestion Preview */}
+      {suggestion && (
+        <div className="pdf-hidden" style={{
+          marginBottom: 8, padding: 12, borderRadius: 8,
+          background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+          border: '1px solid #86EFAC',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Sparkles size={12} /> Suggestion IA
+            </span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                onClick={acceptSuggestion}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  padding: '3px 8px', borderRadius: 4,
+                  background: '#059669', color: '#fff',
+                  border: 'none', fontSize: 10, fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <Check size={10} /> Accepter
+              </button>
+              <button
+                onClick={rejectSuggestion}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  padding: '3px 8px', borderRadius: 4,
+                  background: '#fff', color: '#666',
+                  border: '1px solid #E5E7EB', fontSize: 10, fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <X size={10} /> Rejeter
+              </button>
+            </div>
+          </div>
+          <p style={{
+            fontFamily: fontFamily || 'inherit',
+            fontSize: 12, lineHeight: 1.85, color: '#166534', margin: 0,
+            textAlign: 'justify', whiteSpace: 'pre-wrap',
+          }}>
+            {suggestion}
+          </p>
+          {remaining !== null && (
+            <div style={{ marginTop: 8, fontSize: 9, color: '#6B7280' }}>
+              {remaining} utilisation{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''} aujourd&apos;hui
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Original Text */}
+      <p ref={ref} contentEditable suppressContentEditableWarning
+        data-placeholder={placeholder}
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+        style={{
+          fontFamily: fontFamily || 'inherit',
+          fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0,
+          textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap',
+          cursor: 'text', minHeight: 20,
+          opacity: suggestion ? 0.5 : 1,
+          transition: 'opacity .2s',
+        }} />
+      
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
   )
 }
 

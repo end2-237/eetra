@@ -73,6 +73,10 @@ interface PlanContextType {
   checkDocumentLimit: () => Promise<boolean>
   /** Re-fetch plan from server */
   refreshPlan:       () => Promise<void>
+  /** Check if user can create documents (limit not reached) */
+  canCreateDocument: () => boolean
+  /** Check if user can use community templates */
+  canUseCommunityTemplates: () => boolean
 }
 
 const PlanContext = createContext<PlanContextType>({} as PlanContextType)
@@ -177,6 +181,16 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     return planId === 'pro' || planId === 'business'
   }, [planId])
 
+  const canCreateDocument = useCallback(() => {
+    const remaining = getRemainingDocs()
+    return remaining > 0
+  }, [getRemainingDocs])
+
+  const canUseCommunityTemplates = useCallback(() => {
+    // Only pro and business plans can use community templates
+    return planId === 'pro' || planId === 'business'
+  }, [planId])
+
   const checkDocumentLimit = useCallback(async (): Promise<boolean> => {
     // For unlimited plans, always allow
     if (plan.maxDocsPerMonth === Infinity) return true
@@ -204,6 +218,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
       planId, plan, usage, loading, showUpgradeModal, upgradeReason,
       setPlanId, canAddPage, canUseAI, canStartCollaboration, requestUpgrade,
       dismissUpgrade, incrementDocUsage, getRemainingDocs, checkDocumentLimit, refreshPlan,
+      canCreateDocument, canUseCommunityTemplates,
     }}>
       {children}
     </PlanContext.Provider>

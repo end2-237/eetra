@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Grid, Layout, Globe, Star, Lock, Search } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
+import { usePlan } from '@/contexts/PlanContext'
 import { useCustomTemplates } from '@/contexts/CustomTemplateContext'
 import { Button } from '@/components/ui/Button'
 import { TEMPLATES } from '@/lib/templates'
@@ -72,6 +73,7 @@ type TabId = 'smart' | 'mine' | 'community'
 export function TemplatesPanel({ showToast }: Props) {
   const { selectedTemplate, setSelectedTemplate, pages, currentPageIndex, setPageBlocks, setCoverStyle } = useDocument()
   const { profile } = useProfile()
+  const { canUseCommunityTemplates, requestUpgrade } = usePlan()
   const { templates: myTemplates, incrementUsage, communityTemplates } = useCustomTemplates()
 
   const [activeTab, setActiveTab] = useState<TabId>('smart')
@@ -89,6 +91,15 @@ export function TemplatesPanel({ showToast }: Props) {
   }
 
   function applyCustomTemplate(tpl: CustomTemplate) {
+    const isMyTemplate = myTemplates.find(m => m.id === tpl.id)
+    const isCommunityTemplate = communityTemplates.find(m => m.id === tpl.id)
+
+    // Check if trying to use community template without permission
+    if (isCommunityTemplate && !isMyTemplate && !canUseCommunityTemplates()) {
+      requestUpgrade('Les templates communautaires sont réservés aux plans Pro et Business')
+      return
+    }
+
     const page = pages[currentPageIndex]; if (!page) { showToast('Ajoutez d\'abord une page', 'err'); return }
     if (tpl.coverStyle) {
       const cs: CoverStyle = typeof tpl.coverStyle === 'string' ? JSON.parse(tpl.coverStyle) : tpl.coverStyle
@@ -98,7 +109,7 @@ export function TemplatesPanel({ showToast }: Props) {
       const bl = typeof tpl.blocks === 'string' ? JSON.parse(tpl.blocks) : tpl.blocks
       setPageBlocks(page.id, bl.map((b: any) => ({ id: generateId(), type: b.type, content: b.content, tableData: b.tableData })))
     }
-    if (tpl.id && myTemplates.find(m => m.id === tpl.id)) incrementUsage(tpl.id)
+    if (tpl.id && isMyTemplate) incrementUsage(tpl.id)
     showToast(`"${tpl.name}" appliqué`, 'ok')
     setSelectedCustomId(null)
   }
@@ -215,7 +226,17 @@ export function TemplatesPanel({ showToast }: Props) {
 
         {/* ── COMMUNAUTÉ ── */}
         {activeTab === 'community' && (
-          communityTemplates.length === 0 ? (
+          !canUseCommunityTemplates() ? (
+            <div style={{ textAlign: 'center', padding: '28px 16px' }}>
+              <Globe size={28} color="var(--text4)" style={{ margin: '0 auto 10px' }} />
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>Accès limité</p>
+              <p style={{ fontSize: 11, color: 'var(--text4)', lineHeight: 1.5, marginBottom: 12 }}>Les templates communautaires sont réservés aux plans Pro et Business.</p>
+              <button style={{ fontSize: 11, fontWeight: 600, padding: '6px 12px', borderRadius: 6, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }} 
+                onClick={() => requestUpgrade('Passez au plan Pro pour accéder aux templates communautaires')}>
+                Mettre à niveau mon plan
+              </button>
+            </div>
+          ) : communityTemplates.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '28px 16px' }}>
               <Globe size={28} color="var(--text4)" style={{ margin: '0 auto 10px' }} />
               <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>Galerie communautaire vide</p>
@@ -275,8 +296,10 @@ export function TemplatesPanel({ showToast }: Props) {
           const tpl = activeTab === 'mine'
             ? myTemplates.find(t => t.id === selectedCustomId)
             : communityTemplates.find(t => t.id === selectedCustomId)
+          const isCommunityOnly = activeTab === 'community' && tpl && !myTemplates.find(m => m.id === tpl.id)
+          const canApply = !isCommunityOnly || canUseCommunityTemplates()
           return tpl
-            ? <Button variant="primary" fullWidth onClick={() => applyCustomTemplate(tpl)} size="sm">Appliquer "{tpl.name}" →</Button>
+            ? <Button variant="primary" fullWidth onClick={() => applyCustomTemplate(tpl)} size="sm" disabled={!canApply} style={{ opacity: canApply ? 1 : 0.5, cursor: canApply ? 'pointer' : 'not-allowed' }} title={!canApply ? 'Mettez à niveau pour accéder aux templates communautaires' : 'Appliquer ce template'}>Appliquer "{tpl.name}" →</Button>
             : null
         })()}
         {!smartSelected && !customSelected && (

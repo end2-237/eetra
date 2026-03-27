@@ -84,7 +84,7 @@ export default function DocumentsPage() {
   const router = useRouter()
   const { documents, deleteDocument, duplicateDocument } = useLibrary()
   const { profile } = useProfile()
-  const { getRemainingDocs, requestUpgrade } = usePlan()
+  const { getRemainingDocs, requestUpgrade, canCreateDocument, plan } = usePlan()
 
   const [search,  setSearch]  = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('date')
@@ -111,8 +111,7 @@ export default function DocumentsPage() {
     })
 
   const newDoc = () => {
-    const remaining = getRemainingDocs()
-    if (remaining === 0) {
+    if (!canCreateDocument()) {
       requestUpgrade('Vous avez atteint votre limite mensuelle de documents. Passez au Pro pour créer plus de documents.')
       return
     }
@@ -174,7 +173,9 @@ export default function DocumentsPage() {
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ThemeToggle/>
-            <button className="btn-primary btn-sm" onClick={newDoc}>
+            <button className="btn-primary btn-sm" onClick={newDoc} disabled={!canCreateDocument()} 
+              style={{ opacity: canCreateDocument() ? 1 : 0.5, cursor: canCreateDocument() ? 'pointer' : 'not-allowed' }} 
+              title={!canCreateDocument() ? 'Limite mensuelle atteinte' : 'Créer un nouveau document'}>
               <Plus size={12}/> Nouveau document
             </button>
           </div>
@@ -189,9 +190,16 @@ export default function DocumentsPage() {
               <p className="docs-sub">
                 {documents.length} document{documents.length !== 1 ? 's' : ''} sauvegardé{documents.length !== 1 ? 's' : ''}
                 {profile.name ? ` · ${profile.name}` : ''}
+                {plan.maxDocsPerMonth !== Infinity && (
+                  <span style={{ marginLeft: '12px', color: !canCreateDocument() ? '#DC2626' : 'var(--text4)' }}>
+                    · {getRemainingDocs()}/{plan.maxDocsPerMonth} restants ce mois
+                  </span>
+                )}
               </p>
             </div>
-            <button className="btn-primary" onClick={newDoc}>
+            <button className="btn-primary" onClick={newDoc} disabled={!canCreateDocument()}
+              style={{ opacity: canCreateDocument() ? 1 : 0.5, cursor: canCreateDocument() ? 'pointer' : 'not-allowed' }}
+              title={!canCreateDocument() ? 'Limite mensuelle atteinte' : 'Créer un nouveau document'}>
               <Plus size={13}/> Nouveau document
             </button>
           </div>
@@ -220,7 +228,9 @@ export default function DocumentsPage() {
                 {search ? 'Modifiez votre recherche.' : 'Créez votre premier document professionnel.'}
               </p>
               {!search && (
-                <button className="btn-primary btn-sm" onClick={newDoc}>
+                <button className="btn-primary btn-sm" onClick={newDoc} disabled={!canCreateDocument()}
+                  style={{ opacity: canCreateDocument() ? 1 : 0.5, cursor: canCreateDocument() ? 'pointer' : 'not-allowed' }}
+                  title={!canCreateDocument() ? 'Limite mensuelle atteinte' : 'Créer un nouveau document'}>
                   <Plus size={11}/> Créer un document
                 </button>
               )}

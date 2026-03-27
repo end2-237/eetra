@@ -23,6 +23,9 @@ export function FloatingHelpChat() {
 
   const isLoading = status === 'streaming' || status === 'submitted'
 
+  console.log('[v0] Chat status:', status)
+  console.log('[v0] Messages:', messages.length, messages)
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -280,7 +283,7 @@ export function FloatingHelpChat() {
                     </div>
                   )
                 })}
-                {isLoading && messages[messages.length - 1]?.role === 'user' && (
+                {status === 'submitted' && (
                   <div style={{ display: 'flex', gap: 10 }}>
                     <div
                       style={{

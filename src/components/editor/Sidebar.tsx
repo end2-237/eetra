@@ -1,11 +1,12 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import logo from '../../app/icon.png'
 import {
   Layers, LayoutGrid, Layout, BarChart2, MessageSquare,
-  BookOpen, Download, Settings, BookMarked, Users,
+  BookOpen, Download, Settings, BookMarked, Users, Menu, X,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile }  from '@/contexts/ProfileContext'
@@ -22,14 +23,24 @@ const CSS = `
   .sb-btn.active-oz:hover { background:rgba(124,58,237,.18); }
   .sb-divider { width:24px; height:1px; background:var(--border); margin:5px 0; flex-shrink:0; }
   .sb-avatar { width:26px; height:26px; border-radius:6px; background:var(--accentS); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .sb-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:39; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s; }
+  .sb-overlay.open { opacity:1; visibility:visible; }
+  .sb-toggle { display:none; }
   
   @media (max-width:1023px) {
-    .sidebar { width:100%; height:auto; flex-direction:row; padding:8px; border-right:none; border-top:1px solid var(--border); order:3; align-items:center; }
+    .sidebar { position:fixed; bottom:0; left:0; right:0; width:100%; height:56px; flex-direction:row; padding:0 8px; border-right:none; border-top:1px solid var(--border); border-left:none; align-items:center; z-index:40; }
     .sb-top { display:none !important; }
-    .sb-nav { flex:1; display:flex !important; gap:2; overflow-x:auto; padding-right:4px; flex-direction:row !important; }
+    .sb-nav { flex:1; display:flex !important; gap:2; padding:0 4px; flex-direction:row !important; overflow-x:auto; overflow-y:hidden; }
     .sb-bottom { display:flex !important; gap:2; flex-direction:row !important; }
-    .sb-btn { width:32px !important; height:32px !important; font-size:12px; }
+    .sb-btn { width:32px !important; height:32px !important; font-size:12px; flex-shrink:0; }
     .sb-divider { width:1px !important; height:20px !important; margin:0 4px !important; }
+    .sb-overlay { display:block !important; }
+    .sb-toggle { display:flex !important; }
+  }
+  
+  @media (max-width:479px) {
+    .sb-btn { width:28px !important; height:28px !important; }
+    .sidebar { height:52px; }
   }
 `
 
@@ -49,6 +60,15 @@ export function Sidebar({ onExport }: Props) {
   const { profile }  = useProfile()
   const { planId, requestUpgrade }   = usePlan()
   const router       = useRouter()
+  const [isMobile, setIsMobile] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024)
+    check()
+    window.addEventListener('resize', check, { passive: true })
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const planColor = ({ starter:'#6B7280', pro:'#1B4FD8', business:'#059669' } as Record<string,string>)[planId] ?? '#1B4FD8'
 
@@ -61,13 +81,33 @@ export function Sidebar({ onExport }: Props) {
     router.push('/team')
   }
 
+  const closeSidebar = () => setSidebarOpen(false)
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }}/>
 
-      <div className="sidebar">
+      {/* Mobile overlay */}
+      <div 
+        className={`sb-overlay${sidebarOpen ? ' open' : ''}`}
+        onClick={closeSidebar}
+      />
+
+      <div className="sidebar" style={isMobile && sidebarOpen ? { position: 'fixed', bottom: 0, left: 0, right: 0, width: '100%', height: 'auto', maxHeight: '80vh', flexDirection: 'column', padding: '12px 8px', overflow: 'auto', zIndex: 40 } : {}}>
+        {/* Toggle button for mobile */}
+        {isMobile && (
+          <button 
+            className="sb-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            style={{ width: 36, height: 36, borderRadius: 7, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg2)', color: 'var(--text3)', flexShrink: 0 }}
+            title={sidebarOpen ? "Fermer" : "Menu"}
+          >
+            {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        )}
+
         {/* Logo - hidden on mobile */}
-        <button className="sb-btn sb-top" style={{ marginBottom:8 }} title="Tableau de bord" onClick={() => router.push('/dashboard')}>
+        <button className="sb-btn sb-top" style={{ marginBottom:8 }} title="Tableau de bord" onClick={() => { router.push('/dashboard'); closeSidebar() }}>
           <Image src={logo} alt="EETRA" width={22} height={22} style={{ borderRadius:5 }}/>
         </button>
 
@@ -83,7 +123,7 @@ export function Sidebar({ onExport }: Props) {
                 key={id}
                 className={`sb-btn${isActive && !isOZ ? ' active' : ''}${ozActive ? ' active-oz' : ''}`}
                 title={tip}
-                onClick={() => setActiveTab(id as any)}
+                onClick={() => { setActiveTab(id as any); closeSidebar() }}
                 style={ozEnabled ? { position: 'relative' } : {}}
               >
                 <Icon size={16}/>
@@ -102,7 +142,7 @@ export function Sidebar({ onExport }: Props) {
 
         {/* Bottom actions */}
         <div className="sb-bottom" style={{ display:'flex', flexDirection:'column', gap:2, alignItems:'center', padding:'0 8px', width:'100%' }}>
-          <button className="sb-btn sb-top" title="Mes documents" onClick={() => router.push('/documents')}>
+          <button className="sb-btn sb-top" title="Mes documents" onClick={() => { router.push('/documents'); closeSidebar() }}>
             <BookOpen size={15}/>
           </button>
 
@@ -132,12 +172,12 @@ export function Sidebar({ onExport }: Props) {
             <ThemeToggle/>
           </div>
 
-          <button className="sb-btn sb-top" title="Paramètres" onClick={() => router.push('/settings')}>
+          <button className="sb-btn sb-top" title="Paramètres" onClick={() => { router.push('/settings'); closeSidebar() }}>
             <Settings size={15}/>
           </button>
 
           {/* Avatar */}
-          <button className="sb-btn sb-top" title={profile.name || 'Profil'} onClick={() => router.push('/onboarding')}
+          <button className="sb-btn sb-top" title={profile.name || 'Profil'} onClick={() => { router.push('/onboarding'); closeSidebar() }}
             style={{ background:'transparent', padding:0, border:'none', cursor:'pointer' }}>
             <div className="sb-avatar" style={{ border:`1.5px solid ${planColor}30` }}>
               {profile.logoDataUrl

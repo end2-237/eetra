@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
             email: email.toLowerCase(),
             role: 'admin',
             avatar: '👑',
+            teamId: ""
           },
         },
       },

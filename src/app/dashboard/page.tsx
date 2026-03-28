@@ -180,101 +180,62 @@ export default function DashboardPage() {
     router.push('/editor')
   }
 
-  const Sidebar = () => (
-    <aside className={`db-side${sideOpen ? ' open' : ''}`}>
-      <div className="db-logo-row" onClick={() => go('/')}>
-        <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius: 6 }} />
-        <span className="db-logo-name">EETRA</span>
-        <button onClick={e => { e.stopPropagation(); setSideOpen(false) }}
-          style={{ marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text4)', display: 'flex' }}
-          className="db-mobile-close">
-          <X size={16} />
-        </button>
-      </div>
-
-      <nav className="db-nav">
-        <div className="db-nav-label">Application</div>
-        {NAV_MAIN.map(({ label, path, Icon }) => (
-          <button key={path} className={`db-nav-btn${path === '/dashboard' ? ' active' : ''}`} onClick={() => go(path)}>
-            <Icon size={14} color={path === '/dashboard' ? 'var(--accent)' : 'var(--text4)'} />
-            {label}
-          </button>
-        ))}
-        <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
-        <button className="db-nav-btn" onClick={() => go('/settings')}><Settings size={14} color="var(--text4)" /> Paramètres</button>
-        <button className="db-nav-btn" onClick={() => go('/onboarding')}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
-        <button className="db-nav-btn" onClick={() => go('/')}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
-      </nav>
-
-      <div className="db-plan-box">
-        <div className="db-plan-inner">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Plan {plan.label}</span>
-            <span className="bdg" style={{ background: `${planColor}12`, color: planColor }}>{planId}</span>
-          </div>
-          <div style={{ fontSize: 11, color: limitReached ? '#DC2626' : 'var(--text4)', fontWeight: limitReached ? 700 : 400 }}>
-            {documents.length} / {planMax === 9999 ? '∞' : planMax} documents
-            {limitReached && ' — limite atteinte'}
-          </div>
-          <div className="plan-track">
-            <div className="plan-fill" style={{ width: `${planPct}%`, background: limitReached ? '#DC2626' : planColor }} />
-          </div>
-          {(planId === 'starter' || planId === 'student') && (
-            <button className="btn-primary btn-sm btn-full" style={{ marginTop: 9 }} onClick={() => go('/settings#plan')}>
-              <Zap size={10} /> Passer au Plan Pro
-            </button>
-          )}
-        </div>
-      </div>
-    </aside>
-  )
-
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <style>{`.db-mobile-close { display: none; } @media(max-width:767px){ .db-mobile-close { display:flex!important; } }`}</style>
 
       {/* Plan upgrade modal — rendered at root level of page */}
       <PlanUpgradeModal />
 
       <div className="db">
-        <Sidebar />
+        {/* Desktop sidebar */}
+        <aside className="db-side">
+          <div className="db-logo-row" onClick={() => go('/')}>
+            <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius: 6 }} />
+            <span className="db-logo-name">EETRA</span>
+          </div>
 
-        {/* Mobile overlay + sidebar container */}
+          <nav className="db-nav">
+            <div className="db-nav-label">Application</div>
+            {NAV_MAIN.map(({ label, path, Icon }) => (
+              <button key={path} className={`db-nav-btn${path === '/dashboard' ? ' active' : ''}`} onClick={() => go(path)}>
+                <Icon size={14} color={path === '/dashboard' ? 'var(--accent)' : 'var(--text4)'} />
+                {label}
+              </button>
+            ))}
+            <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
+            <button className="db-nav-btn" onClick={() => go('/settings')}><Settings size={14} color="var(--text4)" /> Paramètres</button>
+            <button className="db-nav-btn" onClick={() => go('/onboarding')}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
+            <button className="db-nav-btn" onClick={() => go('/')}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
+          </nav>
+
+          <div className="db-plan-box">
+            <div className="db-plan-inner">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Plan {plan.label}</span>
+                <span className="bdg" style={{ background: `${planColor}12`, color: planColor }}>{planId}</span>
+              </div>
+              <div style={{ fontSize: 11, color: limitReached ? '#DC2626' : 'var(--text4)', fontWeight: limitReached ? 700 : 400 }}>
+                {documents.length} / {planMax === 9999 ? '∞' : planMax} documents
+                {limitReached && ' — limite atteinte'}
+              </div>
+              <div className="plan-track">
+                <div className="plan-fill" style={{ width: `${planPct}%`, background: limitReached ? '#DC2626' : planColor }} />
+              </div>
+              {(planId === 'starter' || planId === 'student') && (
+                <button className="btn-primary btn-sm btn-full" style={{ marginTop: 9 }} onClick={() => go('/settings#plan')}>
+                  <Zap size={10} /> Passer au Plan Pro
+                </button>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Mobile overlay */}
         <div 
           className={`db-side-overlay${sideOpen ? ' open' : ''}`} 
           onClick={() => setSideOpen(false)}
         />
-
-        {/* Sidebar - slides from top on mobile */}
-        <div className={`db-side${sideOpen ? ' open' : ''}`}>
-          {/* Logo Row */}
-          <button className="db-logo-row" onClick={() => router.push('/dashboard')} title="Aller au dashboard">
-            <Image src={logo} alt="EETRA" width={24} height={24} style={{ borderRadius:5 }}/>
-            <span className="db-logo-name">EETRA</span>
-          </button>
-
-          {/* Navigation */}
-          <nav className="db-nav">
-            {[
-              { id: 'overview', label: 'Vue d\'ensemble', Icon: LayoutGrid },
-              { id: 'documents', label: 'Documents', Icon: FileText },
-              { id: 'templates', label: 'Templates', Icon: Layout },
-              { id: 'team', label: 'Équipe', Icon: Users },
-              { id: 'analytics', label: 'Analyse', Icon: BarChart2 },
-            ].map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                className={`db-nav-btn${activeNav === id ? ' active' : ''}`}
-                onClick={() => { setActiveNav(id); setSideOpen(false); }}
-                title={label}
-              >
-                <Icon size={14} />
-                <span>{label}</span>
-              </button>
-            ))}
-          </nav>
-        </div>
 
         {/* Main content */}
         <div className="db-main">

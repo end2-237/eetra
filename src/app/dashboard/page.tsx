@@ -103,15 +103,16 @@ const CSS = `
   .btn-full { width:100%; justify-content:center; }
   .bdg { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; font-weight:600; }
   
-  .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:99; opacity:0; visibility:hidden; transition:all .25s; }
-  .db-side-overlay.open { opacity:1; visibility:visible; }
-  .db-hamburger { display:none; width:28px; height:28px; border:1px solid var(--border); background:var(--bg2); border-radius:6px; cursor:pointer; color:var(--text3); }
+  .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:99; }
+  .db-side-overlay.open { display:block; }
+  .db-hamburger { display:none; width:28px; height:28px; border:1px solid var(--border); background:var(--bg2); border-radius:6px; cursor:pointer; color:var(--text3); align-items:center; justify-content:center; padding:0; }
+  .db-hamburger:hover { background:var(--bg3); }
   
   @media (max-width:1023px) {
     .db { flex-direction:column; }
-    .db-side { position:fixed; top:0; left:0; width:256px; height:100vh; z-index:100; transform:translateX(-100%); transition:transform .25s; overflow:auto; }
-    .db-side.open { transform:translateX(0); }
-    .db-hamburger { display:flex !important; align-items:center; justify-content:center; }
+    .db-side { position:fixed; left:0; top:0; width:256px; height:100vh; z-index:100; display:none; overflow:auto; }
+    .db-side.open { display:flex; }
+    .db-hamburger { display:flex !important; }
     .db-search { display:none !important; }
     .db-main { width:100%; }
     .db-right { display:none; }

@@ -84,7 +84,7 @@ export default function DocumentsPage() {
   const router = useRouter()
   const { documents, deleteDocument, duplicateDocument } = useLibrary()
   const { profile } = useProfile()
-  const { getRemainingDocs, requestUpgrade, canCreateDocument, plan } = usePlan()
+  const { getRemainingDocs, requestUpgrade, canCreateDocument, checkDocumentLimit, plan } = usePlan()
 
   const [search,  setSearch]  = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('date')
@@ -110,11 +110,10 @@ export default function DocumentsPage() {
       return sortDir === 'asc' ? -cmp : cmp
     })
 
-  const newDoc = () => {
-    if (!canCreateDocument()) {
-      requestUpgrade('Vous avez atteint votre limite mensuelle de documents. Passez au Pro pour créer plus de documents.')
-      return
-    }
+  const newDoc = async () => {
+    // Use server-side verification to ensure accurate limit check
+    const allowed = await checkDocumentLimit()
+    if (!allowed) return // upgrade modal shown automatically
     try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
     router.push('/editor')
   }

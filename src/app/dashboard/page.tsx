@@ -143,7 +143,7 @@ export default function DashboardPage() {
   const { entries }      = useHistory()
   const { members }      = useTeam()
   const { unreadCount }  = useNotifications()
-  const { plan, planId, canCreateDocument, checkDocumentLimit, requestUpgrade } = usePlan()
+  const { plan, planId, checkDocumentLimit, canCreateDocument, requestUpgrade } = usePlan()
 
   const [showNotifs, setShowNotifs] = useState(false)
   const [search,     setSearch]     = useState('')
@@ -328,12 +328,9 @@ export default function DashboardPage() {
                   <button
                     className="btn-primary"
                     onClick={newDoc}
-                    disabled={limitReached}
-                    title={limitReached ? 'Limite de documents atteinte' : 'Nouveau document'}
-                    style={{ opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
                   >
-                    {limitReached ? <Lock size={13} /> : <Plus size={13} />}
-                    {limitReached ? 'Limite atteinte' : 'Nouveau document'}
+                    <Plus size={13} />
+                    Nouveau document
                   </button>
                 </div>
 
@@ -370,11 +367,9 @@ export default function DashboardPage() {
                       <button
                         className="btn-primary btn-sm"
                         onClick={newDoc}
-                        disabled={limitReached}
-                        style={{ opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
                       >
-                        {limitReached ? <Lock size={11} /> : <Plus size={11} />}
-                        {limitReached ? 'Limite atteinte' : 'Créer un document'}
+                        <Plus size={11} />
+                        Créer un document
                       </button>
                     </div>
                   ) : (
@@ -407,30 +402,18 @@ export default function DashboardPage() {
                     <span className="db-block-title">Démarrage rapide</span>
                     <button className="db-block-link" onClick={() => go('/templates')}>Tous les templates <ChevronRight size={11} /></button>
                   </div>
-                  {limitReached && (
-                    <div style={{ padding: '8px 14px', background: 'rgba(220,38,38,.04)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Lock size={10} color="#DC2626" />
-                      <span style={{ fontSize: 10, color: '#DC2626', fontWeight: 600 }}>Création bloquée — limite de documents atteinte</span>
-                    </div>
-                  )}
                   <div className="tpl-grid">
                     {TEMPLATES.map((tpl, i) => (
                       <button
                         key={tpl.id}
                         className="tpl-cell"
                         onClick={() => useTpl(tpl.id)}
-                        disabled={limitReached}
                         style={{
                           borderRight:  i % 3 !== 2 ? '1px solid var(--border)' : 'none',
                           borderBottom: i < 3       ? '1px solid var(--border)' : 'none',
-                          opacity: limitReached ? .45 : 1,
-                          cursor: limitReached ? 'not-allowed' : 'pointer',
                         }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
-                          {limitReached
-                            ? <Lock size={7} color="#aaa" />
-                            : <div style={{ width: 7, height: 7, borderRadius: '50%', background: tpl.color, flexShrink: 0 }} />
-                          }
+                          <div style={{ width: 7, height: 7, borderRadius: '50%', background: tpl.color, flexShrink: 0 }} />
                           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{tpl.name}</span>
                         </div>
                         <span style={{ fontSize: 11, color: 'var(--text4)', paddingLeft: 14 }}>{tpl.desc}</span>

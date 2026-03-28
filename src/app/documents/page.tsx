@@ -84,7 +84,7 @@ export default function DocumentsPage() {
   const router = useRouter()
   const { documents, deleteDocument, duplicateDocument } = useLibrary()
   const { profile } = useProfile()
-  const { getRemainingDocs, requestUpgrade, canCreateDocument, checkDocumentLimit, plan } = usePlan()
+  const { getRemainingDocs, checkDocumentLimit, plan, requestUpgrade, canCreateDocument } = usePlan()
 
   const [search,  setSearch]  = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('date')
@@ -172,9 +172,7 @@ export default function DocumentsPage() {
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ThemeToggle/>
-            <button className="btn-primary btn-sm" onClick={newDoc} disabled={!canCreateDocument()} 
-              style={{ opacity: canCreateDocument() ? 1 : 0.5, cursor: canCreateDocument() ? 'pointer' : 'not-allowed' }} 
-              title={!canCreateDocument() ? 'Limite mensuelle atteinte' : 'Créer un nouveau document'}>
+            <button className="btn-primary btn-sm" onClick={newDoc}>
               <Plus size={12}/> Nouveau document
             </button>
           </div>
@@ -196,9 +194,7 @@ export default function DocumentsPage() {
                 )}
               </p>
             </div>
-            <button className="btn-primary" onClick={newDoc} disabled={!canCreateDocument()}
-              style={{ opacity: canCreateDocument() ? 1 : 0.5, cursor: canCreateDocument() ? 'pointer' : 'not-allowed' }}
-              title={!canCreateDocument() ? 'Limite mensuelle atteinte' : 'Créer un nouveau document'}>
+            <button className="btn-primary" onClick={newDoc}>
               <Plus size={13}/> Nouveau document
             </button>
           </div>
@@ -227,9 +223,7 @@ export default function DocumentsPage() {
                 {search ? 'Modifiez votre recherche.' : 'Créez votre premier document professionnel.'}
               </p>
               {!search && (
-                <button className="btn-primary btn-sm" onClick={newDoc} disabled={!canCreateDocument()}
-                  style={{ opacity: canCreateDocument() ? 1 : 0.5, cursor: canCreateDocument() ? 'pointer' : 'not-allowed' }}
-                  title={!canCreateDocument() ? 'Limite mensuelle atteinte' : 'Créer un nouveau document'}>
+                <button className="btn-primary btn-sm" onClick={newDoc}>
                   <Plus size={11}/> Créer un document
                 </button>
               )}

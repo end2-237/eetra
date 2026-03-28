@@ -11,15 +11,20 @@ const PLAN_LIMITS: Record<string, number> = {
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session) return NextResponse.json({ error: 'Non autorisé' }, { status: 401 })
 
-  const documents = await prisma.document.findMany({
-    where: { userId: session.user.id },
-    orderBy: { updatedAt: 'desc' },
-    take: 100,
-  })
-  return NextResponse.json(documents)
+    const documents = await prisma.document.findMany({
+      where: { userId: session.user.id },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+    })
+    return NextResponse.json(documents)
+  } catch (error) {
+    console.error('[v0] GET /api/documents error:', error)
+    return NextResponse.json({ error: 'Erreur serveur', details: String(error) }, { status: 500 })
+  }
 }
 
 export async function POST(req: NextRequest) {

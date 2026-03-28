@@ -111,8 +111,10 @@ const CSS = `
     .db { height: 100dvh; flex-direction: column; }
     .db-side { position: fixed; top:0; left:0; bottom:0; z-index:50; width: 228px; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,.15); transition: transform .25s cubic-bezier(.23,1,.32,1); overflow-y: auto; }
     .db-side.open { transform: translateX(0); }
-    .db-side-overlay { display: block !important; }
-    .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; }
+    .db-side-overlay { display: block !important; opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; z-index: 49; }
+    .db-side-overlay.open { opacity: 1; visibility: visible; }
+    .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; cursor: pointer !important; }
+    .db-hamburger:hover { background: var(--bg3) !important; }
     .db-search { display: none !important; }
     .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
     .db-main { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
@@ -127,12 +129,16 @@ const CSS = `
 
   @media (max-width:767px) {
     .stat-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+    .db-top { padding: 0 10px !important; height: 44px !important; gap: 4px !important; }
+    .db-top-right { gap: 4px !important; }
   }
 
   @media (max-width:479px) {
-    .db-center { padding: 12px !important; }
-    .db-top { padding: 0 10px; height: 44px; gap: 4px; }
+    .db-center { padding: 10px !important; }
+    .db-top { padding: 0 8px !important; height: 44px !important; gap: 4px !important; }
     .db-logo-name { display: none; }
+    .db-avatar-btn span { display: none !important; }
+    .db-avatar-btn { padding: 3px 4px !important; }
   }
 `
 
@@ -246,8 +252,7 @@ export default function DashboardPage() {
 
         <div 
           className={`db-side-overlay${sideOpen ? ' open' : ''}`} 
-          onClick={() => setSideOpen(false)} 
-          style={{ display: sideOpen ? 'block' : 'none' }}
+          onClick={() => setSideOpen(false)}
         />
 
         <div className="db-main">

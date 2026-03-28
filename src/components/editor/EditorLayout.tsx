@@ -218,31 +218,7 @@ export function EditorLayout() {
           <EditorPanel />
         </div>
         
-        {activeTab !== 'editor' && (
-          <div className="editor-panel-modal-overlay" style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.3)', zIndex: 99,
-            display: 'flex', alignItems: 'flex-end', opacity: 0, visibility: 'hidden', transition: 'opacity .25s, visibility .25s',
-          }} onClick={() => setActiveTab('editor')} >
-            <div style={{
-              width: '100%', maxHeight: '80vh', background: 'var(--surface)',
-              borderTop: '1px solid var(--border)', overflow: 'auto',
-              borderRadius: '12px 12px 0 0', animation: 'slideUp .25s cubic-bezier(.23,1,.32,1)',
-            }} onClick={(e) => e.stopPropagation()}>
-              <div style={{ padding: '16px 0', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-                  {activeTab === 'templates' && 'Templates'}
-                  {activeTab === 'analytics' && 'Analyse'}
-                  {activeTab === 'comments' && 'Notes'}
-                  {activeTab === 'layout' && 'Mise en page'}
-                  {activeTab === 'orientation' && "Zone d'orientation"}
-                </div>
-              </div>
-              <EditorPanel />
-            </div>
-          </div>
-        )}
-        
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <div className="editor-main" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
           <DocumentViewer onExport={() => setShowExport(true)} />
         </div>
 
@@ -258,11 +234,14 @@ export function EditorLayout() {
         }
         @media (min-width: 1024px) {
           .editor-side-panel { display: flex !important; }
-          .editor-panel-modal-overlay { display: none !important; }
+          .editor-main { overflow: hidden !important; }
         }
         @media (max-width: 1023px) {
           .editor-side-panel { display: none !important; }
-          .editor-panel-modal-overlay { display: flex !important; opacity: 1; visibility: visible; }
+          .editor-main { overflow-y: auto !important; padding-bottom: 56px !important; }
+        }
+        @media (max-width: 479px) {
+          .editor-main { padding-bottom: 52px !important; }
         }
       `}</style>
     </PageLayoutProvider>

@@ -252,19 +252,15 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
         console.log('[v0] Under limit, returning true')
         return true
       } else {
-        console.log('[v0] Documents API returned non-OK status')
+        console.log('[v0] Documents API returned non-OK status, allowing creation anyway')
+        // API failed but allow creation - server will do final check
+        return true
       }
     } catch (err) {
       console.error('[v0] Error checking document limit:', err)
-      // On error, fall back to local check
-      const remaining = getRemainingDocs()
-      if (remaining <= 0) {
-        requestUpgrade(
-          `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
-          'document'
-        )
-        return false
-      }
+      // On error, allow creation - server will do final check
+      console.log('[v0] Allowing creation due to error, server will validate')
+      return true
     }
     
     return true

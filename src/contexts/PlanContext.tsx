@@ -24,7 +24,7 @@ export const PLAN_CONFIGS: Record<PlanId, PlanConfig> = {
     id: 'starter', label: 'Starter',
     maxPagesPerDoc: 2, maxDocsPerMonth: 5,
     ai: false, canRemoveWatermark: false,
-    canUseBuiltinTemplates: true,   // ✅ Smart templates gratuits pour tous
+    canUseBuiltinTemplates: true,
     canUseCommunityTpls: false,
     canUseCustomTemplates: false,
     price: 'Gratuit', color: '#6B7280',
@@ -122,12 +122,30 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   const refreshPlan = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/plan/current', { cache: 'no-store' })
-      if (res.ok) {
-        const data = await res.json()
+      // Fetch plan and document list in parallel
+      const [planRes, docsRes] = await Promise.all([
+        fetch('/api/plan/current', { cache: 'no-store' }),
+        fetch('/api/documents',    { cache: 'no-store' }),
+      ])
+
+      if (planRes.ok) {
+        const data = await planRes.json()
         if (data.planId && data.planId in PLAN_CONFIGS) {
           setPlanIdState(data.planId as PlanId)
         }
+      }
+
+      // Sync real document count from server so the local counter stays accurate
+      if (docsRes.ok) {
+        const docs: { createdAt: string }[] = await docsRes.json()
+        const now        = new Date()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const docsThisMonth = docs.filter(
+          d => new Date(d.createdAt) >= monthStart
+        ).length
+        const newUsage = { docsThisMonth, month: now.getMonth(), year: now.getFullYear() }
+        setUsage(newUsage)
+        try { localStorage.setItem(KEY_USAGE, JSON.stringify(newUsage)) } catch {}
       }
     } catch {}
     finally { setLoading(false) }

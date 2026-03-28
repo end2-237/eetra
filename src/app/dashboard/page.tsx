@@ -109,10 +109,10 @@ const CSS = `
 
   @media (max-width:1023px) {
     .db { height: 100dvh; flex-direction: column; }
-    .db-side { position: fixed; top:0; left:0; bottom:0; z-index:50; width: 228px; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,.15); transition: transform .25s cubic-bezier(.23,1,.32,1); overflow-y: auto; }
+    .db-side { position: fixed; top:0; left:0; bottom:0; z-index:100; width: 228px; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,.15); transition: transform .25s cubic-bezier(.23,1,.32,1); overflow-y: auto; background: var(--surface) !important; }
     .db-side.open { transform: translateX(0); }
-    .db-side-overlay { display: block !important; opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; z-index: 49; }
-    .db-side-overlay.open { opacity: 1; visibility: visible; }
+    .db-side-overlay { display: none !important; opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; z-index: 99; }
+    .db-side-overlay.open { display: block !important; opacity: 1; visibility: visible; }
     .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; cursor: pointer !important; }
     .db-hamburger:hover { background: var(--bg3) !important; }
     .db-search { display: none !important; }

@@ -247,12 +247,43 @@ export default function DashboardPage() {
         />
 
         {/* Sidebar - slides from top on mobile */}
-        <div className={`db-side${sideOpen ? ' open' : ''}`} style={{ }}>
+        <div className={`db-side${sideOpen ? ' open' : ''}`}>
           {/* Logo Row */}
           <button className="db-logo-row" onClick={() => router.push('/dashboard')} title="Aller au dashboard">
             <Image src={logo} alt="EETRA" width={24} height={24} style={{ borderRadius:5 }}/>
             <span className="db-logo-name">EETRA</span>
           </button>
+
+          {/* Navigation */}
+          <nav className="db-nav">
+            {[
+              { id: 'overview', label: 'Vue d\'ensemble', Icon: LayoutGrid },
+              { id: 'documents', label: 'Documents', Icon: FileText },
+              { id: 'templates', label: 'Templates', Icon: Layout },
+              { id: 'team', label: 'Équipe', Icon: Users },
+              { id: 'analytics', label: 'Analyse', Icon: BarChart2 },
+            ].map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                className={`db-nav-btn${activeNav === id ? ' active' : ''}`}
+                onClick={() => { setActiveNav(id); setSideOpen(false); }}
+                title={label}
+              >
+                <Icon size={14} />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Main content */}
+        <div className="db-main">
+          {/* Top bar */}
+          <header className="db-top">
+            <div className="db-top-left">
+              <button className="db-hamburger" onClick={() => setSideOpen(!sideOpen)} title="Menu">
+                {sideOpen ? <X size={18} /> : <Menu size={18} />}
+              </button>
               <div className="db-search">
                 <Search size={12} color="var(--text4)" />
                 <input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} />

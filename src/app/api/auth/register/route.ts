@@ -27,16 +27,6 @@ export async function POST(req: NextRequest) {
             planId: 'starter',
           },
         },
-        // Créer un membre admin par défaut
-        teamMembers: {
-          create: {
-            name: sanitizeField(name || email),
-            email: email.toLowerCase(),
-            role: 'admin',
-            avatar: '👑',
-            teamId: ""
-          },
-        },
       },
     })
 

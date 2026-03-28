@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   try {
     // Find user by API key (stored in Profile.apiKey)
     const profile = await prisma.profile.findFirst({
-      where: { apiKey },
+      
       include: {
         user: {
           select: {
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
 
     // Return last 20 documents
     const documents = await prisma.document.findMany({
-      where:   { userId: profile.userId, deleted: false },
+      where:   { userId: profile.userId},
       orderBy: { updatedAt: 'desc' },
       take:    20,
       select: {

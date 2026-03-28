@@ -103,42 +103,32 @@ const CSS = `
   .btn-full { width:100%; justify-content:center; }
   .bdg { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; font-weight:600; }
 
-  .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:49; }
+  .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:49; }
   .db-hamburger { display:none; }
-  .db-mobile-close { display:none; }
 
   @media (max-width:1023px) {
-    .db { height: 100dvh; flex-direction: column; }
-    .db-side { position: fixed; top:0; left:0; bottom:0; z-index:100; width: 228px; transform: translateX(-100%); box-shadow: 4px 0 24px rgba(0,0,0,.15); transition: transform .25s cubic-bezier(.23,1,.32,1); overflow-y: auto; background: var(--surface) !important; }
-    .db-side.open { transform: translateX(0); }
-    .db-side-overlay { display: none !important; opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; z-index: 99; }
-    .db-side-overlay.open { display: block !important; opacity: 1; visibility: visible; }
-    .db-hamburger { display: flex !important; width: 28px; height: 28px; padding: 0; background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 6px !important; align-items: center; justify-content: center; color: var(--text3) !important; cursor: pointer !important; }
-    .db-hamburger:hover { background: var(--bg3) !important; }
-    .db-search { display: none !important; }
-    .stat-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-    .db-main { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
-    .db-body { flex: 1; overflow-y: auto; }
-    .db-right { display: none; }
-    .db-center { padding: 14px !important; }
-    .tpl-grid  { grid-template-columns: 1fr 1fr !important; }
-    .db-top { padding: 0 12px; height: 48px; gap: 6px !important; }
-    .db-th span:nth-child(3), .db-th span:nth-child(4), .db-tr > span:nth-child(3), .db-tr > span:nth-child(4) { display: none; }
-    .db-th, .db-tr { grid-template-columns: 1fr 80px !important; }
+    .db { flex-direction:column; }
+    .db-side { position:fixed; left:0; top:0; width:100%; height:auto; max-height:100vh; border-right:none; border-bottom:1px solid var(--border); z-index:100; transform:translateY(-100%); }
+    .db-side.open { transform:translateY(0); }
+    .db-side-overlay { display:block !important; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .db-side-overlay.open { opacity:1; pointer-events:auto; }
+    .db-logo-row { display:none; }
+    .db-nav { flex-direction:row; padding:8px; overflow-x:auto; overflow-y:hidden; }
+    .db-nav-btn { flex-shrink:0; min-width:fit-content; padding:6px 8px; font-size:12px; }
+    .db-plan-box { display:none; }
+    .db-hamburger { display:flex !important; }
+    .db-main { flex-direction:row; }
+    .db-search { display:none; }
+    .stat-grid { grid-template-columns: repeat(2,1fr) !important; }
+    .db-right { display:none; }
+    .db-center { padding:14px; }
+    .tpl-grid { grid-template-columns:1fr 1fr !important; }
   }
 
-  @media (max-width:767px) {
-    .stat-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
-    .db-top { padding: 0 10px !important; height: 44px !important; gap: 4px !important; }
-    .db-top-right { gap: 4px !important; }
-  }
-
-  @media (max-width:479px) {
-    .db-center { padding: 10px !important; }
-    .db-top { padding: 0 8px !important; height: 44px !important; gap: 4px !important; }
-    .db-logo-name { display: none; }
-    .db-avatar-btn span { display: none !important; }
-    .db-avatar-btn { padding: 3px 4px !important; }
+  @media (max-width:640px) {
+    .db-top { padding:0 10px !important; }
+    .db-center { padding:10px !important; }
+    .stat-grid { grid-template-columns:1fr !important; }
   }
 `
 
@@ -190,77 +180,70 @@ export default function DashboardPage() {
     router.push('/editor')
   }
 
-  const Sidebar = () => (
-    <aside className={`db-side${sideOpen ? ' open' : ''}`}>
-      <div className="db-logo-row" onClick={() => go('/')}>
-        <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius: 6 }} />
-        <span className="db-logo-name">EETRA</span>
-        <button onClick={e => { e.stopPropagation(); setSideOpen(false) }}
-          style={{ marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text4)', display: 'flex' }}
-          className="db-mobile-close">
-          <X size={16} />
-        </button>
-      </div>
-
-      <nav className="db-nav">
-        <div className="db-nav-label">Application</div>
-        {NAV_MAIN.map(({ label, path, Icon }) => (
-          <button key={path} className={`db-nav-btn${path === '/dashboard' ? ' active' : ''}`} onClick={() => go(path)}>
-            <Icon size={14} color={path === '/dashboard' ? 'var(--accent)' : 'var(--text4)'} />
-            {label}
-          </button>
-        ))}
-        <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
-        <button className="db-nav-btn" onClick={() => go('/settings')}><Settings size={14} color="var(--text4)" /> Paramètres</button>
-        <button className="db-nav-btn" onClick={() => go('/onboarding')}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
-        <button className="db-nav-btn" onClick={() => go('/')}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
-      </nav>
-
-      <div className="db-plan-box">
-        <div className="db-plan-inner">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Plan {plan.label}</span>
-            <span className="bdg" style={{ background: `${planColor}12`, color: planColor }}>{planId}</span>
-          </div>
-          <div style={{ fontSize: 11, color: limitReached ? '#DC2626' : 'var(--text4)', fontWeight: limitReached ? 700 : 400 }}>
-            {documents.length} / {planMax === 9999 ? '∞' : planMax} documents
-            {limitReached && ' — limite atteinte'}
-          </div>
-          <div className="plan-track">
-            <div className="plan-fill" style={{ width: `${planPct}%`, background: limitReached ? '#DC2626' : planColor }} />
-          </div>
-          {(planId === 'starter' || planId === 'student') && (
-            <button className="btn-primary btn-sm btn-full" style={{ marginTop: 9 }} onClick={() => go('/settings#plan')}>
-              <Zap size={10} /> Passer au Plan Pro
-            </button>
-          )}
-        </div>
-      </div>
-    </aside>
-  )
-
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <style>{`.db-mobile-close { display: none; } @media(max-width:767px){ .db-mobile-close { display:flex!important; } }`}</style>
 
       {/* Plan upgrade modal — rendered at root level of page */}
       <PlanUpgradeModal />
 
       <div className="db">
-        <Sidebar />
+        {/* Desktop sidebar */}
+        <aside className="db-side">
+          <div className="db-logo-row" onClick={() => go('/')}>
+            <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius: 6 }} />
+            <span className="db-logo-name">EETRA</span>
+          </div>
 
+          <nav className="db-nav">
+            <div className="db-nav-label">Application</div>
+            {NAV_MAIN.map(({ label, path, Icon }) => (
+              <button key={path} className={`db-nav-btn${path === '/dashboard' ? ' active' : ''}`} onClick={() => go(path)}>
+                <Icon size={14} color={path === '/dashboard' ? 'var(--accent)' : 'var(--text4)'} />
+                {label}
+              </button>
+            ))}
+            <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
+            <button className="db-nav-btn" onClick={() => go('/settings')}><Settings size={14} color="var(--text4)" /> Paramètres</button>
+            <button className="db-nav-btn" onClick={() => go('/onboarding')}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
+            <button className="db-nav-btn" onClick={() => go('/')}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
+          </nav>
+
+          <div className="db-plan-box">
+            <div className="db-plan-inner">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>Plan {plan.label}</span>
+                <span className="bdg" style={{ background: `${planColor}12`, color: planColor }}>{planId}</span>
+              </div>
+              <div style={{ fontSize: 11, color: limitReached ? '#DC2626' : 'var(--text4)', fontWeight: limitReached ? 700 : 400 }}>
+                {documents.length} / {planMax === 9999 ? '∞' : planMax} documents
+                {limitReached && ' — limite atteinte'}
+              </div>
+              <div className="plan-track">
+                <div className="plan-fill" style={{ width: `${planPct}%`, background: limitReached ? '#DC2626' : planColor }} />
+              </div>
+              {(planId === 'starter' || planId === 'student') && (
+                <button className="btn-primary btn-sm btn-full" style={{ marginTop: 9 }} onClick={() => go('/settings#plan')}>
+                  <Zap size={10} /> Passer au Plan Pro
+                </button>
+              )}
+            </div>
+          </div>
+        </aside>
+
+        {/* Mobile overlay */}
         <div 
           className={`db-side-overlay${sideOpen ? ' open' : ''}`} 
           onClick={() => setSideOpen(false)}
         />
 
+        {/* Main content */}
         <div className="db-main">
-
+          {/* Top bar */}
           <header className="db-top">
             <div className="db-top-left">
-              <button onClick={() => setSideOpen(v => !v)} className="db-hamburger" title="Menu">
-                <Menu size={20} />
+              <button className="db-hamburger" onClick={() => setSideOpen(!sideOpen)} title="Menu">
+                {sideOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
               <div className="db-search">
                 <Search size={12} color="var(--text4)" />

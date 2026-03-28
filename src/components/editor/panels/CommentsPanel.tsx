@@ -55,9 +55,8 @@ export function CommentsPanel({ showToast }: Props) {
   ]
 
   return (
-    <div className="w-[272px] min-w-[272px] border-r overflow-y-auto hide-scroll flex flex-col"
-      style={{ background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-      <div className="p-4 flex-1">
+    <div className="border-r overflow-y-auto hide-scroll flex flex-col" style={{ width: '100%', maxWidth: '280px', minWidth: '280px', background: 'var(--bg2)', borderColor: 'var(--border)' }}>
+      <div className="p-4 flex-1 min-h-0">
         <div className="flex items-center gap-2 mb-4">
           <MessageSquare size={13} color="var(--accent)" strokeWidth={2} />
           <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>Revue Collaborative</span>

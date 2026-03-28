@@ -167,7 +167,7 @@ model TeamMember {
   id      String   @id @default(cuid())
   userId  String
   user    User     @relation("TeamMemberUser", fields: [userId], references: [id], onDelete: Cascade)
-  teamId  String
+  teamId  String   @default("")
   team    Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   name    String
   email   String
@@ -182,7 +182,7 @@ model TeamMember {
 
 model TeamProject {
   id          String   @id @default(cuid())
-  teamId      String
+  teamId      String   @default("")
   team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
   name        String
   description String   @default("")

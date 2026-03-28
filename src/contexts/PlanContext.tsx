@@ -211,58 +211,18 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   }, [plan, getRemainingDocs])
 
   const checkDocumentLimit = useCallback(async (): Promise<boolean> => {
-    console.log('[v0] checkDocumentLimit called, plan:', plan.id, 'maxDocsPerMonth:', plan.maxDocsPerMonth)
-    
     // Pro/Business plans have unlimited documents - always allow
-    if (plan.maxDocsPerMonth === Infinity) {
-      console.log('[v0] Plan has unlimited docs, returning true')
-      return true
-    }
+    if (plan.maxDocsPerMonth === Infinity) return true
     
-    // Refresh usage from server to ensure accurate count
-    try {
-      console.log('[v0] Fetching documents from server...')
-      const docsRes = await fetch('/api/documents', { cache: 'no-store' })
-      console.log('[v0] Documents API response status:', docsRes.status)
-      
-      if (docsRes.ok) {
-        const docs: { createdAt: string }[] = await docsRes.json()
-        console.log('[v0] Got', docs.length, 'documents total')
-        
-        const now = new Date()
-        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-        const docsThisMonth = docs.filter(d => new Date(d.createdAt) >= monthStart).length
-        console.log('[v0] docsThisMonth:', docsThisMonth, 'limit:', plan.maxDocsPerMonth)
-        
-        // Update local usage state
-        const newUsage = { docsThisMonth, month: now.getMonth(), year: now.getFullYear() }
-        setUsage(newUsage)
-        try { localStorage.setItem(KEY_USAGE, JSON.stringify(newUsage)) } catch {}
-        
-        // Check against plan limit
-        if (docsThisMonth >= plan.maxDocsPerMonth) {
-          console.log('[v0] Limit reached, showing upgrade modal')
-          requestUpgrade(
-            `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
-            'document'
-          )
-          return false
-        }
-        
-        console.log('[v0] Under limit, returning true')
-        return true
-      } else {
-        console.log('[v0] Documents API returned non-OK status, allowing creation anyway')
-        // API failed but allow creation - server will do final check
-        return true
-      }
-    } catch (err) {
-      console.error('[v0] Error checking document limit:', err)
-      // On error, allow creation - server will do final check
-      console.log('[v0] Allowing creation due to error, server will validate')
-      return true
+    // Use local check - server will do final validation on POST
+    const remaining = getRemainingDocs()
+    if (remaining <= 0) {
+      requestUpgrade(
+        `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
+        'document'
+      )
+      return false
     }
-    
     return true
   }, [plan, getRemainingDocs, requestUpgrade])
 

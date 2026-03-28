@@ -111,15 +111,8 @@ export default function DocumentsPage() {
     })
 
   const newDoc = async () => {
-    console.log('[v0] newDoc called, checking document limit...')
-    // Use server-side verification to ensure accurate limit check
     const allowed = await checkDocumentLimit()
-    console.log('[v0] checkDocumentLimit returned:', allowed)
-    if (!allowed) {
-      console.log('[v0] Document limit reached, not proceeding')
-      return // upgrade modal shown automatically
-    }
-    console.log('[v0] Proceeding to create new document')
+    if (!allowed) return // upgrade modal shown automatically
     try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
     router.push('/editor')
   }

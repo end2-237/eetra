@@ -211,15 +211,45 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
   }, [plan, getRemainingDocs])
 
   const checkDocumentLimit = useCallback(async (): Promise<boolean> => {
+    // Pro/Business plans have unlimited documents - always allow
     if (plan.maxDocsPerMonth === Infinity) return true
-    const remaining = getRemainingDocs()
-    if (remaining <= 0) {
-      requestUpgrade(
-        `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
-        'document'
-      )
-      return false
+    
+    // Refresh usage from server to ensure accurate count
+    try {
+      const docsRes = await fetch('/api/documents', { cache: 'no-store' })
+      if (docsRes.ok) {
+        const docs: { createdAt: string }[] = await docsRes.json()
+        const now = new Date()
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+        const docsThisMonth = docs.filter(d => new Date(d.createdAt) >= monthStart).length
+        
+        // Update local usage state
+        const newUsage = { docsThisMonth, month: now.getMonth(), year: now.getFullYear() }
+        setUsage(newUsage)
+        try { localStorage.setItem(KEY_USAGE, JSON.stringify(newUsage)) } catch {}
+        
+        // Check against plan limit
+        if (docsThisMonth >= plan.maxDocsPerMonth) {
+          requestUpgrade(
+            `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
+            'document'
+          )
+          return false
+        }
+      }
+    } catch (err) {
+      console.error('[v0] Error checking document limit:', err)
+      // On error, fall back to local check
+      const remaining = getRemainingDocs()
+      if (remaining <= 0) {
+        requestUpgrade(
+          `Vous avez atteint votre limite de ${plan.maxDocsPerMonth} document${plan.maxDocsPerMonth > 1 ? 's' : ''}/mois sur le plan ${plan.label}. Passez à un plan supérieur pour continuer.`,
+          'document'
+        )
+        return false
+      }
     }
+    
     return true
   }, [plan, getRemainingDocs, requestUpgrade])
 

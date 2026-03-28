@@ -35,10 +35,25 @@ const PAGE_H = 1123
  */
 export function MobileEditor({ onExport }: Props) {
   const router                      = useRouter()
-  const { pages, currentPageIndex, setCurrentPageIndex, title, coverStyle } = useDocument()
+  const { pages, currentPageIndex, setCurrentPageIndex, title, coverStyle, activeTab: contextActiveTab, setActiveTab: setContextActiveTab } = useDocument()
   const { profile }                 = useProfile()
   const [activeTab, setActiveTab]   = useState<'view' | 'editor' | 'templates' | 'analytics' | 'comments'>('view')
   const [panelOpen, setPanelOpen]   = useState(false)
+
+  // Handle tab changes by updating both local state and context
+  const handleTabChange = (tab: typeof activeTab) => {
+    setActiveTab(tab)
+    if (tab !== 'view') {
+      // Map mobile tab names to context tab names
+      const contextTabMap: Record<string, string> = {
+        'editor': 'editor',
+        'templates': 'templates',
+        'analytics': 'analytics',
+        'comments': 'comments',
+      }
+      setContextActiveTab(contextTabMap[tab] || 'editor')
+    }
+  }
 
   // Scale to fit mobile screen width (90vw)
   const scale     = Math.min(0.42, (typeof window !== 'undefined' ? window.innerWidth * 0.9 : 360) / PAGE_W)
@@ -158,7 +173,7 @@ export function MobileEditor({ onExport }: Props) {
               <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
                 {TABS.find(t => t.id === activeTab)?.label}
               </span>
-              <button onClick={() => setActiveTab('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text4)', display: 'flex' }}>
+              <button onClick={() => handleTabChange('view')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text4)', display: 'flex' }}>
                 <X size={16} />
               </button>
             </div>
@@ -186,7 +201,7 @@ export function MobileEditor({ onExport }: Props) {
           return (
             <button
               key={id}
-              onClick={() => setActiveTab(id as typeof activeTab)}
+              onClick={() => handleTabChange(id as typeof activeTab)}
               style={{
                 flex:           1,
                 display:        'flex',

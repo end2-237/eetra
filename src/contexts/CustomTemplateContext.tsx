@@ -37,7 +37,6 @@ export interface CustomTemplate {
   updatedAt: string
   isPublic: boolean
   usageCount: number
-  // Community fields
   publishedAt?: string
   author?: string
   authorAvatar?: string
@@ -81,7 +80,6 @@ const CustomTemplateContext = createContext<CustomTemplateContextType>({
   refreshCommunity: async () => {},
 })
 
-// ── localStorage keys ─────────────────────────────────────────────────────────
 const LOCAL_MY_KEY = 'eetra-custom-templates'
 
 function genId() { return 'TPL-' + Math.random().toString(36).slice(2, 10).toUpperCase() }
@@ -97,7 +95,6 @@ export const DEFAULT_COVER_STYLE: CoverStyle = {
   coverBlocks: [],
 }
 
-// ── Helper API ────────────────────────────────────────────────────────────────
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T | null> {
   try {
     const res = await fetch(url, {
@@ -111,7 +108,23 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T | null
   }
 }
 
-// ── Provider ──────────────────────────────────────────────────────────────────
+function parseBlocks(raw: any): CustomTemplateBlock[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw) } catch { return [] }
+  }
+  return []
+}
+
+function parseCoverStyle(raw: any): CoverStyle {
+  if (!raw) return DEFAULT_COVER_STYLE
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw) } catch { return DEFAULT_COVER_STYLE }
+  }
+  return raw as CoverStyle
+}
+
 export function CustomTemplateProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
   const isAuth = !!session?.user?.id
@@ -121,9 +134,8 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
   const [loading,            setLoading]            = useState(false)
   const [communityLoading,   setCommunityLoading]   = useState(false)
 
-  // ── Charger mes templates ──────────────────────────────────────────────────
+  // ── Load my templates ──────────────────────────────────────────────────────
   useEffect(() => {
-    // Lire localStorage d'abord pour affichage immédiat
     try {
       const s = localStorage.getItem(LOCAL_MY_KEY)
       if (s) setTemplates(JSON.parse(s))
@@ -135,32 +147,53 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
     setLoading(true)
     apiFetch<CustomTemplate[]>('/api/templates').then(serverTemplates => {
       if (serverTemplates) {
-        setTemplates(serverTemplates)
-        try { localStorage.setItem(LOCAL_MY_KEY, JSON.stringify(serverTemplates)) } catch {}
+        const parsed = serverTemplates.map(t => ({
+          ...t,
+          blocks: parseBlocks(t.blocks),
+          coverStyle: parseCoverStyle(t.coverStyle),
+        }))
+        setTemplates(parsed)
+        try { localStorage.setItem(LOCAL_MY_KEY, JSON.stringify(parsed)) } catch {}
       }
       setLoading(false)
     })
   }, [isAuth, status])
 
-  // ── Charger les templates communautaires depuis la BD ──────────────────────
+  // ── Load community templates ───────────────────────────────────────────────
+  const refreshCommunity = useCallback(async () => {
+    setCommunityLoading(true)
+    try {
+      const res = await fetch('/api/templates/community', {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache' },
+      })
+      if (!res.ok) {
+        console.error('[Community] fetch failed:', res.status)
+        return
+      }
+      const data = await res.json()
+      if (!Array.isArray(data)) {
+        console.error('[Community] unexpected response:', data)
+        return
+      }
+      const parsed: CustomTemplate[] = data.map((t: any) => ({
+        ...t,
+        blocks: parseBlocks(t.blocks),
+        coverStyle: parseCoverStyle(t.coverStyle),
+      }))
+      setCommunityTemplates(parsed)
+    } catch (err) {
+      console.error('[Community] error:', err)
+    } finally {
+      setCommunityLoading(false)
+    }
+  }, [])
 
-const refreshCommunity = useCallback(async () => {
-  setCommunityLoading(true)
-  try {
-    const res = await fetch('/api/templates/community', { cache: 'no-store' })
-    if (!res.ok) return
-    const serverTemplates: CustomTemplate[] = await res.json()
-    setCommunityTemplates(serverTemplates)
-  } catch {
-    // silently fail
-  } finally {
-    setCommunityLoading(false)
-  }
-}, [])
+  // Load community on mount (always, even unauthenticated)
+  useEffect(() => {
+    refreshCommunity()
+  }, [refreshCommunity])
 
-  useEffect(() => { refreshCommunity() }, [refreshCommunity])
-
-  // ── Persist my templates locally ───────────────────────────────────────────
   const persistMyTemplates = (items: CustomTemplate[]) => {
     try { localStorage.setItem(LOCAL_MY_KEY, JSON.stringify(items)) } catch {}
   }
@@ -177,16 +210,16 @@ const refreshCommunity = useCallback(async () => {
         body: JSON.stringify(t),
       })
       if (created) {
+        const parsed = { ...created, blocks: parseBlocks(created.blocks), coverStyle: parseCoverStyle(created.coverStyle) }
         setTemplates(prev => {
-          const updated = [created, ...prev]
+          const updated = [parsed, ...prev]
           persistMyTemplates(updated)
           return updated
         })
-        return created
+        return parsed
       }
     }
 
-    // Fallback offline
     const full: CustomTemplate = { ...t, id: genId(), createdAt: now, updatedAt: now, usageCount: 0 }
     setTemplates(prev => {
       const updated = [full, ...prev]
@@ -233,12 +266,7 @@ const refreshCommunity = useCallback(async () => {
   const duplicateTemplate = useCallback(async (id: string): Promise<CustomTemplate | null> => {
     const source = templates.find(t => t.id === id)
     if (!source) return null
-
-    return createTemplate({
-      ...source,
-      name: `${source.name} (copie)`,
-      isPublic: false,
-    })
+    return createTemplate({ ...source, name: `${source.name} (copie)`, isPublic: false })
   }, [templates, createTemplate])
 
   // ── incrementUsage ─────────────────────────────────────────────────────────
@@ -263,7 +291,7 @@ const refreshCommunity = useCallback(async () => {
 
   // ── publishTemplate ────────────────────────────────────────────────────────
   const publishTemplate = useCallback(async (id: string) => {
-    // 1. Mise à jour optimiste locale immédiate
+    // Optimistic local update
     setTemplates(prev => {
       const updated = prev.map(t =>
         t.id === id ? { ...t, isPublic: true, updatedAt: new Date().toISOString() } : t
@@ -271,21 +299,20 @@ const refreshCommunity = useCallback(async () => {
       persistMyTemplates(updated)
       return updated
     })
-  
-    // 2. Appel API direct (pas via updateTemplate pour éviter le debounce)
+
     if (isAuth) {
       await apiFetch(`/api/templates/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ isPublic: true }),
       })
     }
-  
-    // 3. Rafraîchir la liste communauté depuis la BD (sans cache)
+
+    // Refresh community list
     await refreshCommunity()
   }, [isAuth, refreshCommunity])
-  
+
+  // ── unpublishTemplate ──────────────────────────────────────────────────────
   const unpublishTemplate = useCallback(async (id: string) => {
-    // 1. Mise à jour optimiste locale
     setTemplates(prev => {
       const updated = prev.map(t =>
         t.id === id ? { ...t, isPublic: false, updatedAt: new Date().toISOString() } : t
@@ -294,25 +321,16 @@ const refreshCommunity = useCallback(async () => {
       return updated
     })
     setCommunityTemplates(prev => prev.filter(t => t.id !== id))
-  
-    // 2. Appel API direct
+
     if (isAuth) {
       await apiFetch(`/api/templates/${id}`, {
         method: 'PUT',
         body: JSON.stringify({ isPublic: false }),
       })
     }
-  
-    // 3. Rafraîchir
+
     await refreshCommunity()
   }, [isAuth, refreshCommunity])
-
-  // ── unpublishTemplate ──────────────────────────────────────────────────────
-  // const unpublishTemplate = useCallback(async (id: string) => {
-  //   await updateTemplate(id, { isPublic: false })
-  //   setCommunityTemplates(prev => prev.filter(t => t.id !== id))
-  //   await refreshCommunity()
-  // }, [updateTemplate, refreshCommunity])
 
   // ── likeTemplate ──────────────────────────────────────────────────────────
   const likeTemplate = useCallback((id: string) => {
@@ -327,11 +345,7 @@ const refreshCommunity = useCallback(async () => {
 
   // ── importCommunityTemplate ────────────────────────────────────────────────
   const importCommunityTemplate = useCallback(async (tpl: CustomTemplate): Promise<CustomTemplate> => {
-    const imported = await createTemplate({
-      ...tpl,
-      name: `${tpl.name} (importé)`,
-      isPublic: false,
-    })
+    const imported = await createTemplate({ ...tpl, name: `${tpl.name} (importé)`, isPublic: false })
     incrementUsage(tpl.id)
     return imported
   }, [createTemplate, incrementUsage])

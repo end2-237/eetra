@@ -301,6 +301,47 @@ const CSS = `
     color: var(--accent) !important;
     background: var(--accentS) !important;
   }
+
+  /* Showcase & Templates responsive */
+  @media (max-width: 1024px) {
+    .design-showcase-section { padding: 96px 0 !important; }
+    .design-showcase-inner { padding: 0 40px !important; }
+    .design-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 14px !important; }
+    .design-header { margin-bottom: 48px !important; }
+    .design-header h2 { font-size: clamp(28px, 4vw, 44px) !important; }
+    .templates-section { padding: 96px 0 !important; }
+    .templates-inner { padding: 0 40px !important; }
+    .templates-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 12px !important; }
+    .templates-header { margin-bottom: 48px !important; }
+  }
+  @media (max-width: 768px) {
+    .design-showcase-section { padding: 72px 0 !important; }
+    .design-showcase-inner { padding: 0 24px !important; }
+    .design-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 12px !important; }
+    .design-header { margin-bottom: 40px !important; flex-direction: column !important; align-items: flex-start !important; }
+    .design-header h2 { font-size: clamp(24px, 5vw, 36px) !important; line-height: 1.1 !important; }
+    .design-header button { width: 100% !important; justify-content: center !important; }
+    .templates-section { padding: 72px 0 !important; }
+    .templates-inner { padding: 0 24px !important; }
+    .templates-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 10px !important; }
+    .templates-header { margin-bottom: 40px !important; }
+    .templates-header h2 { font-size: clamp(24px, 5vw, 36px) !important; }
+  }
+  @media (max-width: 480px) {
+    .design-showcase-section { padding: 56px 0 !important; }
+    .design-showcase-inner { padding: 0 16px !important; }
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .design-header { margin-bottom: 32px !important; }
+    .design-header h2 { font-size: clamp(22px, 5.5vw, 30px) !important; }
+    .design-header button { width: 100% !important; font-size: 12px !important; padding: 10px 16px !important; }
+    .templates-section { padding: 56px 0 !important; }
+    .templates-inner { padding: 0 16px !important; }
+    .templates-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+    .templates-header { margin-bottom: 32px !important; }
+    .templates-header h2 { font-size: clamp(22px, 5.5vw, 30px) !important; }
+    .tpl-card { padding: 16px 12px !important; }
+    .tpl-card h3 { font-size: 12px !important; }
+  }
 `
 
 export default function LandingPage() {
@@ -334,12 +375,12 @@ export default function LandingPage() {
           </SR>
 
           {/* ── Design showcase ── */}
-          <section style={{ width:'100%', padding:'100px 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
+          <section className="design-showcase-section" style={{ width:'100%', padding:'100px 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
             <div data-p="0.12" style={{ position:'absolute', top:-100, right:-100, width:450, height:450, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(27,79,216,.06),transparent 70%)', pointerEvents:'none' }}/>
             <div data-p="0.07" style={{ position:'absolute', bottom:-60, left:-60, width:320, height:320, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(124,58,237,.05),transparent 70%)', pointerEvents:'none' }}/>
 
-            <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 48px', position:'relative' }}>
-              <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:56, flexWrap:'wrap', gap:16 }}>
+            <div className="design-showcase-inner" style={{ maxWidth:1200, margin:'0 auto', padding:'0 48px', position:'relative' }}>
+              <div className="design-header" style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:56, flexWrap:'wrap', gap:16 }}>
                 <div>
                   <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:10, fontWeight:800, letterSpacing:'.18em', textTransform:'uppercase', marginBottom:14 }}><Sparkles size={10}/> 9 designs A4</div></SR>
                   <SR d={70}><h2 style={{ fontSize:'clamp(26px,3vw,44px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.95, margin:0 }}>Votre document,{' '}<span style={{ fontFamily:'var(--font-playfair,Georgia,serif)', fontStyle:'italic', fontWeight:400, color:'var(--text3)' }}>votre signature.</span></h2></SR>
@@ -351,7 +392,7 @@ export default function LandingPage() {
                 </SR>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:16, alignItems:'end' }}>
+              <div className="design-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:16, alignItems:'end' }}>
                 {DESIGNS.map(({ a, name, C }, i) => (
                   <SR key={i} d={i*75} from="up">
                     <div onClick={()=>router.push('/designs')} style={{ cursor:'pointer', display:'flex', flexDirection:'column', gap:10, marginTop:[0,22,8,30,4,18][i] }}>
@@ -372,17 +413,17 @@ export default function LandingPage() {
           </section>
 
           {/* ── Templates ── */}
-          <section id="templates" style={{ width:'100%', padding:'100px 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
+          <section id="templates" className="templates-section" style={{ width:'100%', padding:'100px 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
             <div data-p="0.08" style={{ position:'absolute', top:'25%', left:'50%', transform:'translateX(-50%)', width:600, height:400, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(27,79,216,.04),transparent 60%)', pointerEvents:'none' }}/>
 
-            <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 48px', position:'relative' }}>
-              <div style={{ textAlign:'center', marginBottom:56 }}>
+            <div className="templates-inner" style={{ maxWidth:1200, margin:'0 auto', padding:'0 48px', position:'relative' }}>
+              <div className="templates-header" style={{ textAlign:'center', marginBottom:56 }}>
                 <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:10, fontWeight:800, letterSpacing:'.18em', textTransform:'uppercase', marginBottom:16 }}>Smart Templates</div></SR>
                 <SR d={70}><h2 style={{ fontSize:'clamp(28px,3vw,48px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.95, marginBottom:14 }}>6 modèles prêts à l'emploi</h2></SR>
                 <SR d={140}><p style={{ fontSize:14, color:'var(--text3)' }}>Chacun enrichi avec tableaux, clauses, KPIs et zones de signature.</p></SR>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:14 }}>
+              <div className="templates-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:14 }}>
                 {TEMPLATES.map((t, i) => {
                   const Icon = Ico[t.id as keyof typeof Ico] || Ico.ao
                   return (

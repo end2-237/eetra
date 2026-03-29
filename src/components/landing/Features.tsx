@@ -50,20 +50,40 @@ const CSS = `
   .feat-header { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:end; margin-bottom:64px; }
   .feat-cta-banner { display:flex; align-items:center; justify-content:space-between; gap:20px; }
 
-  @media (max-width: 1023px) {
-    .feat-bento { grid-template-columns:1fr 1fr; }
+  @media (max-width: 1024px) {
+    .feat-section { padding:96px 0; }
+    .feat-inner { padding:0 40px; }
+    .feat-bento { grid-template-columns:1fr 1fr; gap:14px; }
     .feat-span-5, .feat-span-4, .feat-span-3 { grid-column:span 1; }
-    /* Make AI card and collab full width */
     .feat-ai-card, .feat-cta-card { grid-column:span 2!important; }
-    .feat-header { grid-template-columns:1fr; gap:20px; margin-bottom:40px; }
+    .feat-header { grid-template-columns:1fr; gap:28px; margin-bottom:48px; }
+    .feat-header h2 { font-size:clamp(28px,4vw,44px); }
   }
-  @media (max-width: 767px) {
-    .feat-section { padding:64px 0; }
-    .feat-inner { padding:0 20px; }
+  @media (max-width: 768px) {
+    .feat-section { padding:72px 0; }
+    .feat-inner { padding:0 24px; }
     .feat-bento { grid-template-columns:1fr; gap:12px; }
     .feat-span-5, .feat-span-4, .feat-span-3, .feat-ai-card, .feat-cta-card { grid-column:span 1!important; }
-    .feat-cta-banner { flex-direction:column; align-items:flex-start; gap:14px; }
+    .feat-header { gap:20px; margin-bottom:40px; }
+    .feat-header h2 { font-size:clamp(24px,5vw,36px); line-height:1.1; }
+    .feat-header p { font-size:14px; }
+    .feat-cta-banner { flex-direction:column; align-items:stretch; gap:14px; }
     .feat-cta-banner button { width:100%; justify-content:center; }
+    .feat-card { padding:24px 20px!important; min-height:auto!important; }
+    .feat-card h3 { font-size:16px; }
+    .feat-card p { font-size:12px; }
+  }
+  @media (max-width: 480px) {
+    .feat-section { padding:56px 0; }
+    .feat-inner { padding:0 16px; }
+    .feat-bento { gap:10px; }
+    .feat-header { gap:16px; margin-bottom:32px; }
+    .feat-header h2 { font-size:clamp(22px,5.5vw,30px); }
+    .feat-header p { font-size:13px; line-height:1.6; }
+    .feat-card { padding:20px 16px!important; }
+    .feat-card h3 { font-size:15px; margin-bottom:6px; }
+    .feat-card p { font-size:11px; line-height:1.6; }
+    .feat-icon { width:38px!important; height:38px!important; margin-bottom:12px!important; }
   }
 `
 

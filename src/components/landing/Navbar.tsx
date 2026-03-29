@@ -36,25 +36,40 @@ const CSS = `
   .nav-mobile-item:hover { background:var(--bg2); }
   .nav-actions { display:flex; align-items:center; gap:10px; }
 
-  @media (max-width: 767px) {
-    .nav-micro   { padding:0 16px; height:32px; }
+  @media (max-width: 768px) {
+    .nav-micro   { padding:0 16px; height:34px; font-size:11px; gap:8px; }
     .nav-micro-right { display:none; }
+    .nav-micro-left { gap:12px; }
     .nav-micro-left span:last-child { display:none; }
-    .nav-main    { padding:0 16px; height:60px; }
+    .nav-main    { padding:0 16px; height:64px; gap:12px; }
     .nav-main > a > div:last-child { display:none; }
+    .nav-main > a > div:first-child { width:32px; height:32px; }
+    .nav-main > a > div:first-child { width:32px; height:32px; }
     .nav-links   { display:none; }
     .nav-hamburger { display:flex; }
     .nav-actions .btn-ghost { display:none; }
+    .nav-actions .btn-primary { font-size:13px; padding:9px 16px; }
+  }
+  @media (max-width: 640px) {
+    .nav-micro   { padding:0 14px; height:32px; font-size:10px; gap:8px; }
+    .nav-micro-left span:first-child { display:none; }
+    .nav-main    { padding:0 14px; height:60px; gap:10px; }
+    .nav-main > a { gap:8px; }
+    .nav-main > a > div:first-child { width:30px; height:30px; }
+    .nav-main > a > div { gap:4px; }
+    .nav-main > a > div > div:first-child { font-size:16px; }
     .nav-actions .btn-primary { font-size:12px; padding:8px 14px; }
   }
-  @media (max-width: 479px) {
-    .nav-micro   { padding:0 12px; height:28px; font-size:10px; }
-    .nav-micro-left span:first-child { display:none; }
+  @media (max-width: 480px) {
+    .nav-micro   { padding:0 12px; height:30px; font-size:9px; gap:6px; }
     .nav-main    { padding:0 12px; height:56px; gap:8px; }
     .nav-main > a { gap:6px; }
     .nav-main > a > div:first-child { width:28px; height:28px; }
+    .nav-main > a > div > div:first-child { font-size:14px; }
+    .nav-main > a > div > div:last-child { font-size:8px; }
     .nav-actions .btn-primary { font-size:11px; padding:6px 10px; }
     .nav-actions .btn-primary span { display:none; }
+    .nav-actions svg { width:18px; height:18px; }
   }
 `
 

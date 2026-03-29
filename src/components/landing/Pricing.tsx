@@ -57,25 +57,38 @@ const PLANS = [
 ]
 
 const CSS = `
-  .pricing-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .pricing-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .pricing-section { width:100%; padding:100px 0; background:var(--bg); }
+  .pricing-inner { max-width:1200px; margin:0 auto; padding:0 48px; }
 
-  @media (max-width: 1023px) {
-    .pricing-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+  @media (max-width: 1024px) {
+    .pricing-section { padding:96px 0; }
+    .pricing-inner { padding:0 40px; }
+    .pricing-grid { grid-template-columns:repeat(2,1fr); gap:14px; }
+    .pricing-inner > div:first-child { margin-bottom:56px; }
+    .pricing-inner > div:first-child h2 { font-size:clamp(28px,4vw,44px); }
   }
-  @media (max-width: 640px) {
+  @media (max-width: 768px) {
+    .pricing-section { padding:72px 0; }
+    .pricing-inner { padding:0 24px; margin-bottom:32px; }
     .pricing-grid { grid-template-columns:1fr; gap:12px; }
-    .pricing-section { padding:56px 0!important; }
-    .pricing-inner { padding:0 20px!important; }
-    .pricing-toggle { flex-direction:column; gap:6px; align-items:center; }
+    .pricing-inner > div:first-child { margin-bottom:48px; }
+    .pricing-inner > div:first-child h2 { font-size:clamp(24px,5vw,36px); line-height:1.1; }
+    .pricing-inner > div:first-child p { font-size:14px; }
+    .pricing-toggle { flex-direction:row; gap:8px; }
+    .pricing-toggle button { padding:9px 18px; font-size:13px; }
+    .pricing-compare-strip { flex-direction:column; align-items:stretch!important; gap:14px!important; }
   }
-  @media (max-width: 479px) {
-    .pricing-section { padding:40px 0!important; }
-    .pricing-inner { padding:0 16px!important; }
-    .pricing-inner > div:first-child { margin-bottom:32px!important; }
-    .pricing-inner > div:first-child h2 { font-size:clamp(22px,5vw,32px)!important; }
-    .pricing-inner > div:first-child p { font-size:12px; }
-    .pricing-toggle { padding:3px !important; }
-    .pricing-toggle button { padding:6px 14px!important; font-size:12px!important; }
+  @media (max-width: 480px) {
+    .pricing-section { padding:56px 0; }
+    .pricing-inner { padding:0 16px; }
+    .pricing-inner > div:first-child { margin-bottom:40px; }
+    .pricing-inner > div:first-child h2 { font-size:clamp(22px,5.5vw,30px); }
+    .pricing-inner > div:first-child p { font-size:13px; }
+    .pricing-toggle { padding:3px; }
+    .pricing-toggle button { padding:8px 14px; font-size:12px; }
+    .pricing-card { padding:20px 16px!important; }
+    .pricing-compare-strip { padding:16px 14px!important; font-size:13px; }
   }
 `
 

@@ -34,20 +34,36 @@ const CSS = `
   .faq-section { width:100%; padding:100px 0; background:var(--bg2); }
   .faq-inner { max-width:1200px; margin:0 auto; padding:0 48px; display:grid; grid-template-columns:1fr 2fr; gap:80px; align-items:start; }
   .faq-sticky { position:sticky; top:120px; }
+  .faq-accordion { display:flex; flex-direction:column; gap:2px; }
+  .faq-item { border-radius:14px; border:1px solid var(--border); background:transparent; overflow:hidden; transition:all .2s; }
+  .faq-item.open { border-color:var(--accent); background:var(--surface); }
+  .faq-trigger { width:100%; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:18px 22px; background:transparent; border:none; cursor:pointer; text-align:left; }
+  .faq-trigger:hover { background:var(--bg3); }
+  .faq-content { padding:0 22px 18px 50px; }
 
-  @media (max-width: 1023px) {
-    .faq-inner { grid-template-columns:1fr; gap:36px; }
+  @media (max-width: 1024px) {
+    .faq-section { padding:96px 0; }
+    .faq-inner { grid-template-columns:1fr; gap:48px; }
     .faq-sticky { position:static; }
+    .faq-inner > div:first-child h2 { font-size:clamp(28px,4vw,44px); }
   }
-  @media (max-width: 767px) {
-    .faq-section { padding:64px 0; }
-    .faq-inner { padding:0 20px; gap:28px; }
+  @media (max-width: 768px) {
+    .faq-section { padding:72px 0; }
+    .faq-inner { padding:0 24px; gap:36px; }
+    .faq-sticky h2 { font-size:clamp(24px,5vw,36px); line-height:1.1; }
+    .faq-sticky p { font-size:14px; }
+    .faq-trigger { padding:16px 18px; }
+    .faq-content { padding:0 18px 16px 44px; font-size:13px; }
   }
-  @media (max-width: 479px) {
-    .faq-section { padding:48px 0; }
-    .faq-inner { padding:0 16px; gap:24px; }
-    .faq-sticky h2 { font-size:clamp(22px,5vw,32px)!important; }
+  @media (max-width: 480px) {
+    .faq-section { padding:56px 0; }
+    .faq-inner { padding:0 16px; gap:28px; }
+    .faq-sticky h2 { font-size:clamp(22px,5.5vw,30px); }
     .faq-sticky p { font-size:13px; }
+    .faq-trigger { padding:14px 14px; gap:10px; }
+    .faq-trigger span:first-child > span { font-size:13px; }
+    .faq-trigger span:first-child > div { width:24px; height:24px; }
+    .faq-content { padding:0 14px 14px 40px; font-size:12px; line-height:1.65; }
   }
 `
 

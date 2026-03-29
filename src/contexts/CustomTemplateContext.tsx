@@ -163,9 +163,13 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
   const refreshCommunity = useCallback(async () => {
     setCommunityLoading(true)
     try {
-      const res = await fetch('/api/templates/community', {
+      // Cache-buster timestamp pour forcer le rechargement sur Vercel
+      const res = await fetch(`/api/templates/community?t=${Date.now()}`, {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' },
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        },
       })
       if (!res.ok) {
         console.error('[Community] fetch failed:', res.status)
@@ -291,7 +295,6 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
 
   // ── publishTemplate ────────────────────────────────────────────────────────
   const publishTemplate = useCallback(async (id: string) => {
-    // Optimistic local update
     setTemplates(prev => {
       const updated = prev.map(t =>
         t.id === id ? { ...t, isPublic: true, updatedAt: new Date().toISOString() } : t
@@ -307,7 +310,6 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
       })
     }
 
-    // Refresh community list
     await refreshCommunity()
   }, [isAuth, refreshCommunity])
 

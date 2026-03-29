@@ -196,6 +196,13 @@ export function CustomTemplateProvider({ children }: { children: React.ReactNode
   // Load community on mount (always, even unauthenticated)
   useEffect(() => {
     refreshCommunity()
+    
+    // Poll for new community templates every 30 seconds
+    const pollInterval = setInterval(() => {
+      refreshCommunity()
+    }, 30000)
+    
+    return () => clearInterval(pollInterval)
   }, [refreshCommunity])
 
   const persistMyTemplates = (items: CustomTemplate[]) => {

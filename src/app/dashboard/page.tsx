@@ -103,30 +103,13 @@ const CSS = `
   .btn-full { width:100%; justify-content:center; }
   .bdg { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; font-weight:600; }
   
-  .db-side-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:99; }
-  .db-side-overlay.open { display:block; }
-  .db-hamburger { display:none; width:28px; height:28px; border:1px solid var(--border); background:var(--bg2); border-radius:6px; cursor:pointer; color:var(--text3); align-items:center; justify-content:center; padding:0; }
-  .db-hamburger:hover { background:var(--bg3); }
+  .db-menu-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:98; }
+  .db-menu-overlay.open { display:block; }
+  .db-hamburger { display:none; width:32px; height:32px; border:1px solid var(--border); background:transparent; border-radius:6px; cursor:pointer; color:var(--text3); align-items:center; justify-content:center; padding:0; transition:background .12s; }
+  .db-hamburger:hover { background:var(--bg2); }
   
-  @media (max-width:1023px) {
-    .db { flex-direction:column; }
-    .db-side { position:fixed; left:0; top:0; width:256px; height:100vh; z-index:100; display:none; overflow:auto; }
-    .db-side.open { display:flex; }
-    .db-hamburger { display:flex !important; }
-    .db-search { display:none !important; }
-    .db-main { width:100%; }
-    .db-right { display:none; }
-    .db-center { padding:14px; }
-    .stat-grid { grid-template-columns:repeat(2,1fr) !important; }
-    .tpl-grid { grid-template-columns:1fr 1fr !important; }
-    .db-top { height:48px; padding:0 10px; }
-  }
-  
-  @media (max-width:640px) {
-    .db-top { padding:0 8px !important; }
-    .db-center { padding:8px !important; }
-    .stat-grid { grid-template-columns:1fr !important; }
-  }
+  .db-mobile-menu { position:fixed; left:0; top:0; width:280px; height:100vh; background:var(--surface); border-right:1px solid var(--border); transform:translateX(-100%); transition:transform .25s ease; z-index:99; display:flex; flex-direction:column; }
+  .db-mobile-menu.open { transform:translateX(0); }
 `
 
 export default function DashboardPage() {
@@ -228,18 +211,39 @@ export default function DashboardPage() {
           </div>
         </aside>
 
-        {/* Mobile overlay */}
+        {/* Mobile menu overlay */}
         <div 
-          className={`db-side-overlay${sideOpen ? ' open' : ''}`} 
+          className={`db-menu-overlay${sideOpen ? ' open' : ''}`} 
           onClick={() => setSideOpen(false)}
         />
+
+        {/* Mobile menu */}
+        <div className={`db-mobile-menu${sideOpen ? ' open' : ''}`}>
+          <div className="db-logo-row" onClick={() => { go('/'); setSideOpen(false) }}>
+            <Image src={logo} alt="EETRA" width={26} height={26} style={{ borderRadius: 6 }} />
+            <span className="db-logo-name">EETRA</span>
+          </div>
+          <nav className="db-nav" style={{ flex: 1 }}>
+            <div className="db-nav-label">Application</div>
+            {NAV_MAIN.map(({ label, path, Icon }) => (
+              <button key={path} className={`db-nav-btn${path === '/dashboard' ? ' active' : ''}`} onClick={() => { go(path); setSideOpen(false) }}>
+                <Icon size={14} color={path === '/dashboard' ? 'var(--accent)' : 'var(--text4)'} />
+                {label}
+              </button>
+            ))}
+            <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
+            <button className="db-nav-btn" onClick={() => { go('/settings'); setSideOpen(false) }}><Settings size={14} color="var(--text4)" /> Paramètres</button>
+            <button className="db-nav-btn" onClick={() => { go('/onboarding'); setSideOpen(false) }}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
+            <button className="db-nav-btn" onClick={() => { go('/'); setSideOpen(false) }}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
+          </nav>
+        </div>
 
         {/* Main content */}
         <div className="db-main">
           {/* Top bar */}
           <header className="db-top">
             <div className="db-top-left">
-              <button className="db-hamburger" onClick={() => setSideOpen(!sideOpen)} title="Menu">
+              <button className="db-hamburger" onClick={() => setSideOpen(!sideOpen)} title="Menu" style={{ display: 'flex' }}>
                 {sideOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
               <div className="db-search">

@@ -370,7 +370,6 @@ export function GenerateCoverDialog({
             )}
           </div>
         </div>
-      </div>
     </div>
   )
 }

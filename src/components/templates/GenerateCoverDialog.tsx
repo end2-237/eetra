@@ -128,22 +128,33 @@ export function GenerateCoverDialog({
     try {
       // Compress image
       const compressedBlob = await compressImage(selectedImage)
+      console.log('[v0] Compressed image:', compressedBlob.size, 'bytes')
 
       // Prepare FormData
       const formData = new FormData()
       formData.append('image', compressedBlob, 'inspiration.jpg')
       formData.append('description', description.trim())
       formData.append('currentTitle', currentCoverTitle)
+      console.log('[v0] FormData prepared with description:', description.trim())
 
       // Call API
+      console.log('[v0] Sending request to /api/ai/generate-cover')
       const response = await fetch('/api/ai/generate-cover', {
         method: 'POST',
         body: formData,
       })
+      console.log('[v0] Response status:', response.status)
 
       if (!response.ok) {
-        const error = await response.json()
-        const message = error.error || 'Erreur lors de la génération'
+        console.error('[v0] Response error:', response.status, response.statusText)
+        let error: any = {}
+        try {
+          error = await response.json()
+        } catch (e) {
+          console.error('[v0] Could not parse error response:', e)
+        }
+        const message = error.error || `Erreur ${response.status}: ${response.statusText}`
+        console.log('[v0] Error message:', message)
         if (response.status === 403) {
           showToast('Cette fonctionnalité est réservée aux utilisateurs PRO', 'err')
         } else if (response.status === 429) {
@@ -155,7 +166,9 @@ export function GenerateCoverDialog({
         return
       }
 
+      console.log('[v0] Response OK, parsing JSON')
       const data = await response.json()
+      console.log('[v0] Parsed data:', data)
       setGeneratedStyle({
         layout: data.layout,
         accentColor: data.accentColor,
@@ -165,7 +178,9 @@ export function GenerateCoverDialog({
       setAcceptedTitle(currentCoverTitle === data.suggestedTitle)
       setStep('review')
     } catch (err) {
-      console.error('Error generating cover:', err)
+      console.error('[v0] Error generating cover:', err)
+      const errorMsg = err instanceof Error ? err.message : String(err)
+      console.error('[v0] Error details:', errorMsg)
       showToast('Erreur réseau. Réessayez.', 'err')
       setStep('upload')
     }

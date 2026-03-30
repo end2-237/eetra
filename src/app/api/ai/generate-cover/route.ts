@@ -83,7 +83,9 @@ export async function POST(req: NextRequest) {
 
   // ── Call AI to generate cover style ────────────────────────────────────────
   const apiKey = process.env.ANTHROPIC_API_KEY
+  console.log('[v0] API Key configured:', !!apiKey)
   if (!apiKey) {
+    console.error('[v0] ANTHROPIC_API_KEY not found')
     return NextResponse.json({ error: 'AI service not configured' }, { status: 503 })
   }
 
@@ -98,7 +100,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1500,
-        system: `Tu es un expert en design de couvertures de documents professionnels. Analyze l'image fournie et la description pour générer un style de couverture cohérent.
+        system: `Tu es un expert en design de couvertures de documents professionnels. Analyse l'image fournie et la description pour générer un style de couverture cohérent.
 
 Réponds UNIQUEMENT avec un objet JSON valide (pas de texte avant/après). Le JSON doit avoir cette structure exacte:
 {
@@ -139,7 +141,8 @@ Génère un style de couverture professionnelle basé sur cette image d'inspirat
     })
 
     if (!response.ok) {
-      console.error('[EETRA AI Cover] Anthropic error:', response.status)
+      const errorText = await response.text()
+      console.error('[v0] Anthropic error:', response.status, errorText)
       return NextResponse.json(
         { error: 'AI service error' },
         { status: 502, headers: rlHeaders }
@@ -147,7 +150,9 @@ Génère un style de couverture professionnelle basé sur cette image d'inspirat
     }
 
     const data = await response.json()
+    console.log('[v0] Anthropic response:', data)
     const rawText = data.content?.[0]?.text?.trim() || '{}'
+    console.log('[v0] Extracted text:', rawText)
 
     // Try to parse JSON response
     let coverData

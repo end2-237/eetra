@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useCustomTemplates, type CoverLayout, type CoverStyle, DEFAULT_COVER_STYLE } from '@/contexts/CustomTemplateContext'
 import { useProfile } from '@/contexts/ProfileContext'
+import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Button } from '@/components/ui/Button'
 import { Toast } from '@/components/ui/Toast'
@@ -20,6 +21,7 @@ import { STYLE_PRESETS, FONT_TITLE_OPTIONS, type DocumentStyle, type BlockType }
 import { PALETTE, TEMPLATES } from '@/lib/templates'
 import { DocumentProvider, useDocument, STORAGE_DRAFT } from '@/contexts/DocumentContext'
 import { EditableCoverPage } from '@/components/editor/document/EditableCoverPage'
+import { GenerateCoverDialog } from '@/components/templates/GenerateCoverDialog'
 
 type StudioTab = 'blocks' | 'style' | 'cover' | 'cover-editor' | 'meta' | 'publish'
 
@@ -184,6 +186,7 @@ function TemplateCreatorContent() {
 
   const { createTemplate, updateTemplate, getTemplate, publishTemplate, unpublishTemplate } = useCustomTemplates()
   const { profile } = useProfile()
+  const { planId } = usePlan()
   const { toast, showToast } = useToast()
 
   const [activeTab, setActiveTab] = useState<StudioTab>('blocks')
@@ -195,6 +198,7 @@ function TemplateCreatorContent() {
   const [newTag, setNewTag] = useState('')
   const [isPublic, setIsPublic] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showGenerateCoverDialog, setShowGenerateCoverDialog] = useState(false)
 
   const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
   const [coverStyle, setCoverStyle] = useState<CoverStyle>(DEFAULT_COVER_STYLE)
@@ -252,6 +256,14 @@ function TemplateCreatorContent() {
     setShowGridOption(cs.showGrid)
     setTitleSize(cs.titleSize)
   }, [pushCoverHistory])
+
+  const handleApplyGeneratedCover = useCallback((style: CoverStyle, newTitle?: string) => {
+    handleCoverStyleChange(style)
+    if (newTitle) {
+      setTemplateName(newTitle)
+    }
+    showToast('Style de couverture appliqué', 'ok')
+  }, [handleCoverStyleChange, showToast])
 
   const coverUndo = useCallback(() => {
     if (coverHistoryIdx.current <= 0) return
@@ -953,7 +965,20 @@ function TemplateCreatorContent() {
 
                 {/* Cover mini preview */}
                 <div className="mb-6 p-4 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
-                  <div className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text4)' }}>Aperçu couverture</div>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text4)' }}>Aperçu couverture</div>
+                    {(planId === 'pro' || planId === 'business') && (
+                      <button
+                        onClick={() => setShowGenerateCoverDialog(true)}
+                        className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer border transition-all hover:opacity-80"
+                        style={{ borderColor: '#F59E0B40', background: '#F59E0B10', color: '#F59E0B' }}
+                        title="Générer le style avec l'IA (PRO)"
+                      >
+                        <Sparkles size={10} />
+                        IA
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center gap-4">
                     <div style={{ width: 80, aspectRatio: '.707', position: 'relative', borderRadius: 6, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,.15)', flexShrink: 0 }}>
                       <CoverBg layout={selectedLayout} accent={accent} />
@@ -1041,6 +1066,13 @@ function TemplateCreatorContent() {
       </div>
 
       <Toast {...toast} />
+
+      <GenerateCoverDialog
+        isOpen={showGenerateCoverDialog}
+        onClose={() => setShowGenerateCoverDialog(false)}
+        currentCoverTitle={templateName}
+        onApply={handleApplyGeneratedCover}
+      />
     </div>
   )
 }

@@ -21,7 +21,7 @@ import { STYLE_PRESETS, FONT_TITLE_OPTIONS, type DocumentStyle, type BlockType }
 import { PALETTE, TEMPLATES } from '@/lib/templates'
 import { DocumentProvider, useDocument, STORAGE_DRAFT } from '@/contexts/DocumentContext'
 import { EditableCoverPage } from '@/components/editor/document/EditableCoverPage'
-import { GenerateCoverDialog } from '@/components/templates/GenerateCoverDialog'
+import { CoverAnalyzerButton } from '@/components/templates/CoverAnalyzerButton'
 
 type StudioTab = 'blocks' | 'style' | 'cover' | 'cover-editor' | 'meta' | 'publish'
 
@@ -198,7 +198,6 @@ function TemplateCreatorContent() {
   const [newTag, setNewTag] = useState('')
   const [isPublic, setIsPublic] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
-  const [showGenerateCoverDialog, setShowGenerateCoverDialog] = useState(false)
 
   const [docStyle, setDocStyle] = useState<DocumentStyle>(STYLE_PRESETS.classic)
   const [coverStyle, setCoverStyle] = useState<CoverStyle>(DEFAULT_COVER_STYLE)
@@ -967,17 +966,11 @@ function TemplateCreatorContent() {
                 <div className="mb-6 p-4 rounded-xl border" style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text4)' }}>Aperçu couverture</div>
-                    {(planId === 'pro' || planId === 'business') && (
-                      <button
-                        onClick={() => setShowGenerateCoverDialog(true)}
-                        className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg cursor-pointer border transition-all hover:opacity-80"
-                        style={{ borderColor: '#F59E0B40', background: '#F59E0B10', color: '#F59E0B' }}
-                        title="Générer le style avec l'IA (PRO)"
-                      >
-                        <Sparkles size={10} />
-                        IA
-                      </button>
-                    )}
+                    <CoverAnalyzerButton
+                      isPro={planId === 'pro' || planId === 'business'}
+                      currentTitle={templateName}
+                      onApplyCover={handleApplyGeneratedCover}
+                    />
                   </div>
                   <div className="flex items-center gap-4">
                     <div style={{ width: 80, aspectRatio: '.707', position: 'relative', borderRadius: 6, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,.15)', flexShrink: 0 }}>
@@ -1066,13 +1059,6 @@ function TemplateCreatorContent() {
       </div>
 
       <Toast {...toast} />
-
-      <GenerateCoverDialog
-        isOpen={showGenerateCoverDialog}
-        onClose={() => setShowGenerateCoverDialog(false)}
-        currentCoverTitle={templateName}
-        onApply={handleApplyGeneratedCover}
-      />
     </div>
   )
 }

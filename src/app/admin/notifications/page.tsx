@@ -197,3 +197,7 @@ export default function AdminNotifications() {
         .btn-primary { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; }
         .btn-primary:hover { opacity:.88; }
       `}
+      </style>
+    </div>
+  )
+}

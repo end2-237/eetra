@@ -251,3 +251,7 @@ export default function AdminDashboard() {
         .activity-time { color:var(--text4); min-width:80px; }
         .activity-desc { color:var(--text3); flex:1; }
       `}
+      </style>
+    </div>
+  )
+}

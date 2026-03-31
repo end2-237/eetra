@@ -64,6 +64,8 @@ const CSS = `
   @keyframes float-badge { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-6px)} }
   @keyframes pulse-ring { 0%{transform:scale(1);opacity:.7} 100%{transform:scale(2.4);opacity:0} }
   @keyframes gradient-text { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+  @keyframes shimmer { 0%{background-position:-1000px 0} 100%{background-position:1000px 0} }
+  @keyframes glow-pulse { 0%,100%{box-shadow:0 0 20px rgba(27,79,216,.3)} 50%{box-shadow:0 0 40px rgba(27,79,216,.5)} }
 
   .hero-section { width:100%; max-width:1200px; margin:0 auto; padding:88px 48px 0; position:relative; overflow:hidden; }
   .hero-grid { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; padding-bottom:80px; }
@@ -72,13 +74,15 @@ const CSS = `
   .hero-badge { animation:float-badge 4s ease-in-out infinite; }
   .hero-badge:nth-child(2) { animation-delay:.5s; animation-duration:5s; }
   .hero-badge:nth-child(3) { animation-delay:1s; animation-duration:6s; }
-  .hero-cta-primary { transition:transform .25s cubic-bezier(.23,1,.32,1),box-shadow .25s; }
-  .hero-cta-primary:hover { transform:translateY(-3px)!important; box-shadow:0 16px 48px rgba(27,79,216,.5)!important; }
-  .hero-cta-ghost { transition:all .2s; }
-  .hero-cta-ghost:hover { border-color:var(--accent)!important; color:var(--accent)!important; transform:translateY(-1px); }
-  .stat-card { transition:transform .2s,background .2s; }
-  .stat-card:hover { background:var(--bg3)!important; transform:translateY(-2px); }
-  .hero-stats { border-top:1px solid var(--border); border-bottom:1px solid var(--border); display:grid; grid-template-columns:repeat(4,1fr); background:var(--bg2); margin:0 -48px; padding:30px 48px; }
+  .hero-cta-primary { transition:transform .25s cubic-bezier(.23,1,.32,1),box-shadow .25s,background .25s; background:linear-gradient(135deg,#1B4FD8 0%,#5B9BFF 100%); position:relative; overflow:hidden; }
+  .hero-cta-primary::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent); transform:translateX(-100%); transition:transform .6s; }
+  .hero-cta-primary:hover { transform:translateY(-3px)!important; box-shadow:0 20px 60px rgba(27,79,216,.6)!important; }
+  .hero-cta-primary:hover::before { transform:translateX(100%); }
+  .hero-cta-ghost { transition:all .25s cubic-bezier(.23,1,.32,1); border:1.5px solid rgba(27,79,216,.2)!important; background:rgba(27,79,216,.04)!important; }
+  .hero-cta-ghost:hover { border-color:var(--accent)!important; color:var(--accent)!important; transform:translateY(-2px); background:rgba(27,79,216,.1)!important; }
+  .stat-card { transition:transform .2s cubic-bezier(.23,1,.32,1),background .2s,border-color .2s; border-radius:14px!important; background:rgba(255,255,255,.6)!important; backdrop-filter:blur(12px); border:1px solid rgba(27,79,216,.08); }
+  .stat-card:hover { background:rgba(27,79,216,.08)!important; transform:translateY(-4px); border-color:rgba(27,79,216,.2)!important; }
+  .hero-stats { border-top:1px solid rgba(27,79,216,.08); border-bottom:1px solid rgba(27,79,216,.08); display:grid; grid-template-columns:repeat(4,1fr); background:linear-gradient(135deg,rgba(255,255,255,.4) 0%,rgba(27,79,216,.04) 100%); backdrop-filter:blur(20px); margin:0 -48px; padding:30px 48px; }
   .hero-h1 { font-size:clamp(38px,4.5vw,72px); }
 
   @media (max-width: 1023px) {
@@ -161,11 +165,11 @@ export function Hero() {
 
             <div data-sr className="hero-ctas" style={{ opacity: 0, transform: 'translateY(28px)', transition: 'opacity .8s .3s, transform .8s .3s', display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 32 }}>
               <button onClick={() => router.push('/login')} className="hero-cta-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 26px', borderRadius: 14, background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 8px 32px rgba(27,79,216,.35)' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 26px', borderRadius: 14, background: 'linear-gradient(135deg,#1B4FD8 0%,#5B9BFF 100%)', color: '#fff', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 40px rgba(27,79,216,.4)' }}>
                 Commencer gratuitement <ArrowRight size={15} />
               </button>
               <button onClick={() => router.push('/designs')} className="hero-cta-ghost"
-                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 22px', borderRadius: 14, background: 'transparent', color: 'var(--text2)', border: '1px solid var(--border2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '13px 22px', borderRadius: 14, background: 'rgba(27,79,216,.06)', color: 'var(--text2)', border: '1.5px solid rgba(27,79,216,.2)', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                 Voir les designs →
               </button>
             </div>
@@ -248,15 +252,15 @@ export function Hero() {
             ].map((b, i) => (
               <div key={i} className="hero-badge" style={{
                 position: 'absolute', ...b.style,
-                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
-                background: 'var(--surface)', border: '1px solid var(--border)',
-                borderRadius: 12, boxShadow: '0 6px 24px rgba(0,0,0,.13)', whiteSpace: 'nowrap', zIndex: 12,
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+                background: 'rgba(255,255,255,.75)', border: '1px solid rgba(255,255,255,.5)',
+                borderRadius: 14, boxShadow: '0 8px 32px rgba(0,0,0,.1), inset 0 1px 1px rgba(255,255,255,.9)', whiteSpace: 'nowrap', zIndex: 12,
                 opacity: 0, animation: `fadeUp .7s ${b.delay} forwards, float-badge 5s ${b.delay} ease-in-out infinite`,
-                backdropFilter: 'blur(10px)',
+                backdropFilter: 'blur(16px)',
               }}>
-                <span style={{ fontSize: 16 }}>{b.icon}</span>
+                <span style={{ fontSize: 18 }}>{b.icon}</span>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{b.label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '-.02em' }}>{b.label}</div>
                   <div style={{ fontSize: 9, color: 'var(--text4)' }}>{b.sub}</div>
                 </div>
               </div>

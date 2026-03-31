@@ -5,8 +5,10 @@ import { useEffect, useCallback } from 'react'
 import { Navbar } from '@/components/landing/Navbar'
 import { Hero } from '@/components/landing/Hero'
 import { Features } from '@/components/landing/Features'
+import { DesignShowcase } from '@/components/landing/DesignShowcase'
 import { Pricing } from '@/components/landing/Pricing'
 import { FAQ } from '@/components/landing/FAQ'
+import { PremiumCTA } from '@/components/landing/PremiumCTA'
 import { Footer } from '@/components/landing/Footer'
 import { TEMPLATES } from '@/lib/templates'
 import { ArrowRight, Sparkles } from 'lucide-react'
@@ -265,41 +267,48 @@ const CSS = `
   @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-33.333%)} }
 
   .d-card {
-    border-radius: 14px; overflow: hidden;
-    border: 1.5px solid var(--border);
-    box-shadow: 0 4px 20px rgba(0,0,0,.08);
+    border-radius: 18px; overflow: hidden;
+    border: 1.5px solid rgba(27,79,216,.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,.08);
     transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s ease, border-color .2s;
-    cursor: pointer; position: relative;
+    cursor: pointer; position: relative; background: rgba(255,255,255,.6); backdrop-filter: blur(8px);
   }
-  .d-card:hover { transform: translateY(-10px) scale(1.03) !important; }
+  .d-card:hover { transform: translateY(-12px) scale(1.04) !important; box-shadow: 0 20px 60px rgba(27,79,216,.15) !important; border-color: rgba(27,79,216,.25) !important; }
 
   .tpl-card {
-    border-radius: 16px; border: 1px solid var(--border);
-    padding: 22px 18px; cursor: pointer;
-    background: var(--surface);
-    transition: transform .25s cubic-bezier(.23,1,.32,1), box-shadow .25s, border-color .2s;
+    border-radius: 18px; border: 1.5px solid rgba(27,79,216,.1);
+    padding: 24px 20px; cursor: pointer;
+    background: rgba(255,255,255,.6); backdrop-filter: blur(12px);
+    transition: transform .25s cubic-bezier(.23,1,.32,1), box-shadow .25s, border-color .2s, background .2s;
   }
   .tpl-card:hover {
-    border-color: var(--accent) !important;
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0,0,0,.1);
+    border-color: rgba(27,79,216,.3) !important;
+    transform: translateY(-6px);
+    box-shadow: 0 16px 48px rgba(27,79,216,.12);
+    background: rgba(255,255,255,.8) !important;
   }
 
   .cta-btn {
-    transition: transform .25s cubic-bezier(.23,1,.32,1), box-shadow .25s;
+    transition: transform .25s cubic-bezier(.23,1,.32,1), box-shadow .25s, background .25s;
+    background: linear-gradient(135deg,#1B4FD8 0%,#5B9BFF 100%);
+    position: relative; overflow: hidden;
   }
+  .cta-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent); transform: translateX(-100%); transition: transform .6s; }
   .cta-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 16px 48px rgba(27,79,216,.4) !important;
+    box-shadow: 0 20px 60px rgba(27,79,216,.5) !important;
   }
+  .cta-btn:hover::before { transform: translateX(100%); }
 
   .ghost-btn {
     transition: border-color .2s, color .2s, background .2s;
+    background: rgba(27,79,216,.06) !important;
+    border: 1.5px solid rgba(27,79,216,.2) !important;
   }
   .ghost-btn:hover {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
-    background: var(--accentS) !important;
+    background: rgba(27,79,216,.12) !important;
   }
 `
 
@@ -318,16 +327,17 @@ export default function LandingPage() {
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
 
           <Hero />
+          <DesignShowcase />
           <Features />
 
           {/* ── Marquee strip ── */}
           <SR style={{ width: '100%', overflow: 'hidden' }}>
-            <div style={{ background: 'var(--accent)', padding: '13px 0', overflow: 'hidden' }}>
+            <div style={{ background: 'linear-gradient(135deg,#1B4FD8 0%,#5B9BFF 100%)', padding: '16px 0', overflow: 'hidden', boxShadow: '0 8px 32px rgba(27,79,216,.25)' }}>
               <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'marquee 24s linear infinite', alignItems: 'center' }}>
                 {Array.from({ length: 4 }).flatMap(() =>
                   ['Business Plan','·','Rapport d\'Audit','·','Appel d\'Offres','·','Contrat OHADA','·','Note de Direction','·','Devis Pro','·','Export PDF','·','Export Word .docx','·','IA Rédactionnelle','·']
                 ).map((t, i) => (
-                  <span key={i} style={{ fontSize: 11, fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.3)':'rgba(255,255,255,.82)', letterSpacing: '.04em', marginRight: 28 }}>{t}</span>
+                  <span key={i} style={{ fontSize: 12, fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.25)':'rgba(255,255,255,.88)', letterSpacing: '.04em', marginRight: 28, textTransform: t==='·'?'none':'capitalize' }}>{t}</span>
                 ))}
               </div>
             </div>
@@ -409,6 +419,11 @@ export default function LandingPage() {
           {/* ── FAQ ── */}
           <div data-sr style={{ width:'100%', opacity:0, transform:'translateY(32px)', transition:'opacity .75s cubic-bezier(.23,1,.32,1), transform .75s cubic-bezier(.23,1,.32,1)' } as any}>
             <FAQ/>
+          </div>
+
+          {/* ── Premium CTA ── */}
+          <div style={{ width:'100%' }}>
+            <PremiumCTA/>
           </div>
 
           {/* ── Footer ── */}

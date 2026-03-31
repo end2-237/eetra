@@ -22,18 +22,18 @@ const NAV_ITEMS = [
 ]
 
 const CSS = `
-  .nav-micro { border-bottom:1px solid var(--border); background:var(--bg2); padding:0 48px; display:flex; align-items:center; justify-content:space-between; height:36px; }
+  .nav-micro { border-bottom:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg,var(--bg) 0%,rgba(0,0,0,.02) 100%); padding:0 48px; display:flex; align-items:center; justify-content:space-between; height:36px; }
   .nav-main  { padding:0 48px; display:flex; align-items:center; justify-content:space-between; height:80px; }
-  .nav-links  { display:flex; align-items:center; gap:1px; }
-  .nav-btn-item { padding:7px 14px; border-radius:8px; border:1px solid transparent; cursor:pointer; font-size:13px; font-weight:500; color:var(--text3); background:transparent; transition:all .15s; white-space:nowrap; }
-  .nav-btn-item:hover { color:var(--text); background:var(--bg2); }
+  .nav-links  { display:flex; align-items:center; gap:2px; }
+  .nav-btn-item { padding:8px 16px; border-radius:10px; border:1px solid rgba(27,79,216,.1); cursor:pointer; font-size:13px; font-weight:500; color:var(--text3); background:rgba(255,255,255,.4); backdrop-filter:blur(8px); transition:all .2s cubic-bezier(.23,1,.32,1); white-space:nowrap; }
+  .nav-btn-item:hover { color:var(--accent); background:rgba(27,79,216,.08); border-color:rgba(27,79,216,.3); transform:translateY(-1px); }
   .nav-hamburger { display:none; background:none; border:none; cursor:pointer; color:var(--text); padding:6px; }
   .nav-mobile-overlay { display:none; position:fixed; inset:0; z-index:200; }
-  .nav-mobile-menu { position:fixed; top:0; right:0; bottom:0; width:280px; background:var(--surface); border-left:1px solid var(--border); z-index:201; padding:20px; display:flex; flex-direction:column; gap:4px; box-shadow:-8px 0 32px rgba(0,0,0,.15); transform:translateX(100%); transition:transform .3s cubic-bezier(.23,1,.32,1); }
+  .nav-mobile-menu { position:fixed; top:0; right:0; bottom:0; width:280px; background:var(--surface); backdrop-filter:blur(20px); border-left:1px solid rgba(255,255,255,.08); z-index:201; padding:20px; display:flex; flex-direction:column; gap:4px; box-shadow:-12px 4px 40px rgba(0,0,0,.2); transform:translateX(100%); transition:transform .3s cubic-bezier(.23,1,.32,1); }
   .nav-mobile-menu.open { transform:translateX(0); }
   .nav-mobile-overlay.open { display:block; background:rgba(0,0,0,.5); }
-  .nav-mobile-item { width:100%; text-align:left; padding:13px 14px; border-radius:10px; background:transparent; border:none; cursor:pointer; font-size:15px; font-weight:600; color:var(--text2); transition:background .12s; }
-  .nav-mobile-item:hover { background:var(--bg2); }
+  .nav-mobile-item { width:100%; text-align:left; padding:13px 14px; border-radius:12px; background:rgba(27,79,216,.05); border:1px solid rgba(27,79,216,.1); cursor:pointer; font-size:15px; font-weight:600; color:var(--text2); transition:all .15s; }
+  .nav-mobile-item:hover { background:rgba(27,79,216,.12); border-color:rgba(27,79,216,.3); transform:translateX(4px); }
   .nav-actions { display:flex; align-items:center; gap:10px; }
 
   @media (max-width: 767px) {
@@ -76,7 +76,7 @@ export function Navbar({ onScrollTo }: NavbarProps) {
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      <nav className="sticky top-0 z-50 border-b" style={{ background: 'var(--bg)', borderColor: 'var(--border)', backdropFilter: 'blur(12px)' }}>
+      <nav className="sticky top-0 z-50 border-b" style={{ background: 'rgba(255,255,255,.7)', borderColor: 'rgba(255,255,255,.1)', backdropFilter: 'blur(16px)', boxShadow: '0 2px 12px rgba(0,0,0,.04)' }}>
 
         {/* Micro-bar */}
         <div className="nav-micro">
@@ -122,9 +122,17 @@ export function Navbar({ onScrollTo }: NavbarProps) {
             <ThemeToggle />
             <div style={{ width: 1, height: 20, background: 'var(--border)' }} />
             <Button variant="ghost" size="sm" onClick={() => router.push('/login')}>Connexion</Button>
-            <Button variant="primary" size="sm" onClick={() => router.push('/login')}>
-              Essai gratuit <span style={{ color: 'rgba(255,255,255,.6)' }}>→</span>
-            </Button>
+            <button onClick={() => router.push('/login')} style={{
+              background: 'linear-gradient(135deg,#1B4FD8 0%,#5B9BFF 100%)',
+              color: '#fff', border: 'none', borderRadius: 12, padding: '10px 20px',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'all .25s cubic-bezier(.23,1,.32,1)',
+              boxShadow: '0 8px 24px rgba(27,79,216,.35)',
+              position: 'relative', overflow: 'hidden',
+              onMouseEnter: (e) => Object.assign(e.currentTarget.style, { transform: 'translateY(-2px)', boxShadow: '0 12px 36px rgba(27,79,216,.45)' }),
+              onMouseLeave: (e) => Object.assign(e.currentTarget.style, { transform: 'translateY(0)', boxShadow: '0 8px 24px rgba(27,79,216,.35)' }),
+            }} onMouseEnter={(e) => Object.assign(e.currentTarget.style, { transform: 'translateY(-2px)', boxShadow: '0 12px 36px rgba(27,79,216,.45)' })} onMouseLeave={(e) => Object.assign(e.currentTarget.style, { transform: 'translateY(0)', boxShadow: '0 8px 24px rgba(27,79,216,.35)' })}>
+              Essai gratuit →
+            </button>
             <button className="nav-hamburger" onClick={() => setMenuOpen(v => !v)} aria-label="Menu">
               <Menu size={22} />
             </button>

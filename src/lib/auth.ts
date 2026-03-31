@@ -36,6 +36,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           planId: user.profile?.planId ?? 'starter',
+          isSuperAdmin: user.isSuperAdmin,
         }
       },
     }),
@@ -45,6 +46,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id
         token.planId = (user as any).planId ?? 'starter'
+        token.isSuperAdmin = (user as any).isSuperAdmin ?? false
       }
       return token
     },
@@ -52,6 +54,7 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         session.user.id = token.id as string
         session.user.planId = token.planId as string
+        session.user.isSuperAdmin = token.isSuperAdmin as boolean
       }
       return session
     },
@@ -61,12 +64,13 @@ export const authOptions: NextAuthOptions = {
 // Extend next-auth types
 declare module 'next-auth' {
   interface Session {
-    user: { id: string; email: string; name?: string | null; planId: string }
+    user: { id: string; email: string; name?: string | null; planId: string; isSuperAdmin: boolean }
   }
   interface User {
     planId?: string
+    isSuperAdmin?: boolean
   }
 }
 declare module 'next-auth/jwt' {
-  interface JWT { id: string; planId: string }
+  interface JWT { id: string; planId: string; isSuperAdmin: boolean }
 }

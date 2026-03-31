@@ -282,3 +282,7 @@ export default function AdminUsers() {
         .db-tr:hover { background:var(--bg2); }
         .user-select { width:100%; padding:4px 6px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--text); font-size:11px; }
       `}
+      </style>
+    </div>
+  )
+}

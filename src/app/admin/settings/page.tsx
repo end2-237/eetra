@@ -184,3 +184,7 @@ export default function AdminSettings() {
         .setting-item:last-child { border-bottom:none; }
         .setting-label { font-size:12px; color:var(--text3); }
       `}
+      </style>
+    </div>
+  )
+}

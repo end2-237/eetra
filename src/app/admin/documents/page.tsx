@@ -136,3 +136,7 @@ export default function AdminDocuments() {
         .db-block { border:1px solid var(--border); border-radius:7px; background:var(--surface); padding:20px; overflow:hidden; }
         .placeholder-text { color:var(--text4); text-align:center; font-style:italic; }
       `}
+      </style>
+    </div>
+  )
+}

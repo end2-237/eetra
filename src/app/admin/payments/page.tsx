@@ -289,3 +289,7 @@ export default function AdminPayments() {
         .db-tr:hover { background:var(--bg2); }
         .status-badge { padding:3px 8px; border-radius:4px; font-size:10px; font-weight:600; text-transform:uppercase; }
       `}
+      </style>
+    </div>
+  )
+}

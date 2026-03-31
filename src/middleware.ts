@@ -22,6 +22,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Protéger les routes admin
+  if (pathname.startsWith('/admin')) {
+    const isSuperAdmin = (token as any).isSuperAdmin === true
+    if (!isSuperAdmin) {
+      const url = req.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
   return NextResponse.next()
 }
 

@@ -431,57 +431,57 @@ export function Hero() {
           {/* LEFT: Copy */}
           <div>
             {/* Badge */}
-            <div data-sr style={{ opacity: 0, transform: 'translateY(32px)', transition: 'opacity .7s, transform .7s', display: 'inline-flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
-              <div style={{ position: 'relative' }}>
-                <Image src={logo} alt="EETRA" width={40} height={40} style={{ borderRadius: 10, display: 'block' }} />
+            <div data-sr style={{ opacity: 0, transform: 'translateY(32px)', transition: 'opacity .7s, transform .7s', display: 'inline-flex', alignItems: 'center', gap: 'clamp(10px, 2vw, 14px)', marginBottom: 'clamp(20px, 3vw, 28px)', width: '100%', minWidth: 0 }}>
+              <div style={{ position: 'relative', flexShrink: 0 }}>
+                <Image src={logo} alt="EETRA" width={40} height={40} style={{ borderRadius: 10, display: 'block', width: 'clamp(32px, 5vw, 40px)', height: 'auto' }} />
                 <span style={{ position: 'absolute', inset: -4, borderRadius: 14, border: '2px solid var(--accentS2)', pointerEvents: 'none' }} />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 14px', borderRadius: 99, background: 'var(--glass-bg)', backdropFilter: 'blur(8px)', border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 1.5vw, 10px)', padding: 'clamp(5px, 1vw, 6px) clamp(10px, 2vw, 14px)', borderRadius: 99, background: 'var(--glass-bg)', backdropFilter: 'blur(8px)', border: '1px solid var(--border)', minWidth: 0 }}>
                 <span style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
                   <span style={{ display: 'block', width: 8, height: 8, borderRadius: '50%', background: 'var(--accent)' }} />
                   <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse-ring 2s ease-out infinite' }} />
                 </span>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)' }}>Version 2026</span>
+                <span style={{ fontSize: 'clamp(9px, 1.5vw, 11px)', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', whiteSpace: 'nowrap' }}>Version 2026</span>
               </div>
             </div>
 
             {/* Headline */}
-            <h1 data-sr className="hero-h1" style={{ opacity: 0, transform: 'translateY(44px)', transition: 'opacity .85s .1s, transform .85s .1s', fontWeight: 900, lineHeight: .9, letterSpacing: '-.05em', color: 'var(--text)', marginBottom: 24 }}>
+            <h1 data-sr className="hero-h1" style={{ opacity: 0, transform: 'translateY(44px)', transition: 'opacity .85s .1s, transform .85s .1s', fontWeight: 900, lineHeight: 0.95, letterSpacing: '-.05em', color: 'var(--text)', marginBottom: 'clamp(18px, 3vw, 24px)', maxWidth: '100%', wordBreak: 'break-word' }}>
               <span style={{ display: 'block' }}>Vos documents</span>
               <span className="gradient-text" style={{ display: 'block', background: 'linear-gradient(135deg,var(--accent) 0%,#A855F7 50%,#EC4899 100%)', backgroundSize: '200% 200%', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'gradient-shift 5s ease infinite' }}>
                 d&apos;exception.
               </span>
-              <span style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontStyle: 'italic', fontWeight: 400, fontSize: '.68em', color: 'var(--text3)', display: 'block', marginTop: 8 }}>En quelques minutes.</span>
+              <span style={{ fontFamily: 'var(--font-playfair,Georgia,serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 'clamp(12px, 2vw, 16px)', color: 'var(--text3)', display: 'block', marginTop: 'clamp(6px, 1.5vw, 8px)' }}>En quelques minutes.</span>
             </h1>
 
             {/* Subtitle */}
-            <p data-sr style={{ opacity: 0, transform: 'translateY(32px)', transition: 'opacity .85s .22s, transform .85s .22s', fontSize: 17, lineHeight: 1.75, color: 'var(--text3)', maxWidth: 500, marginBottom: 32 }}>
+            <p data-sr style={{ opacity: 0, transform: 'translateY(32px)', transition: 'opacity .85s .22s, transform .85s .22s', fontSize: 'clamp(14px, 3vw, 17px)', lineHeight: 1.75, color: 'var(--text3)', maxWidth: '100%', marginBottom: 32 }}>
               Business Plans, Audits, Contrats OHADA, Appels d&apos;Offres — creez des documents de niveau executif avec votre charte graphique, l&apos;IA, et exportez en PDF ou Word.
             </p>
 
             {/* CTAs */}
-            <div data-sr className="hero-ctas" style={{ opacity: 0, transform: 'translateY(32px)', transition: 'opacity .85s .34s, transform .85s .34s', display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 36 }}>
+            <div data-sr className="hero-ctas" style={{ opacity: 0, transform: 'translateY(32px)', transition: 'opacity .85s .34s, transform .85s .34s', display: 'flex', gap: 'clamp(10px, 2vw, 14px)', flexWrap: 'wrap', marginBottom: 36, width: '100%' }}>
               <button onClick={() => router.push('/login')} className="hero-cta-primary"
-                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '15px 30px', borderRadius: 14, background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 40px var(--electricGlow)' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 'clamp(12px, 2vw, 15px) clamp(20px, 4vw, 30px)', borderRadius: 14, background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', color: '#fff', border: 'none', fontSize: 'clamp(13px, 2vw, 15px)', fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 40px var(--electricGlow)', whiteSpace: 'nowrap' }}>
                 Commencer gratuitement <ArrowRight size={16} strokeWidth={2.5} />
               </button>
               <button onClick={() => router.push('/designs')} className="hero-cta-ghost"
-                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '15px 26px', borderRadius: 14, background: 'var(--glass-bg)', backdropFilter: 'blur(8px)', color: 'var(--text2)', border: '1px solid var(--border)', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 'clamp(12px, 2vw, 15px) clamp(18px, 3vw, 26px)', borderRadius: 14, background: 'var(--glass-bg)', backdropFilter: 'blur(8px)', color: 'var(--text2)', border: '1px solid var(--border)', fontSize: 'clamp(13px, 2vw, 15px)', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                 <Play size={14} fill="currentColor" /> Voir les designs
               </button>
             </div>
 
             {/* Trust badges */}
-            <div data-sr className="hero-trust" style={{ opacity: 0, transform: 'translateY(24px)', transition: 'opacity .85s .46s, transform .85s .46s', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+            <div data-sr className="hero-trust" style={{ opacity: 0, transform: 'translateY(24px)', transition: 'opacity .85s .46s, transform .85s .46s', display: 'flex', alignItems: 'center', gap: 'clamp(12px, 2.5vw, 20px)', flexWrap: 'wrap', width: '100%' }}>
               {[
                 { icon: <Shield size={14} color="var(--success)" />, text: 'Aucune CB requise' },
                 { icon: <Clock size={14} color="var(--success)" />, text: 'Configure en 3 min' },
                 { icon: <TrendingUp size={14} color="var(--success)" />, text: '+8 000 documents crees' },
               ].map(({ icon, text }, i) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                  {i > 0 && <div className="sep" style={{ width: 1, height: 14, background: 'var(--border)', marginRight: 7 }} />}
-                  <div style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-                  <span style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 600 }}>{text}</span>
+                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                  {i > 0 && <div className="sep" style={{ width: 1, height: 14, background: 'var(--border)', marginRight: 'clamp(4px, 1vw, 7px)', flexShrink: 0 }} />}
+                  <div style={{ width: 'clamp(20px, 3vw, 24px)', height: 'clamp(20px, 3vw, 24px)', borderRadius: 8, background: 'rgba(16,185,129,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                  <span style={{ fontSize: 'clamp(11px, 2vw, 13px)', color: 'var(--text3)', fontWeight: 600, whiteSpace: 'nowrap' }}>{text}</span>
                 </div>
               ))}
             </div>

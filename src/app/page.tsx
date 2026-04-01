@@ -395,25 +395,25 @@ export default function LandingPage() {
 
           {/* ── Marquee strip ── */}
           <SR style={{ width: '100%', overflow: 'hidden' }}>
-            <div className="marquee-strip" style={{ background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', padding: '15px 0', overflow: 'hidden', position: 'relative' }}>
+            <div className="marquee-strip" style={{ background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', padding: 'clamp(10px, 2vw, 15px) 0', overflow: 'hidden', position: 'relative' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(255,255,255,0.05) 0%,transparent 20%,transparent 80%,rgba(255,255,255,0.05) 100%)', pointerEvents: 'none' }} />
               <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'marquee 22s linear infinite', alignItems: 'center' }}>
                 {Array.from({ length: 4 }).flatMap(() =>
                   ['Business Plan','·','Rapport d\'Audit','·','Appel d\'Offres','·','Contrat OHADA','·','Note de Direction','·','Devis Pro','·','Export PDF','·','Export Word .docx','·','IA Redactionnelle','·']
                 ).map((t, i) => (
-                  <span key={i} style={{ fontSize: 12, fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.35)':'rgba(255,255,255,.9)', letterSpacing: '.05em', marginRight: 32, textShadow: t!=='·' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none' }}>{t}</span>
+                  <span key={i} style={{ fontSize: 'clamp(10px, 2vw, 12px)', fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.35)':'rgba(255,255,255,.9)', letterSpacing: '.05em', marginRight: 'clamp(20px, 4vw, 32px)', textShadow: t!=='·' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none' }}>{t}</span>
                 ))}
               </div>
             </div>
           </SR>
 
           {/* ── Design showcase ── */}
-          <section className="design-section" style={{ width:'100%', padding:'120px 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
+          <section className="design-section" style={{ width:'100%', padding:'clamp(60px, 10vw, 120px) 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
             <div data-p="0.1" style={{ position:'absolute', top:-120, right:-80, width:500, height:500, borderRadius:'50%', background:'radial-gradient(ellipse,var(--electricGlow),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite' }}/>
             <div data-p="0.06" style={{ position:'absolute', bottom:-80, left:-60, width:400, height:400, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(236,72,153,0.12),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite 3s' }}/>
 
-            <div className="design-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
-              <div className="design-header-wrap" style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:64, flexWrap:'wrap', gap:20 }}>
+            <div className="design-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 clamp(20px, 5vw, 56px)', position:'relative' }}>
+              <div className="design-header-wrap" style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:'clamp(40px, 8vw, 64px)', flexWrap:'wrap', gap:'clamp(16px, 3vw, 20px)' }}>
                 <div>
                   <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:18 }}><Sparkles size={12}/> 9 designs A4</div></SR>
                   <SR d={70}><h2 style={{ fontSize:'clamp(28px,3.5vw,52px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, margin:0 }}>Votre document,{' '}<span style={{ fontFamily:'var(--font-playfair,Georgia,serif)', fontStyle:'italic', fontWeight:400, color:'var(--text3)' }}>votre signature.</span></h2></SR>
@@ -425,10 +425,10 @@ export default function LandingPage() {
                 </SR>
               </div>
 
-              <div className="design-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:18, alignItems:'end' }}>
+              <div className="design-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:'clamp(12px, 2vw, 18px)', alignItems:'end' }}>
                 {DESIGNS.map(({ a, name, C }, i) => (
                   <SR key={i} d={i*75} from="up">
-                    <div onClick={()=>router.push('/designs')} style={{ cursor:'pointer', display:'flex', flexDirection:'column', gap:10, marginTop:[0,22,8,30,4,18][i] }}>
+                    <div onClick={()=>router.push('/designs')} style={{ cursor:'pointer', display:'flex', flexDirection:'column', gap:'clamp(8px, 1.5vw, 10px)', marginTop:[0,22,8,30,4,18][i] }}>
                       <div className="d-card" style={{ '--hc': a } as any}
                         onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow=`0 24px 56px rgba(0,0,0,.18),0 8px 16px ${a}28`;el.style.borderColor=a}}
                         onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow='';el.style.borderColor='var(--border)'}}>
@@ -446,22 +446,22 @@ export default function LandingPage() {
           </section>
 
           {/* ── Templates ── */}
-          <section id="templates" className="tpl-section" style={{ width:'100%', padding:'120px 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
+          <section id="templates" className="tpl-section" style={{ width:'100%', padding:'clamp(60px, 10vw, 120px) 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
             <div data-p="0.06" style={{ position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)', width:700, height:500, borderRadius:'50%', background:'radial-gradient(ellipse,var(--electricGlow),transparent 65%)', pointerEvents:'none', opacity:0.3 }}/>
 
-            <div className="tpl-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
-              <div style={{ textAlign:'center', marginBottom:64 }}>
+            <div className="tpl-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 clamp(20px, 5vw, 56px)', position:'relative' }}>
+              <div style={{ textAlign:'center', marginBottom:'clamp(40px, 8vw, 64px)' }}>
                 <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:20 }}><Sparkles size={12}/> Smart Templates</div></SR>
                 <SR d={70}><h2 style={{ fontSize:'clamp(30px,3.5vw,54px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, marginBottom:16 }}>6 modeles prets a l&apos;emploi</h2></SR>
                 <SR d={140}><p style={{ fontSize:15, color:'var(--text3)' }}>Chacun enrichi avec tableaux, clauses, KPIs et zones de signature.</p></SR>
               </div>
 
-              <div className="tpl-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:18 }}>
+              <div className="tpl-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:'clamp(12px, 2vw, 18px)' }}>
                 {TEMPLATES.map((t, i) => {
                   const Icon = Ico[t.id as keyof typeof Ico] || Ico.ao
                   return (
                     <SR key={t.id} d={i*60} from="up">
-                      <div className="tpl-card" onClick={()=>router.push('/login')} style={{ display:'flex', flexDirection:'column', gap:14, height:'100%' }}>
+                      <div className="tpl-card" onClick={()=>router.push('/login')} style={{ display:'flex', flexDirection:'column', gap:'clamp(10px, 2vw, 14px)', height:'100%' }}>
                         <div style={{ width:48, height:48, borderRadius:14, background:'var(--accentS)', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--accent)' }}><Icon/></div>
                         <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', letterSpacing:'-.01em' }}>{t.name}</div>
                         <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>

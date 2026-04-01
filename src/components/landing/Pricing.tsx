@@ -57,7 +57,7 @@ const PLANS = [
 ]
 
 const CSS = `
-  .pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .pricing-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
   
   .pricing-card {
     transition: transform .35s cubic-bezier(.23,1,.32,1), box-shadow .35s, border-color .25s;
@@ -98,14 +98,24 @@ const CSS = `
     background: var(--accentS) !important; 
   }
 
+  @media (max-width: 1280px) {
+    .pricing-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  }
   @media (max-width: 1023px) {
     .pricing-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .pricing-section { padding: 100px 0 !important; }
+    .pricing-inner { padding: 0 40px !important; }
+  }
+  @media (max-width: 767px) {
+    .pricing-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .pricing-section { padding: 80px 0 !important; }
+    .pricing-inner { padding: 0 24px !important; }
+    .pricing-toggle { flex-direction: row; gap: 4px; }
+    .pricing-card { padding: 24px 20px !important; }
   }
   @media (max-width: 640px) {
     .pricing-grid { grid-template-columns: 1fr; gap: 14px; }
-    .pricing-section { padding: 80px 0 !important; }
-    .pricing-inner { padding: 0 24px !important; }
-    .pricing-toggle { flex-direction: column; gap: 8px; align-items: center; }
+    .pricing-toggle { flex-direction: column; gap: 6px; align-items: stretch; width: 100%; max-width: 280px; }
   }
   @media (max-width: 479px) {
     .pricing-section { padding: 56px 0 !important; }
@@ -115,6 +125,8 @@ const CSS = `
     .pricing-inner > div:first-child p { font-size: 13px; }
     .pricing-toggle { padding: 4px !important; }
     .pricing-toggle button { padding: 8px 16px !important; font-size: 13px !important; }
+    .pricing-card { padding: 22px 18px !important; border-radius: 20px !important; }
+    .pricing-card ul li { font-size: 12px !important; }
   }
 `
 

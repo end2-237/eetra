@@ -321,21 +321,41 @@ const CSS = `
   }
 
   /* Responsive grids */
+  @media (max-width: 1200px) {
+    .design-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 16px !important; }
+    .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
+    .design-section, .tpl-section { padding: 100px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 40px !important; }
+    .design-header, .tpl-header { margin-bottom: 48px !important; }
+  }
   @media (max-width: 1023px) {
     .design-grid { grid-template-columns: repeat(3, 1fr) !important; }
     .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .marquee-strip { padding: 12px 0 !important; }
+    .marquee-strip span { font-size: 11px !important; margin-right: 24px !important; }
   }
   @media (max-width: 767px) {
-    .design-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; }
-    .design-section, .tpl-section { padding: 80px 0 !important; }
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+    .design-section, .tpl-section { padding: 72px 0 !important; }
     .design-inner, .tpl-inner { padding: 0 24px !important; }
+    .design-header-wrap { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
+    .design-header-wrap button { width: 100%; justify-content: center; }
+    .tpl-card { padding: 20px 18px !important; }
+    .tpl-card > div:first-child { width: 42px !important; height: 42px !important; border-radius: 12px !important; }
+    .tpl-card > div:nth-child(2) { font-size: 13px !important; }
   }
   @media (max-width: 479px) {
-    .design-grid { grid-template-columns: 1fr !important; }
-    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .tpl-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
     .design-section, .tpl-section { padding: 56px 0 !important; }
-    .design-inner, .tpl-inner { padding: 0 18px !important; }
+    .design-inner, .tpl-inner { padding: 0 16px !important; }
+    .design-section h2, .tpl-section h2 { font-size: clamp(22px, 5vw, 32px) !important; }
+    .tpl-card { padding: 16px 14px !important; gap: 10px !important; }
+    .tpl-card > div:first-child { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
+    .tpl-card > div:nth-child(2) { font-size: 12px !important; }
+    .tpl-card > div:nth-child(3) span { font-size: 8px !important; padding: 3px 8px !important; }
+    .marquee-strip span { font-size: 10px !important; margin-right: 20px !important; }
   }
 `
 
@@ -358,7 +378,7 @@ export default function LandingPage() {
 
           {/* ── Marquee strip ── */}
           <SR style={{ width: '100%', overflow: 'hidden' }}>
-            <div style={{ background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', padding: '15px 0', overflow: 'hidden', position: 'relative' }}>
+            <div className="marquee-strip" style={{ background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', padding: '15px 0', overflow: 'hidden', position: 'relative' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(255,255,255,0.05) 0%,transparent 20%,transparent 80%,rgba(255,255,255,0.05) 100%)', pointerEvents: 'none' }} />
               <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'marquee 22s linear infinite', alignItems: 'center' }}>
                 {Array.from({ length: 4 }).flatMap(() =>
@@ -376,7 +396,7 @@ export default function LandingPage() {
             <div data-p="0.06" style={{ position:'absolute', bottom:-80, left:-60, width:400, height:400, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(236,72,153,0.12),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite 3s' }}/>
 
             <div className="design-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
-              <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:64, flexWrap:'wrap', gap:20 }}>
+              <div className="design-header-wrap" style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:64, flexWrap:'wrap', gap:20 }}>
                 <div>
                   <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:18 }}><Sparkles size={12}/> 9 designs A4</div></SR>
                   <SR d={70}><h2 style={{ fontSize:'clamp(28px,3.5vw,52px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, margin:0 }}>Votre document,{' '}<span style={{ fontFamily:'var(--font-playfair,Georgia,serif)', fontStyle:'italic', fontWeight:400, color:'var(--text3)' }}>votre signature.</span></h2></SR>

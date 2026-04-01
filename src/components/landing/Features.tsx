@@ -117,40 +117,46 @@ const CSS = `
     .feat-inner { padding: 0 40px; }
   }
   @media (max-width: 767px) {
-    .feat-section { padding: 60px 0; }
+    .feat-section { padding: 64px 0; }
     .feat-inner { padding: 0 20px; }
-    .feat-bento { grid-template-columns: 1fr; gap: 12px; }
+    .feat-bento { grid-template-columns: 1fr; gap: 11px; }
     .feat-span-5, .feat-span-4, .feat-span-3, .feat-ai-card, .feat-cta-card { grid-column: span 1 !important; }
-    .feat-cta-banner { flex-direction: column; align-items: flex-start; gap: 14px; }
-    .feat-cta-banner button { width: 100%; justify-content: center; }
-    .feat-header { gap: 16px; margin-bottom: 32px; }
-    .feat-header h2 { font-size: clamp(24px, 5vw, 44px) !important; }
+    .feat-cta-banner { flex-direction: column; align-items: flex-start; gap: 13px; }
+    .feat-cta-banner button { width: 100%; justify-content: center; padding: 13px 20px !important; font-size: 14px !important; }
+    .feat-header { gap: 16px; margin-bottom: 36px; }
+    .feat-header h2 { font-size: clamp(26px, 5vw, 44px) !important; line-height: 1.15; }
     .feat-header p { font-size: 14px; }
-    [style*="padding: 40px 36px"] { padding: 28px 20px !important; }
-    [style*="padding: 36px 32px"] { padding: 24px 18px !important; }
-    [style*="padding: 36px 28px"] { padding: 24px 16px !important; }
+    [style*="padding: 40px 36px"] { padding: 28px 22px !important; }
+    [style*="padding: 36px 32px"] { padding: 26px 20px !important; }
+    [style*="padding: 36px 28px"] { padding: 26px 18px !important; }
+    [style*="padding: 32px 28px"] { padding: 24px 18px !important; }
   }
   @media (max-width: 599px) {
-    .feat-section { padding: 48px 0; }
+    .feat-section { padding: 56px 0; }
     .feat-inner { padding: 0 16px; }
     .feat-bento { gap: 10px; }
-    .feat-header { gap: 12px; margin-bottom: 28px; }
-    .feat-header h2 { font-size: clamp(20px, 5vw, 36px) !important; }
+    .feat-header { gap: 14px; margin-bottom: 32px; }
+    .feat-header h2 { font-size: clamp(22px, 5vw, 38px) !important; line-height: 1.1; }
     .feat-header p { font-size: 13px; }
-    .feat-cta-banner { gap: 12px; }
+    .feat-cta-banner { gap: 11px; }
+    [style*="padding: 28px 22px"] { padding: 22px 18px !important; }
+    [style*="padding: 26px 20px"] { padding: 22px 16px !important; }
+    [style*="padding: 24px 18px"] { padding: 20px 16px !important; }
   }
   @media (max-width: 479px) {
-    .feat-section { padding: 40px 0; }
+    .feat-section { padding: 48px 0; }
     .feat-inner { padding: 0 14px; }
-    .feat-header { margin-bottom: 24px; }
-    .feat-header h2 { font-size: clamp(18px, 4.5vw, 32px) !important; line-height: 1.1; }
-    .feat-header p { font-size: 12px; line-height: 1.6; }
-    .feat-bento { gap: 8px; }
-    [style*="padding: 28px 20px"] { padding: 20px 16px !important; }
-    [style*="padding: 24px 18px"] { padding: 18px 14px !important; }
-    [style*="padding: 24px 16px"] { padding: 18px 12px !important; }
-    [style*="margin-bottom: 22px"] { margin-bottom: 14px !important; }
-    [style*="margin-bottom: 20px"] { margin-bottom: 12px !important; }
+    .feat-header { margin-bottom: 28px; }
+    .feat-header h2 { font-size: clamp(20px, 4.5vw, 34px) !important; line-height: 1.1; }
+    .feat-header p { font-size: 12px; line-height: 1.5; }
+    .feat-bento { gap: 9px; }
+    .feat-cta-banner { gap: 10px; }
+    .feat-cta-banner button { padding: 12px 18px !important; font-size: 13px !important; }
+    [style*="padding: 22px 18px"] { padding: 18px 14px !important; }
+    [style*="padding: 22px 16px"] { padding: 18px 12px !important; }
+    [style*="padding: 20px 16px"] { padding: 16px 12px !important; }
+    [style*="margin-bottom: 22px"] { margin-bottom: 13px !important; }
+    [style*="margin-bottom: 20px"] { margin-bottom: 11px !important; }
   }
 `
 

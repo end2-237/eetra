@@ -212,8 +212,8 @@ const CSS = `
   
   .editor-canvas {
     background:var(--bg3);
-    padding:24px;
-    min-height:400px;
+    padding:clamp(8px,2vw,24px);
+    min-height:clamp(280px,50vh,400px);
     display:flex;
     justify-content:center;
     overflow:auto;
@@ -222,11 +222,11 @@ const CSS = `
   
   .document-page {
     width:100%;
-    max-width:380px;
+    max-width:clamp(280px,90vw,380px);
     background:#fff;
     border-radius:4px;
     box-shadow:0 4px 20px rgba(0,0,0,0.1);
-    padding:28px 24px;
+    padding:clamp(16px,3vw,28px) clamp(14px,2.5vw,24px);
     position:relative;
     flex-shrink:0;
     box-sizing:border-box;
@@ -342,58 +342,63 @@ const CSS = `
   @media (max-width: 767px) {
     .hero-section { padding:48px 20px 0; }
     .hero-grid { gap:28px; padding-bottom:36px; }
-    .hero-h1 { font-size:clamp(28px,5vw,40px); line-height:1.15; }
-    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -20px; padding:20px; gap:0; }
-    .hero-stats > div { border-right:none!important; padding:14px 10px; border-bottom:1px solid var(--border); }
+    .hero-h1 { font-size:clamp(28px,5vw,40px); line-height:1.15; margin-bottom:18px; }
+    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -20px; padding:18px; gap:0; }
+    .hero-stats > div { border-right:none!important; padding:13px 9px; border-bottom:1px solid var(--border); }
     .hero-stats > div:nth-child(1),
     .hero-stats > div:nth-child(2) { border-right:1px solid var(--border)!important; }
     .hero-stats > div:nth-child(3),
     .hero-stats > div:nth-child(4) { border-bottom:none; }
-    .hero-badge { transform:scale(0.85); margin-bottom:16px; }
-    .hero-ctas { flex-direction:column; gap:10px!important; width:100%; }
-    .hero-cta-primary, .hero-cta-ghost { width:100%!important; justify-content:center; padding:12px 18px!important; font-size:14px!important; }
-    .hero-trust { flex-direction:column; align-items:flex-start!important; gap:8px!important; width:100%; }
+    .hero-stats > div span:first-child { font-size:clamp(18px,4vw,26px); }
+    .hero-stats > div span:last-child { font-size:11px; }
+    .hero-badge { transform:scale(0.9); margin-bottom:18px; }
+    .hero-ctas { flex-direction:column; gap:11px!important; width:100%; }
+    .hero-cta-primary, .hero-cta-ghost { width:100%!important; justify-content:center; padding:13px 20px!important; font-size:15px!important; font-weight:700!important; }
+    .hero-trust { flex-direction:column; align-items:flex-start!important; gap:10px!important; width:100%; }
     .hero-trust > div { margin:0!important; }
+    .hero-trust > div span:last-child { font-size:12px; }
     .hero-trust .sep { display:none; }
     .editor-sidebar { display:none; }
-    .editor-canvas { padding:12px; min-height:280px; }
-    .document-page { max-width:100%; padding:14px 12px; font-size:12px; }
-    .editor-toolbar { padding:8px 10px; gap:6px; }
+    .editor-canvas { min-height:280px; }
+    .editor-toolbar { padding:9px 12px; gap:7px; }
     .editor-toolbar-btn { width:24px; height:24px; min-width:24px; min-height:24px; }
     .hero-glow { width:250px; height:250px; }
   }
   
   @media (max-width: 599px) {
     .hero-section { padding:40px 16px 0; }
-    .hero-grid { gap:24px; padding-bottom:32px; width:100%; }
-    .hero-h1 { font-size:clamp(24px,5vw,36px); line-height:1.15; margin-bottom:16px; }
-    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -16px; padding:16px; gap:0; width:calc(100% + 32px); }
-    .hero-stats > div { padding:12px 8px; }
-    .hero-stats > div span:first-child { font-size:clamp(16px,4vw,24px); }
-    .hero-stats > div span:last-child { font-size:11px; }
-    .hero-badge { transform:scale(0.8); margin-bottom:14px; }
-    .hero-trust { gap:6px; }
-    .editor-canvas { min-height:240px; padding:10px; }
-    .editor-toolbar { padding:6px 8px; gap:4px; }
-    .editor-toolbar-btn { width:22px; height:22px; min-width:22px; min-height:22px; }
+    .hero-grid { gap:22px; padding-bottom:30px; width:100%; }
+    .hero-h1 { font-size:clamp(26px,5vw,38px); line-height:1.1; margin-bottom:16px; }
+    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -16px; padding:15px; gap:0; width:calc(100% + 32px); }
+    .hero-stats > div { padding:11px 7px; }
+    .hero-stats > div span:first-child { font-size:clamp(16px,4vw,22px); }
+    .hero-stats > div span:last-child { font-size:10px; }
+    .hero-badge { transform:scale(0.85); margin-bottom:16px; }
+    .hero-ctas { gap:10px!important; }
+    .hero-cta-primary, .hero-cta-ghost { padding:12px 18px!important; font-size:14px!important; }
+    .hero-trust { gap:8px; }
+    .hero-trust > div span:last-child { font-size:11px; }
     .hero-glow { width:200px; height:200px; }
   }
   
   @media (max-width: 479px) {
-    .hero-section { padding:32px 12px 0; }
-    .hero-grid { gap:16px; padding-bottom:24px; width:100%; }
-    .hero-h1 { font-size:clamp(22px,4.5vw,32px); line-height:1.1; margin-bottom:14px; }
-    .hero-stats { margin:0 -12px; padding:12px; width:calc(100% + 24px); }
-    .hero-stats > div { padding:10px 6px; }
-    .hero-stats > div span:first-child { font-size:clamp(14px,3.5vw,20px); }
-    .hero-stats > div span:last-child { font-size:10px; }
-    .editor-toolbar { padding:5px 6px; gap:3px; }
-    .editor-toolbar-btn { width:20px; height:20px; min-width:20px; min-height:20px; }
-    .editor-canvas { min-height:200px; padding:8px; }
-    .document-page { padding:10px 8px; font-size:11px; }
+    .hero-section { padding:32px 13px 0; }
+    .hero-grid { gap:18px; padding-bottom:26px; width:100%; }
+    .hero-h1 { font-size:clamp(24px,5vw,34px); line-height:1.1; margin-bottom:13px; }
+    .hero-stats { margin:0 -13px; padding:13px; width:calc(100% + 26px); }
+    .hero-stats > div { padding:10px 5px; }
+    .hero-stats > div span:first-child { font-size:clamp(15px,3.5vw,22px); }
+    .hero-stats > div span:last-child { font-size:9px; }
     .hero-badge { display:none; }
-    .hero-cta-primary, .hero-cta-ghost { padding:10px 16px!important; font-size:12px!important; }
-    .hero-glow { width:120px; height:120px; }
+    .hero-ctas { gap:9px!important; }
+    .hero-cta-primary, .hero-cta-ghost { padding:11px 16px!important; font-size:13px!important; }
+    .hero-trust { gap:7px; }
+    .hero-trust > div span:last-child { font-size:10px; }
+    .hero-trust > div { width:fit-content; }
+    .editor-toolbar { padding:6px 7px; gap:4px; overflow-x:auto; }
+    .editor-toolbar-btn { width:20px; height:20px; min-width:20px; min-height:20px; font-size:12px; }
+    .editor-canvas { min-height:220px; }
+    .hero-glow { width:140px; height:140px; }
   }
 `
 

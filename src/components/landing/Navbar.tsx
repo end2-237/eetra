@@ -182,24 +182,44 @@ const CSS = `
   }
   
   @media (max-width: 767px) {
-    .nav-micro { padding: 0 20px; height: 34px; }
+    .nav-micro { padding: 0 18px; height: 32px; font-size: 10px; }
     .nav-micro-right { display: none; }
     .nav-micro-left span:last-child { display: none; }
-    .nav-main { padding: 0 20px; height: 64px; }
+    .nav-main { padding: 0 18px; height: 60px; gap: 10px; }
+    .nav-main > a { gap: 10px; }
     .nav-main > a > div:last-child { display: none; }
+    .nav-main > a > div:first-child { width: 36px; height: 36px; }
     .nav-actions .btn-ghost { display: none; }
-    .nav-actions .nav-cta-btn { font-size: 13px; padding: 9px 16px; }
+    .nav-actions .nav-cta-btn { font-size: 12px; padding: 9px 16px; }
+    .nav-hamburger { width: 40px; height: 40px; padding: 6px; }
+    .nav-mobile-menu { width: 280px; }
+  }
+  
+  @media (max-width: 599px) {
+    .nav-micro { padding: 0 14px; height: 28px; font-size: 9px; }
+    .nav-micro-left span { gap: 4px; }
+    .nav-main { padding: 0 14px; height: 56px; }
+    .nav-main > a > div:first-child { width: 34px; height: 34px; }
+    .nav-main > a > div:first-child + div span:nth-child(1) { font-size: 16px; }
+    .nav-actions { gap: 8px; }
+    .nav-actions .nav-cta-btn { font-size: 12px; padding: 8px 14px; gap: 6px; }
+    .nav-hamburger { width: 38px; }
   }
   
   @media (max-width: 479px) {
-    .nav-micro { padding: 0 16px; height: 30px; font-size: 10px; }
+    .nav-micro { padding: 0 12px; height: 26px; font-size: 8px; }
+    .nav-micro-left span { gap: 3px; }
     .nav-micro-left span:first-child { display: none; }
-    .nav-main { padding: 0 16px; height: 58px; gap: 8px; }
-    .nav-main > a { gap: 8px; }
+    .nav-main { padding: 0 12px; height: 52px; gap: 6px; }
+    .nav-main > a { gap: 6px; }
     .nav-main > a > div:first-child { width: 32px; height: 32px; }
-    .nav-actions .nav-cta-btn { font-size: 12px; padding: 8px 14px; }
+    .nav-main > a > div:nth-child(2) { display: none; }
+    .nav-actions { gap: 6px; }
+    .nav-actions .nav-cta-btn { font-size: 11px; padding: 7px 12px; gap: 5px; }
     .nav-actions .nav-cta-btn span { display: none; }
-    .nav-mobile-menu { width: 100%; }
+    .nav-hamburger { width: 36px; height: 36px; padding: 5px; }
+    .nav-mobile-menu { width: 100vw; }
+    .nav-mobile-overlay { display: block; }
   }
 `
 

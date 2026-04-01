@@ -80,28 +80,43 @@ const CSS = `
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 40px; }
   }
   @media (max-width: 767px) {
-    .footer-cta { padding: 72px 0; }
-    .footer-cta-inner { padding: 0 24px; }
-    .footer-cta-btns { flex-direction: column; align-items: center; }
-    .footer-cta-btns button { width: 100%; max-width: 340px; justify-content: center; }
-    .footer-main { padding: 56px 0 28px; }
-    .footer-main-inner { padding: 0 24px; }
-    .footer-grid { grid-template-columns: 1fr; gap: 32px; margin-bottom: 40px; }
-    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 14px; }
+    .footer-cta { padding: 60px 0; }
+    .footer-cta-inner { padding: 0 20px; }
+    .footer-cta-inner h2 { font-size: clamp(26px, 5vw, 48px) !important; }
+    .footer-cta-inner p { font-size: 14px; }
+    .footer-cta-btns { flex-direction: column; align-items: center; gap: 12px; }
+    .footer-cta-btns button { width: 100%; max-width: 100%; justify-content: center; padding: 13px 20px !important; font-size: 14px !important; }
+    .footer-main { padding: 48px 0 24px; }
+    .footer-main-inner { padding: 0 20px; }
+    .footer-grid { grid-template-columns: 1fr; gap: 28px; margin-bottom: 32px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 12px; font-size: 12px; }
     .footer-bottom-links { flex-wrap: wrap; }
   }
+  @media (max-width: 599px) {
+    .footer-cta { padding: 48px 0; }
+    .footer-cta-inner { padding: 0 16px; }
+    .footer-cta-inner h2 { font-size: clamp(22px, 5vw, 40px) !important; line-height: 1.1; }
+    .footer-cta-inner p { font-size: 13px; margin-bottom: 28px !important; }
+    .footer-pay-badges { gap: 6px; margin-top: 16px; }
+    .footer-pay-badges > div { padding: 5px 10px !important; font-size: 10px; }
+    .footer-main { padding: 40px 0 20px; }
+    .footer-main-inner { padding: 0 16px; }
+    .footer-grid { gap: 24px; margin-bottom: 24px; }
+  }
   @media (max-width: 479px) {
-    .footer-cta { padding: 56px 0; }
-    .footer-cta-inner { padding: 0 18px; }
-    .footer-cta-inner h2 { font-size: clamp(26px, 6vw, 44px) !important; }
-    .footer-cta-inner p { font-size: 14px; }
-    .footer-cta-btns { gap: 12px; }
-    .footer-cta-btns button { padding: 14px 24px !important; font-size: 13px !important; }
-    .footer-pay-badges { gap: 8px; margin-top: 20px; }
-    .footer-pay-badges > div { padding: 5px 12px !important; font-size: 11px; }
-    .footer-main { padding: 48px 0 24px; }
-    .footer-main-inner { padding: 0 18px; }
-    .footer-bottom { gap: 10px; }
+    .footer-cta { padding: 40px 0; }
+    .footer-cta-inner { padding: 0 14px; }
+    .footer-cta-inner h2 { font-size: clamp(20px, 4.5vw, 36px) !important; line-height: 1.1; }
+    .footer-cta-inner p { font-size: 12px; margin-bottom: 20px !important; }
+    .footer-cta-btns { gap: 10px; }
+    .footer-cta-btns button { padding: 12px 18px !important; font-size: 12px !important; }
+    .footer-pay-badges { gap: 5px; margin-top: 14px; }
+    .footer-pay-badges > div { padding: 4px 8px !important; font-size: 9px; }
+    .footer-main { padding: 32px 0 16px; }
+    .footer-main-inner { padding: 0 14px; }
+    .footer-grid { gap: 20px; margin-bottom: 20px; }
+    .footer-grid > div > div:first-child { margin-bottom: 12px !important; }
+    .footer-bottom { gap: 8px; font-size: 11px; }
   }
 `
 

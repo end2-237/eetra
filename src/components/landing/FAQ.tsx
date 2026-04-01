@@ -68,14 +68,30 @@ const CSS = `
     .faq-sticky { position: static; }
   }
   @media (max-width: 767px) {
-    .faq-section { padding: 80px 0; }
-    .faq-inner { padding: 0 24px; gap: 32px; }
+    .faq-section { padding: 72px 0; }
+    .faq-inner { padding: 0 20px; gap: 32px; }
+    .faq-sticky h2 { font-size: clamp(26px, 5vw, 44px) !important; }
+    .faq-sticky p { font-size: 14px; }
+  }
+  @media (max-width: 599px) {
+    .faq-section { padding: 56px 0; }
+    .faq-inner { padding: 0 16px; gap: 24px; }
+    .faq-sticky h2 { font-size: clamp(22px, 4.5vw, 36px) !important; line-height: 1.1; }
+    .faq-sticky p { font-size: 13px; }
+    .faq-item { border-radius: 14px; }
+    .faq-item button { padding: 16px 18px !important; gap: 12px; }
   }
   @media (max-width: 479px) {
-    .faq-section { padding: 56px 0; }
-    .faq-inner { padding: 0 18px; gap: 28px; }
-    .faq-sticky h2 { font-size: clamp(24px, 6vw, 36px) !important; }
-    .faq-sticky p { font-size: 14px; }
+    .faq-section { padding: 48px 0; }
+    .faq-inner { padding: 0 14px; gap: 20px; }
+    .faq-sticky h2 { font-size: clamp(20px, 4vw, 32px) !important; line-height: 1.1; margin-bottom: 14px !important; }
+    .faq-sticky p { font-size: 12px; }
+    .faq-item { border-radius: 12px; }
+    .faq-item button { padding: 14px 16px !important; }
+    .faq-toggle { width: 26px; height: 26px; }
+    .faq-toggle svg { width: 12px; height: 12px; }
+    .faq-item.active { max-height: 400px !important; }
+    [style*="padding: 0 24px 22px 56px"] { padding: 0 16px 14px 36px !important; font-size: 13px; }
   }
 `
 

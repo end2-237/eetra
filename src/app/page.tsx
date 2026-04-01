@@ -329,33 +329,50 @@ const CSS = `
     .design-header, .tpl-header { margin-bottom: 48px !important; }
   }
   @media (max-width: 1023px) {
-    .design-grid { grid-template-columns: repeat(3, 1fr) !important; }
-    .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+    .design-section, .tpl-section { padding: 80px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 40px !important; }
     .marquee-strip { padding: 12px 0 !important; }
     .marquee-strip span { font-size: 11px !important; margin-right: 24px !important; }
   }
   @media (max-width: 767px) {
-    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
-    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-    .design-section, .tpl-section { padding: 72px 0 !important; }
-    .design-inner, .tpl-inner { padding: 0 24px !important; }
-    .design-header-wrap { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
-    .design-header-wrap button { width: 100%; justify-content: center; }
-    .tpl-card { padding: 20px 18px !important; }
-    .tpl-card > div:first-child { width: 42px !important; height: 42px !important; border-radius: 12px !important; }
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 11px !important; }
+    .design-section, .tpl-section { padding: 64px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 20px !important; }
+    .design-header-wrap { flex-direction: column !important; gap: 14px !important; align-items: flex-start !important; }
+    .design-header-wrap button { width: 100%; justify-content: center; font-size: 13px; padding: 10px 18px; }
+    .tpl-card { padding: 18px 16px !important; gap: 10px !important; }
+    .tpl-card > div:first-child { width: 40px !important; height: 40px !important; border-radius: 11px !important; }
     .tpl-card > div:nth-child(2) { font-size: 13px !important; }
+    .marquee-strip span { font-size: 11px !important; margin-right: 20px !important; }
+  }
+  @media (max-width: 599px) {
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 9px !important; }
+    .design-section, .tpl-section { padding: 48px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 16px !important; }
+    .design-header, .tpl-header { margin-bottom: 32px !important; }
+    .tpl-card { padding: 16px 14px !important; }
+    .tpl-card > div:first-child { width: 38px !important; height: 38px !important; border-radius: 10px !important; }
+    .tpl-card > div:nth-child(2) { font-size: 12px !important; }
   }
   @media (max-width: 479px) {
-    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-    .tpl-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-    .design-section, .tpl-section { padding: 56px 0 !important; }
-    .design-inner, .tpl-inner { padding: 0 16px !important; }
-    .design-section h2, .tpl-section h2 { font-size: clamp(22px, 5vw, 32px) !important; }
-    .tpl-card { padding: 16px 14px !important; gap: 10px !important; }
-    .tpl-card > div:first-child { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
-    .tpl-card > div:nth-child(2) { font-size: 12px !important; }
-    .tpl-card > div:nth-child(3) span { font-size: 8px !important; padding: 3px 8px !important; }
-    .marquee-strip span { font-size: 10px !important; margin-right: 20px !important; }
+    .design-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+    .tpl-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+    .design-section, .tpl-section { padding: 40px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 14px !important; }
+    .design-section h2, .tpl-section h2 { font-size: clamp(20px, 4.5vw, 32px) !important; line-height: 1.1; }
+    .design-header, .tpl-header { margin-bottom: 28px !important; }
+    .design-header-wrap { gap: 10px !important; }
+    .design-header-wrap button { font-size: 12px; padding: 9px 16px; }
+    .tpl-card { padding: 14px 12px !important; gap: 8px !important; }
+    .tpl-card > div:first-child { width: 36px !important; height: 36px !important; border-radius: 9px !important; }
+    .tpl-card > div:nth-child(2) { font-size: 11px !important; }
+    .tpl-card > div:nth-child(3) span { font-size: 8px !important; padding: 3px 6px !important; }
+    .marquee-strip { padding: 8px 0 !important; }
+    .marquee-strip span { font-size: 9px !important; margin-right: 16px !important; }
   }
 `
 

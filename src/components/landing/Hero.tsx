@@ -277,43 +277,60 @@ const CSS = `
   
   @media (max-width: 1023px) {
     .hero-grid { grid-template-columns:1fr; gap:48px; padding-bottom:56px; }
-    .hero-editor-wrap { max-width:600px; margin:0 auto; }
+    .hero-editor-wrap { max-width:100%; margin:0 auto; }
     .hero-section { padding:64px 40px 0; }
     .hero-stats { margin:0 -40px; padding:28px 40px; }
     .editor-canvas { min-height:340px; }
   }
   
   @media (max-width: 767px) {
-    .hero-section { padding:48px 24px 0; }
-    .hero-grid { gap:36px; padding-bottom:44px; }
-    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -24px; padding:24px; gap:0; }
-    .hero-stats > div { border-right:none!important; padding:18px 14px; border-bottom:1px solid var(--border); }
+    .hero-section { padding:48px 20px 0; }
+    .hero-grid { gap:32px; padding-bottom:40px; }
+    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -20px; padding:20px; gap:0; }
+    .hero-stats > div { border-right:none!important; padding:16px 12px; border-bottom:1px solid var(--border); }
     .hero-stats > div:nth-child(1),
     .hero-stats > div:nth-child(2) { border-right:1px solid var(--border)!important; }
     .hero-stats > div:nth-child(3),
     .hero-stats > div:nth-child(4) { border-bottom:none; }
-    .hero-badge { transform:scale(0.9); }
-    .hero-ctas { flex-direction:column; gap:12px!important; }
-    .hero-cta-primary, .hero-cta-ghost { width:100%; justify-content:center; }
-    .hero-trust { flex-direction:column; align-items:flex-start!important; gap:10px!important; }
+    .hero-badge { transform:scale(0.85); }
+    .hero-ctas { flex-direction:column; gap:10px!important; }
+    .hero-cta-primary, .hero-cta-ghost { width:100%; justify-content:center; padding:13px 20px!important; font-size:14px!important; }
+    .hero-trust { flex-direction:column; align-items:flex-start!important; gap:8px!important; }
     .hero-trust > div { margin:0!important; }
     .hero-trust .sep { display:none; }
     .editor-sidebar { display:none; }
     .editor-canvas { padding:12px; min-height:280px; }
-    .document-page { padding:16px 14px; }
+    .document-page { max-width:100%; padding:14px 12px; font-size:12px; }
+    .editor-toolbar { padding:8px 10px; gap:6px; overflow-x:auto; }
+    .editor-toolbar-btn { width:26px; height:26px; }
+  }
+  
+  @media (max-width: 599px) {
+    .hero-section { padding:40px 16px 0; }
+    .hero-grid { gap:24px; padding-bottom:32px; }
+    .hero-h1 { font-size:clamp(28px,6vw,44px); line-height:1.1; }
+    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -16px; padding:16px; gap:0; }
+    .hero-stats > div { padding:14px 10px; }
+    .hero-stats > div span:first-child { font-size:clamp(18px,4vw,28px); }
+    .hero-badge { transform:scale(0.8); margin-bottom:16px; }
+    .hero-trust { gap:6px; }
+    .editor-canvas { min-height:240px; padding:10px; }
   }
   
   @media (max-width: 479px) {
-    .hero-editor-wrap { display:block; }
-    .hero-grid { grid-template-columns:1fr; gap:28px; padding-bottom:36px; }
-    .hero-section { padding:36px 18px 0; }
-    .hero-h1 { font-size:clamp(28px,7vw,40px); line-height:1.05; }
-    .hero-stats { grid-template-columns:1fr 1fr; margin:0 -18px; padding:18px; gap:0; }
-    .hero-stats > div { padding:16px 12px; }
-    .hero-stats > div span:first-child { font-size:clamp(22px,4vw,30px); }
-    .editor-toolbar { padding:8px 12px; gap:4px; overflow-x:auto; }
-    .editor-toolbar-btn { width:24px; height:24px; flex-shrink:0; }
+    .hero-section { padding:32px 14px 0; }
+    .hero-grid { gap:20px; padding-bottom:28px; }
+    .hero-h1 { font-size:clamp(24px,5.5vw,36px); line-height:1.05; margin-bottom:16px; }
+    .hero-stats { margin:0 -14px; padding:14px; }
+    .hero-stats > div { padding:12px 8px; }
+    .hero-stats > div span:first-child { font-size:clamp(16px,3.5vw,24px); }
+    .hero-stats > div span:last-child { font-size:11px; }
+    .editor-toolbar { padding:6px 8px; gap:4px; }
+    .editor-toolbar-btn { width:22px; height:22px; flex-shrink:0; }
+    .editor-canvas { min-height:220px; }
+    .document-page { padding:12px 10px; }
     .hero-badge { display:none; }
+    .hero-cta-primary, .hero-cta-ghost { padding:12px 18px!important; font-size:13px!important; }
   }
 `
 

@@ -263,43 +263,99 @@ const CSS = `
   [data-sr].sr-in { opacity:1 !important; transform:none !important; }
 
   @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-33.333%)} }
+  @keyframes glow-pulse { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
 
   .d-card {
-    border-radius: 14px; overflow: hidden;
+    border-radius: 18px; overflow: hidden;
     border: 1.5px solid var(--border);
-    box-shadow: 0 4px 20px rgba(0,0,0,.08);
-    transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s ease, border-color .2s;
+    box-shadow: 0 6px 24px rgba(0,0,0,.08);
+    transition: transform .35s cubic-bezier(.23,1,.32,1), box-shadow .35s ease, border-color .25s;
     cursor: pointer; position: relative;
   }
-  .d-card:hover { transform: translateY(-10px) scale(1.03) !important; }
+  .d-card:hover { 
+    transform: translateY(-12px) scale(1.03) !important; 
+    box-shadow: 0 24px 56px rgba(0,0,0,.15);
+  }
 
   .tpl-card {
-    border-radius: 16px; border: 1px solid var(--border);
-    padding: 22px 18px; cursor: pointer;
-    background: var(--surface);
-    transition: transform .25s cubic-bezier(.23,1,.32,1), box-shadow .25s, border-color .2s;
+    border-radius: 20px; border: 1px solid var(--border);
+    padding: 26px 22px; cursor: pointer;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s, border-color .25s;
   }
   .tpl-card:hover {
     border-color: var(--accent) !important;
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(0,0,0,.1);
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,.12);
   }
 
   .cta-btn {
-    transition: transform .25s cubic-bezier(.23,1,.32,1), box-shadow .25s;
+    transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s;
+    position: relative;
+    overflow: hidden;
   }
+  .cta-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform .5s;
+  }
+  .cta-btn:hover::before { transform: translateX(100%); }
   .cta-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 16px 48px rgba(27,79,216,.4) !important;
+    box-shadow: 0 20px 50px var(--electricGlow) !important;
   }
 
   .ghost-btn {
-    transition: border-color .2s, color .2s, background .2s;
+    transition: all .25s cubic-bezier(.23,1,.32,1);
   }
   .ghost-btn:hover {
     border-color: var(--accent) !important;
     color: var(--accent) !important;
     background: var(--accentS) !important;
+    transform: translateY(-2px);
+  }
+
+  /* Responsive grids */
+  @media (max-width: 1200px) {
+    .design-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 16px !important; }
+    .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
+    .design-section, .tpl-section { padding: 100px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 40px !important; }
+    .design-header, .tpl-header { margin-bottom: 48px !important; }
+  }
+  @media (max-width: 1023px) {
+    .design-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; }
+    .marquee-strip { padding: 12px 0 !important; }
+    .marquee-strip span { font-size: 11px !important; margin-right: 24px !important; }
+  }
+  @media (max-width: 767px) {
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+    .design-section, .tpl-section { padding: 72px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 24px !important; }
+    .design-header-wrap { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
+    .design-header-wrap button { width: 100%; justify-content: center; }
+    .tpl-card { padding: 20px 18px !important; }
+    .tpl-card > div:first-child { width: 42px !important; height: 42px !important; border-radius: 12px !important; }
+    .tpl-card > div:nth-child(2) { font-size: 13px !important; }
+  }
+  @media (max-width: 479px) {
+    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+    .tpl-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+    .design-section, .tpl-section { padding: 56px 0 !important; }
+    .design-inner, .tpl-inner { padding: 0 16px !important; }
+    .design-section h2, .tpl-section h2 { font-size: clamp(22px, 5vw, 32px) !important; }
+    .tpl-card { padding: 16px 14px !important; gap: 10px !important; }
+    .tpl-card > div:first-child { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
+    .tpl-card > div:nth-child(2) { font-size: 12px !important; }
+    .tpl-card > div:nth-child(3) span { font-size: 8px !important; padding: 3px 8px !important; }
+    .marquee-strip span { font-size: 10px !important; margin-right: 20px !important; }
   }
 `
 
@@ -322,36 +378,37 @@ export default function LandingPage() {
 
           {/* ── Marquee strip ── */}
           <SR style={{ width: '100%', overflow: 'hidden' }}>
-            <div style={{ background: 'var(--accent)', padding: '13px 0', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'marquee 24s linear infinite', alignItems: 'center' }}>
+            <div className="marquee-strip" style={{ background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', padding: '15px 0', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(255,255,255,0.05) 0%,transparent 20%,transparent 80%,rgba(255,255,255,0.05) 100%)', pointerEvents: 'none' }} />
+              <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'marquee 22s linear infinite', alignItems: 'center' }}>
                 {Array.from({ length: 4 }).flatMap(() =>
-                  ['Business Plan','·','Rapport d\'Audit','·','Appel d\'Offres','·','Contrat OHADA','·','Note de Direction','·','Devis Pro','·','Export PDF','·','Export Word .docx','·','IA Rédactionnelle','·']
+                  ['Business Plan','·','Rapport d\'Audit','·','Appel d\'Offres','·','Contrat OHADA','·','Note de Direction','·','Devis Pro','·','Export PDF','·','Export Word .docx','·','IA Redactionnelle','·']
                 ).map((t, i) => (
-                  <span key={i} style={{ fontSize: 11, fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.3)':'rgba(255,255,255,.82)', letterSpacing: '.04em', marginRight: 28 }}>{t}</span>
+                  <span key={i} style={{ fontSize: 12, fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.35)':'rgba(255,255,255,.9)', letterSpacing: '.05em', marginRight: 32, textShadow: t!=='·' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none' }}>{t}</span>
                 ))}
               </div>
             </div>
           </SR>
 
           {/* ── Design showcase ── */}
-          <section style={{ width:'100%', padding:'100px 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
-            <div data-p="0.12" style={{ position:'absolute', top:-100, right:-100, width:450, height:450, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(27,79,216,.06),transparent 70%)', pointerEvents:'none' }}/>
-            <div data-p="0.07" style={{ position:'absolute', bottom:-60, left:-60, width:320, height:320, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(124,58,237,.05),transparent 70%)', pointerEvents:'none' }}/>
+          <section className="design-section" style={{ width:'100%', padding:'120px 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
+            <div data-p="0.1" style={{ position:'absolute', top:-120, right:-80, width:500, height:500, borderRadius:'50%', background:'radial-gradient(ellipse,var(--electricGlow),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite' }}/>
+            <div data-p="0.06" style={{ position:'absolute', bottom:-80, left:-60, width:400, height:400, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(236,72,153,0.12),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite 3s' }}/>
 
-            <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 48px', position:'relative' }}>
-              <div style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:56, flexWrap:'wrap', gap:16 }}>
+            <div className="design-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
+              <div className="design-header-wrap" style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:64, flexWrap:'wrap', gap:20 }}>
                 <div>
-                  <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:10, fontWeight:800, letterSpacing:'.18em', textTransform:'uppercase', marginBottom:14 }}><Sparkles size={10}/> 9 designs A4</div></SR>
-                  <SR d={70}><h2 style={{ fontSize:'clamp(26px,3vw,44px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.95, margin:0 }}>Votre document,{' '}<span style={{ fontFamily:'var(--font-playfair,Georgia,serif)', fontStyle:'italic', fontWeight:400, color:'var(--text3)' }}>votre signature.</span></h2></SR>
+                  <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:18 }}><Sparkles size={12}/> 9 designs A4</div></SR>
+                  <SR d={70}><h2 style={{ fontSize:'clamp(28px,3.5vw,52px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, margin:0 }}>Votre document,{' '}<span style={{ fontFamily:'var(--font-playfair,Georgia,serif)', fontStyle:'italic', fontWeight:400, color:'var(--text3)' }}>votre signature.</span></h2></SR>
                 </div>
                 <SR d={140} from="left">
-                  <button className="ghost-btn" onClick={()=>router.push('/designs')} style={{ display:'flex', alignItems:'center', gap:6, padding:'11px 22px', borderRadius:12, background:'transparent', color:'var(--accent)', border:'1.5px solid var(--accent)', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                    Voir tous les designs <ArrowRight size={13}/>
+                  <button className="ghost-btn" onClick={()=>router.push('/designs')} style={{ display:'flex', alignItems:'center', gap:8, padding:'13px 26px', borderRadius:14, background:'transparent', color:'var(--accent)', border:'1.5px solid var(--accent)', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                    Voir tous les designs <ArrowRight size={14}/>
                   </button>
                 </SR>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:16, alignItems:'end' }}>
+              <div className="design-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:18, alignItems:'end' }}>
                 {DESIGNS.map(({ a, name, C }, i) => (
                   <SR key={i} d={i*75} from="up">
                     <div onClick={()=>router.push('/designs')} style={{ cursor:'pointer', display:'flex', flexDirection:'column', gap:10, marginTop:[0,22,8,30,4,18][i] }}>
@@ -372,26 +429,26 @@ export default function LandingPage() {
           </section>
 
           {/* ── Templates ── */}
-          <section id="templates" style={{ width:'100%', padding:'100px 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
-            <div data-p="0.08" style={{ position:'absolute', top:'25%', left:'50%', transform:'translateX(-50%)', width:600, height:400, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(27,79,216,.04),transparent 60%)', pointerEvents:'none' }}/>
+          <section id="templates" className="tpl-section" style={{ width:'100%', padding:'120px 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
+            <div data-p="0.06" style={{ position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)', width:700, height:500, borderRadius:'50%', background:'radial-gradient(ellipse,var(--electricGlow),transparent 65%)', pointerEvents:'none', opacity:0.3 }}/>
 
-            <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 48px', position:'relative' }}>
-              <div style={{ textAlign:'center', marginBottom:56 }}>
-                <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:10, fontWeight:800, letterSpacing:'.18em', textTransform:'uppercase', marginBottom:16 }}>Smart Templates</div></SR>
-                <SR d={70}><h2 style={{ fontSize:'clamp(28px,3vw,48px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.95, marginBottom:14 }}>6 modèles prêts à l'emploi</h2></SR>
-                <SR d={140}><p style={{ fontSize:14, color:'var(--text3)' }}>Chacun enrichi avec tableaux, clauses, KPIs et zones de signature.</p></SR>
+            <div className="tpl-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
+              <div style={{ textAlign:'center', marginBottom:64 }}>
+                <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:20 }}><Sparkles size={12}/> Smart Templates</div></SR>
+                <SR d={70}><h2 style={{ fontSize:'clamp(30px,3.5vw,54px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, marginBottom:16 }}>6 modeles prets a l&apos;emploi</h2></SR>
+                <SR d={140}><p style={{ fontSize:15, color:'var(--text3)' }}>Chacun enrichi avec tableaux, clauses, KPIs et zones de signature.</p></SR>
               </div>
 
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:14 }}>
+              <div className="tpl-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:18 }}>
                 {TEMPLATES.map((t, i) => {
                   const Icon = Ico[t.id as keyof typeof Ico] || Ico.ao
                   return (
-                    <SR key={t.id} d={i*55} from="up">
-                      <div className="tpl-card" onClick={()=>router.push('/login')} style={{ display:'flex', flexDirection:'column', gap:12, height:'100%' }}>
-                        <div style={{ color:'var(--accent)' }}><Icon/></div>
-                        <div style={{ fontSize:13, fontWeight:800, color:'var(--text)', letterSpacing:'-.01em' }}>{t.name}</div>
-                        <div style={{ display:'flex', gap:4, flexWrap:'wrap' }}>
-                          {t.tags.slice(0,2).map(tag=><span key={tag} style={{ fontSize:8, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', padding:'2px 7px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)' }}>{tag}</span>)}
+                    <SR key={t.id} d={i*60} from="up">
+                      <div className="tpl-card" onClick={()=>router.push('/login')} style={{ display:'flex', flexDirection:'column', gap:14, height:'100%' }}>
+                        <div style={{ width:48, height:48, borderRadius:14, background:'var(--accentS)', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--accent)' }}><Icon/></div>
+                        <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', letterSpacing:'-.01em' }}>{t.name}</div>
+                        <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
+                          {t.tags.slice(0,2).map(tag=><span key={tag} style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em', padding:'4px 10px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)' }}>{tag}</span>)}
                         </div>
                       </div>
                     </SR>

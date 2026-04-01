@@ -11,19 +11,32 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   
-  /* Colors */
-  --bg: #FFFFFF; --bg2: #F5F7FA; --bg3: #EEF1F6; --surface: #FFFFFF;
-  --border: #DDE1EA; --border2: #C8CDD8; --text: #0D1117; --text2: #374151;
-  --text3: #6B7280; --text4: #9CA3AF; --accent: #1B4FD8; --accentH: #1540B0;
-  --accentS: rgba(27,79,216,0.08); --accentS2: rgba(27,79,216,0.15);
-  --success: #059669; --danger: #DC2626; --warn: #D97706;
+  /* Slate & Electric Color Palette - Light Mode */
+  --bg: #FFFFFF; --bg2: #F8FAFC; --bg3: #F1F5F9; --surface: #FFFFFF;
+  --border: #E2E8F0; --border2: #CBD5E1; --text: #0F172A; --text2: #334155;
+  --text3: #64748B; --text4: #94A3B8; --accent: #6B47ED; --accentH: #5B37DD;
+  --accentS: rgba(107,71,237,0.08); --accentS2: rgba(107,71,237,0.15);
+  --electric: #7C3AED; --electricGlow: rgba(124,58,237,0.4);
+  --success: #10B981; --danger: #EF4444; --warn: #F59E0B;
+  
+  /* Glass effect */
+  --glass-bg: rgba(255,255,255,0.7);
+  --glass-border: rgba(255,255,255,0.2);
+  --glass-blur: 12px;
 }
 .dark {
-  --bg: #0D0F16; --bg2: #131620; --bg3: #1A1D2A; --surface: #181B27;
-  --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
-  --text: #EDF0F7; --text2: #B8BFCC; --text3: #6B7485; --text4: #3D4251;
-  --accent: #3B7FFF; --accentH: #5593FF;
-  --accentS: rgba(59,127,255,0.1); --accentS2: rgba(59,127,255,0.18);
+  /* Slate & Electric Color Palette - Dark Mode */
+  --bg: #0F172A; --bg2: #1E293B; --bg3: #334155; --surface: #1E293B;
+  --border: rgba(148,163,184,0.12); --border2: rgba(148,163,184,0.2);
+  --text: #F8FAFC; --text2: #E2E8F0; --text3: #94A3B8; --text4: #64748B;
+  --accent: #818CF8; --accentH: #A5B4FC;
+  --accentS: rgba(129,140,248,0.12); --accentS2: rgba(129,140,248,0.2);
+  --electric: #A78BFA; --electricGlow: rgba(167,139,250,0.35);
+  
+  /* Glass effect dark */
+  --glass-bg: rgba(30,41,59,0.75);
+  --glass-border: rgba(148,163,184,0.1);
+  --glass-blur: 16px;
 }
 
 * { box-sizing: border-box; }
@@ -84,6 +97,54 @@ body.pdf-exporting .block-drag-handle { display: none !important; }
 .delay-500 { animation-delay: .5s; }
 .animate-pulse-dot { animation: pulse 2s infinite; }
 .animate-spin-fast { animation: spin .6s linear infinite; }
+
+/* Glassmorphism utilities */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+}
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+}
+.dark .glass-card {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+/* Electric glow effects */
+.glow-accent {
+  box-shadow: 0 0 20px var(--electricGlow), 0 0 40px rgba(107,71,237,0.15);
+}
+.glow-accent-sm {
+  box-shadow: 0 0 12px var(--electricGlow);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--electric) 50%, #EC4899 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium card hover */
+.card-hover {
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.2s;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+  border-color: var(--accent);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
 
 /* Remplace l'intégralité du bloc @media print existant */
 @media print {

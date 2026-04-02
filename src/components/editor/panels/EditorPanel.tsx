@@ -98,12 +98,7 @@ function DocumentPropertiesPanel() {
               </div>
             ))}
           </div>
-          <div>
-            <label style={{ display: 'block', fontSize: 9, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 4 }}>Confidentialité</label>
-            <select style={{ ...inp, height: 28, cursor: 'pointer' }} value={confidentiality} onChange={e => setConfidentiality(e.target.value)} onFocus={fo} onBlur={bl as any}>
-              {CONF_LEVELS.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
+
         </div>
       )}
     </div>

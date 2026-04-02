@@ -8,6 +8,7 @@ import { SafeBlock } from '@/components/ErrorBoundary'
 import { sanitizeContent } from '@/lib/sanitize'
 import { ImageBlock } from './ImageBlock'
 import { ChartBlock } from './ChartBlock'
+import { TextContextMenu } from './TextContextMenu'
 
 interface Props {
   block: DocBlock
@@ -18,6 +19,7 @@ interface Props {
   onUpdateContent?: (blockId: string, content: string) => void
   onUpdateChart?: (blockId: string, chartData: ChartBlockData) => void
   onUpdateImage?: (blockId: string, imageData: ImageBlockData) => void
+  onUpdateStyle?: (blockId: string, styles: any) => void
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>
   /** Whether to force Times New Roman on all text (set via docStyle.fontBody) */
   fontBody?: string
@@ -54,10 +56,11 @@ function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: str
 
 // ─── Text with AI Assist ──────────────────────────────────────────────────────
 
-function TextBlock({ block, onUpdateContent, fontFamily }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent']; fontFamily?: string }) {
+function TextBlock({ block, onUpdateContent, onUpdateStyle, fontFamily }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent']; onUpdateStyle?: Props['onUpdateStyle']; fontFamily?: string }) {
   const placeholder = 'Commencez à écrire votre paragraphe ici. Double-cliquez pour éditer ce texte et remplacez-le par votre contenu.'
   const ref = useEditableRef(block.content || '', block.id)
   const { planId, requestUpgrade } = usePlan()
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   
   const [isLoading, setIsLoading] = useState(false)
   const [suggestion, setSuggestion] = useState<string | null>(null)
@@ -251,14 +254,31 @@ function TextBlock({ block, onUpdateContent, fontFamily }: { block: DocBlock; on
       <p ref={ref} contentEditable suppressContentEditableWarning
         data-placeholder={placeholder}
         onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          setContextMenu({ x: e.clientX, y: e.clientY })
+        }}
         style={{
           fontFamily: fontFamily || 'inherit',
           fontSize: 12, lineHeight: 1.85, color: '#444', margin: 0,
-          textAlign: 'justify', outline: 'none', whiteSpace: 'pre-wrap',
+          outline: 'none', whiteSpace: 'pre-wrap',
           cursor: 'text', minHeight: 20,
           opacity: suggestion ? 0.5 : 1,
           transition: 'opacity .2s',
+          ...applyBlockStyles(block),
         }} />
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <TextContextMenu
+          block={block}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onUpdateStyle={(styles) => onUpdateStyle?.(block.id, styles)}
+          onUpdateContent={(content) => onUpdateContent?.(block.id, content)}
+        />
+      )}
       
       <style>{`
         @keyframes spin {
@@ -674,7 +694,7 @@ export function BlockRenderer({
     </div>
   )
 
-  // ── Headings ────────────────────────────────────────────────────────────────
+  // ─��� Headings ────────────────────────────────────────────────────────────────
   if (type === 'h1') return wrap(<H1Block block={block} onUpdateContent={onUpdateContent} />, 'H1')
   if (type === 'h2') return wrap(<H2Block block={block} onUpdateContent={onUpdateContent} />, 'H2')
   if (type === 'h3') return wrap(<H3Block block={block} onUpdateContent={onUpdateContent} />, 'H3')

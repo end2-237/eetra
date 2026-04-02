@@ -705,7 +705,7 @@ function SnapGuides({guides,zoom}:{guides:{x?:number;y?:number}[];zoom:number}) 
   )}</>
 }
 
-// ──────────────────────────────────────────────────────────────────────────��──
+// ──────────────────────────────────────────────────────────────────────────���──
 // UI HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1461,12 +1461,11 @@ export function EditableCoverPage({zoom}:Props){
 
       {/* CANVAS + PANEL */}
       <div style={{display:'flex',alignItems:'flex-start'}}>
-        <div style={{width:dW,height:dH,position:'relative',flexShrink:0,overflow:'hidden'}}>
+        <div style={{width:PAGE_W,height:PAGE_H,position:'relative',flexShrink:0,overflow:'hidden',transform:`scale(${zoom})`,transformOrigin:'top left'}}>
         <div id="eetra-page-cover" ref={canvasRef}
           style={{
             width:PAGE_W,height:PAGE_H,
             position:'absolute',top:0,left:0,
-            transform:`scale(${zoom})`,transformOrigin:'top left',
             overflow:'hidden',cursor:'default',
           }}
           onClick={e=>{if(!(e.target as HTMLElement).closest('[data-block]')){setSelIds(new Set());setEditId(null);setInnerEditId(null)}}}>

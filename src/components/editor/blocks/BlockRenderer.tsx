@@ -685,7 +685,7 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
   )
 }
 
-// ─── Main BlockRenderer ───────────────────────────────────────────────────────
+// ─── Main BlockRenderer ──────────────────────────────���────────────────────────
 
 export function BlockRenderer({
   block, color: co, entityName: en, pageId,
@@ -764,13 +764,69 @@ export function BlockRenderer({
     </div>
   )
 
-  if (type === 'divider') return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ flex: 1, height: 1, background: '#e8e8e8' }} />
-      <div style={{ width: 5, height: 5, borderRadius: '50%', background: co, opacity: .4 }} />
-      <div style={{ flex: 1, height: 1, background: '#e8e8e8' }} />
-    </div>
-  )
+  if (type === 'divider') {
+    // Check if this divider contains shape data
+    let shapeData: any = null
+    try {
+      if (block.content) shapeData = JSON.parse(block.content)
+    } catch {}
+
+    // If it's a shape, render it
+    if (shapeData?.shapeType) {
+      const size = shapeData.size || 'md'
+      const sizeMap = { sm: 24, md: 40, lg: 64 }
+      const dims = sizeMap[size] || 40
+      const color = shapeData.color || co
+
+      const shapes: { [key: string]: JSX.Element } = {
+        circle: (
+          <svg viewBox="0 0 100 100" style={{ width: dims, height: dims }}>
+            <circle cx="50" cy="50" r="48" fill={color} />
+          </svg>
+        ),
+        rectangle: (
+          <svg viewBox="0 0 100 100" style={{ width: dims, height: dims }}>
+            <rect x="4" y="4" width="92" height="92" fill={color} />
+          </svg>
+        ),
+        line: (
+          <svg viewBox="0 0 100 100" style={{ width: dims, height: dims }}>
+            <line x1="5" y1="50" x2="95" y2="50" stroke={color} strokeWidth="4" />
+          </svg>
+        ),
+        triangle: (
+          <svg viewBox="0 0 100 100" style={{ width: dims, height: dims }}>
+            <polygon points="50,5 95,95 5,95" fill={color} />
+          </svg>
+        ),
+        heart: (
+          <svg viewBox="0 0 100 100" style={{ width: dims, height: dims }}>
+            <path d="M50 90 C20 70, 5 60, 5 45 C5 30, 15 20, 25 20 C35 20, 45 28, 50 38 C55 28, 65 20, 75 20 C85 20, 95 30, 95 45 C95 60, 80 70, 50 90 Z" fill={color} />
+          </svg>
+        ),
+        star: (
+          <svg viewBox="0 0 100 100" style={{ width: dims, height: dims }}>
+            <polygon points="50,10 61,39 90,39 68,57 79,86 50,68 21,86 32,57 10,39 39,39" fill={color} />
+          </svg>
+        ),
+      }
+
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 0' }} className="pdf-hidden">
+          {shapes[shapeData.shapeType] || <div style={{ width: dims, height: dims, background: color, borderRadius: 4 }} />}
+        </div>
+      )
+    }
+
+    // Regular divider (when no shape data)
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, height: 1, background: '#e8e8e8' }} />
+        <div style={{ width: 5, height: 5, borderRadius: '50%', background: co, opacity: .4 }} />
+        <div style={{ flex: 1, height: 1, background: '#e8e8e8' }} />
+      </div>
+    )
+  }
 
   return null
 }

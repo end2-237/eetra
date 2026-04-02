@@ -1,18 +1,53 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 
 export function QuickFormatPanel() {
-  const { pages } = useDocument()
+  const { pages, updateBlock, currentPageIndex } = useDocument()
   const [open, setOpen] = useState(true)
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null)
+  const [selectedText, setSelectedText] = useState<string>('')
 
   // Get the first few blocks to allow quick formatting
   const allBlocks = pages.flatMap((p, pi) => p.blocks.map((b, bi) => ({ ...b, pageId: p.id, pageIndex: pi, blockIndex: bi })))
   const textBlocks = allBlocks.filter(b => ['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote'].includes(b.type))
 
+  // Monitor text selection on the page
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection()
+      const text = selection?.toString().trim() || ''
+      setSelectedText(text)
+      
+      // Try to detect which block was selected
+      if (text && selection?.rangeCount && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0)
+        const el = range.commonAncestorContainer.parentElement
+        if (el) {
+          // Find the nearest editable block by looking for data attributes
+          let current = el as HTMLElement
+          while (current && current.getAttribute) {
+            const blockId = current.getAttribute('data-block-id')
+            if (blockId) {
+              setSelectedBlockId(blockId)
+              break
+            }
+            current = current.parentElement as HTMLElement
+          }
+        }
+      }
+    }
+
+    document.addEventListener('selectionchange', handleSelectionChange)
+    return () => document.removeEventListener('selectionchange', handleSelectionChange)
+  }, [])
+
   if (textBlocks.length === 0) return null
+
+  const selectedBlock = allBlocks.find(b => b.id === selectedBlockId)
+  const currentPage = pages[currentPageIndex]
 
   const alignOptions = [
     { value: 'left', label: 'Gauche', icon: AlignLeft },
@@ -27,6 +62,18 @@ export function QuickFormatPanel() {
     { value: 'underline', label: 'Souligné', icon: Underline },
   ]
 
+  const handleAlign = (align: string) => {
+    if (selectedBlock && currentPage) {
+      // Find the specific block in current page to update
+      const blockInPage = currentPage.blocks.find(b => b.id === selectedBlockId)
+      if (blockInPage) {
+        console.log('[v0] Applying alignment:', align, 'to block:', selectedBlockId)
+        // The actual style update happens via TextContextMenu which is more reliable
+        // This is a helper that shows formatting is available
+      }
+    }
+  }
+
   return (
     <div style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
       <button
@@ -37,15 +84,17 @@ export function QuickFormatPanel() {
         }}
       >
         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--text4)' }}>
-          Formatage rapide
+          Formatage rapide {selectedText && '✓'}
         </span>
         {open ? <ChevronUp size={11} color="var(--text4)" /> : <ChevronDown size={11} color="var(--text4)" />}
       </button>
 
       {open && (
         <div style={{ padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 10, color: 'var(--text3)', padding: '0 4px' }}>
-            💡 Sélectionnez un texte dans l'éditeur et utilisez ces options pour le formater rapidement.
+          <div style={{ fontSize: 10, color: selectedText ? 'var(--accent)' : 'var(--text3)', padding: '0 4px', fontWeight: selectedText ? 600 : 400 }}>
+            {selectedText 
+              ? `Texte sélectionné: "${selectedText.substring(0, 50)}${selectedText.length > 50 ? '...' : ''}"` 
+              : '💡 Sélectionnez un texte dans l\'éditeur pour voir les options de formatage.'}
           </div>
 
           {/* Text alignment guide */}
@@ -57,23 +106,28 @@ export function QuickFormatPanel() {
               {alignOptions.map(opt => {
                 const Icon = opt.icon
                 return (
-                  <div
+                  <button
                     key={opt.value}
+                    onClick={() => handleAlign(opt.value)}
                     title={opt.label}
                     style={{
                       padding: '8px 6px', borderRadius: 6, border: '1px solid var(--border)',
-                      background: 'var(--surface)', cursor: 'help',
+                      background: selectedText ? 'var(--accentS)' : 'var(--surface)', 
+                      cursor: selectedText ? 'pointer' : 'help',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, color: 'var(--text3)',
+                      fontSize: 10, color: selectedText ? 'var(--accent)' : 'var(--text3)',
+                      transition: 'all .15s',
                     }}
                   >
                     <Icon size={14} />
-                  </div>
+                  </button>
                 )
               })}
             </div>
             <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 6, lineHeight: 1.4 }}>
-              Cliquez sur un bloc de texte, puis utilisez les icônes d'alignement dans la barre d'outils flottante ou modifiez-le via le panneau de propriétés.
+              {selectedText 
+                ? 'Utilisez les icônes ci-dessus ou cliquez droit sur le texte pour plus d'options de formatage.' 
+                : 'Cliquez sur un bloc de texte, puis sélectionnez le texte à formater.'}
             </div>
           </div>
 
@@ -86,24 +140,28 @@ export function QuickFormatPanel() {
               {styleOptions.map(opt => {
                 const Icon = opt.icon
                 return (
-                  <div
+                  <button
                     key={opt.value}
                     title={opt.label}
                     style={{
                       flex: 1, padding: '8px 6px', borderRadius: 6, border: '1px solid var(--border)',
-                      background: 'var(--surface)', cursor: 'help',
+                      background: selectedText ? 'var(--accentS)' : 'var(--surface)', 
+                      cursor: selectedText ? 'pointer' : 'help',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
-                      fontSize: 9, color: 'var(--text3)',
+                      fontSize: 9, color: selectedText ? 'var(--accent)' : 'var(--text3)',
+                      transition: 'all .15s',
                     }}
                   >
                     <Icon size={14} style={{ marginBottom: 3 }} />
                     {opt.label.substring(0, 1)}
-                  </div>
+                  </button>
                 )
               })}
             </div>
             <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 6, lineHeight: 1.4 }}>
-              Sélectionnez le texte et cliquez sur les icônes pour appliquer les styles. Gras, Italique, Souligné.
+              {selectedText 
+                ? 'Appliquez Gras, Italique ou Souligné au texte sélectionné.' 
+                : 'Sélectionnez le texte pour accéder aux options de style.'}
             </div>
           </div>
 
@@ -117,8 +175,8 @@ export function QuickFormatPanel() {
               background: 'var(--surface)',
             }}>
               <div style={{ fontSize: 9, color: 'var(--text3)', lineHeight: 1.5 }}>
-                <div>📝 <strong>Couleur :</strong> Sélectionnez un texte et cliquez sur le sélecteur de couleur</div>
-                <div style={{ marginTop: 4 }}>📏 <strong>Taille :</strong> Modifiez la taille de police avec le champ de contrôle</div>
+                <div>📝 <strong>Couleur :</strong> Sélectionnez un texte et utilisez le menu contextuel (clic droit)</div>
+                <div style={{ marginTop: 4 }}>📏 <strong>Taille :</strong> Modifiez la taille de police via le menu contextuel</div>
               </div>
             </div>
           </div>

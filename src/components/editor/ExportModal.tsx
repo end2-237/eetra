@@ -65,12 +65,14 @@ export function ExportModal({ onClose }: Props) {
       setZoom(1)
 
       // Wait for React to re-render with zoom=1
-      await new Promise(r => setTimeout(r, 300))
+      // Extended wait for mobile devices which may need more time to re-render
+      await new Promise(r => setTimeout(r, 500))
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
 
       document.body.classList.add('pdf-exporting')
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
-      await new Promise(r => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 200))
 
       const pdf = new jsPDF({
         orientation: 'portrait',

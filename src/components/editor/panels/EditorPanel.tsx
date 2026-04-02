@@ -16,6 +16,8 @@ import { CommentsPanel }         from './CommentsPanel'
 import { StylePanel }            from './StylePanel'
 import { LayoutPanel }           from './LayoutPanel'
 import { OrientationZonePanel }  from './OrientationZonePanel'
+import { BlockStylePanel }       from './BlockStylePanel'
+import { QuickFormatPanel }      from './QuickFormatPanel'
 
 interface BlockDef {
   type: BlockType; label: string; icon: React.ReactNode; desc: string; group: string
@@ -42,7 +44,6 @@ const BLOCKS: BlockDef[] = [
 ]
 
 const GROUPS = ['Titres', 'Listes', 'Structure', 'Données', 'Visuel', 'Juridique']
-const CONF_LEVELS = ['CONFIDENTIEL', 'USAGE INTERNE', 'PUBLIC', 'STRICTEMENT CONFIDENTIEL']
 
 function DocumentPropertiesPanel() {
   const {
@@ -176,6 +177,7 @@ export function EditorPanel() {
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <DocumentPropertiesPanel />
+      <QuickFormatPanel />
       <div style={{ flexShrink: 0, padding: '10px 14px 6px' }}>
         <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--text4)' }}>
           Bibliothèque de Blocs

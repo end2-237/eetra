@@ -40,6 +40,20 @@ function readAndSanitize(el: HTMLElement): string {
   return sanitizeContent(el.textContent || '')
 }
 
+// Helper function to apply block styles
+function applyBlockStyles(block: DocBlock): React.CSSProperties {
+  const styles = block.styles || {}
+  return {
+    textAlign: (styles.align as any) || 'left',
+    color: styles.color || 'inherit',
+    fontSize: styles.fontSize ? `${styles.fontSize}px` : 'inherit',
+    fontFamily: styles.fontFamily || 'inherit',
+    fontWeight: styles.textStyles?.bold ? 700 : 'inherit',
+    fontStyle: styles.textStyles?.italic ? 'italic' : 'inherit',
+    textDecoration: styles.textStyles?.underline ? 'underline' : 'inherit',
+  }
+}
+
 // ─── Section ──────────────────────────────────────────────────────────────────
 
 function SectionBlock({ block, co, onUpdateContent }: { block: DocBlock; co: string; onUpdateContent?: Props['onUpdateContent'] }) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { useHistory } from '@/contexts/HistoryContext'
@@ -13,6 +13,7 @@ export function Canvas() {
   const { profile } = useProfile()
   const { addEntry } = useHistory()
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const [selectedBlock, setSelectedBlock] = useState<{ pageId: string; blockId: string } | null>(null)
 
   const handlePageOverflow = useCallback((pageId: string, blockId: string) => {
     overflowBlock(pageId, blockId)

@@ -9,7 +9,7 @@ import { BlockRenderer } from '../blocks/BlockRenderer'
 import { PageHeader } from './PageHeader'
 import { PageFooter } from './PageFooter'
 import { WatermarkOverlay } from './WatermarkOverlay'
-import { Trash2, ArrowDown, ArrowUp, X } from 'lucide-react'
+import { Trash2, ArrowDown, ArrowUp, X, AlignLeft, AlignCenter, AlignRight, AlignJustify, Bold, Italic, Underline } from 'lucide-react'
 
 interface Props {
   page: DocPage
@@ -23,7 +23,7 @@ const PAD_V = 28
 export function ContentPage({ page, pageIndex, totalPages }: Props) {
   const {
     removeBlock, updateBlock, updateBlockTable, updateBlockChart, updateBlockImage,
-    setPageBlocks, removePage, overflowBlock,
+    updateBlockStyle, setPageBlocks, removePage, overflowBlock,
   } = useDocument()
   const { profile } = useProfile()
   const { layout } = usePageLayout()
@@ -198,22 +198,51 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                 >
                   {/* Block controls */}
                   <div className="pdf-hidden block-controls" style={{
-                    position: 'absolute', right: -36, top: 0,
+                    position: 'absolute', right: -200, top: 0,
                     display: 'flex', flexDirection: 'column', gap: 2,
                     opacity: 0, transition: 'opacity .15s',
+                    padding: 6, background: '#fff', border: '1px solid #e8e8e8', borderRadius: 6,
                   }}>
-                    <button onClick={() => moveBlockUp(block.id)} disabled={idx === 0} title="Monter"
-                      style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid #e8e8e8', background: '#fff', cursor: idx === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? '#e0e0e0' : '#888', padding: 0 }}>
-                      <ArrowUp size={10} />
-                    </button>
-                    <button onClick={() => moveBlockDown(block.id)} disabled={idx === page.blocks.length - 1} title="Descendre"
-                      style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid #e8e8e8', background: '#fff', cursor: idx === page.blocks.length - 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === page.blocks.length - 1 ? '#e0e0e0' : '#888', padding: 0 }}>
-                      <ArrowDown size={10} />
-                    </button>
-                    <button onClick={() => removeBlock(page.id, block.id)} title="Supprimer"
-                      style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid #FCA5A5', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', padding: 0 }}>
-                      <X size={10} />
-                    </button>
+                    {/* Text alignment (if text block) */}
+                    {['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote'].includes(block.type) && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 2, marginBottom: 6 }}>
+                        {[
+                          { value: 'left', icon: AlignLeft },
+                          { value: 'center', icon: AlignCenter },
+                          { value: 'right', icon: AlignRight },
+                          { value: 'justify', icon: AlignJustify }
+                        ].map(({ value, icon: Icon }) => (
+                          <button
+                            key={value}
+                            onClick={() => updateBlockStyle(page.id, block.id, { align: value as any })}
+                            title={value}
+                            style={{
+                              width: 20, height: 20, borderRadius: 3, border: `1px solid #e0e0e0`,
+                              background: block.styles?.align === value ? '#e8f1ff' : '#fff',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                            }}
+                          >
+                            <Icon size={10} color={block.styles?.align === value ? '#1B4FD8' : '#999'} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Move & Delete */}
+                    <div style={{ display: 'flex', gap: 2 }}>
+                      <button onClick={() => moveBlockUp(block.id)} disabled={idx === 0} title="Monter"
+                        style={{ width: 20, height: 20, borderRadius: 3, border: '1px solid #e8e8e8', background: '#fff', cursor: idx === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? '#e0e0e0' : '#888', padding: 0, flex: 1 }}>
+                        <ArrowUp size={10} />
+                      </button>
+                      <button onClick={() => moveBlockDown(block.id)} disabled={idx === page.blocks.length - 1} title="Descendre"
+                        style={{ width: 20, height: 20, borderRadius: 3, border: '1px solid #e8e8e8', background: '#fff', cursor: idx === page.blocks.length - 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === page.blocks.length - 1 ? '#e0e0e0' : '#888', padding: 0, flex: 1 }}>
+                        <ArrowDown size={10} />
+                      </button>
+                      <button onClick={() => removeBlock(page.id, block.id)} title="Supprimer"
+                        style={{ width: 20, height: 20, borderRadius: 3, border: '1px solid #FCA5A5', background: '#FEF2F2', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', padding: 0, flex: 1 }}>
+                        <X size={10} />
+                      </button>
+                    </div>
                   </div>
 
                   <BlockRenderer

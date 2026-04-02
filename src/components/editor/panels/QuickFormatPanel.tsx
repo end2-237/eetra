@@ -62,7 +62,7 @@ export function QuickFormatPanel() {
     { value: 'underline', label: 'Souligné', icon: Underline },
   ]
 
-  const handleAlign = (align: string) => {
+  const handleAlign = (align: string): void => {
     if (selectedBlock && currentPage) {
       // Find the specific block in current page to update
       const blockInPage = currentPage.blocks.find(b => b.id === selectedBlockId)
@@ -94,7 +94,7 @@ export function QuickFormatPanel() {
           <div style={{ fontSize: 10, color: selectedText ? 'var(--accent)' : 'var(--text3)', padding: '0 4px', fontWeight: selectedText ? 600 : 400 }}>
             {selectedText 
               ? `Texte sélectionné: "${selectedText.substring(0, 50)}${selectedText.length > 50 ? '...' : ''}"` 
-              : '💡 Sélectionnez un texte dans l\'éditeur pour voir les options de formatage.'}
+              : "💡 Sélectionnez un texte dans l'éditeur pour voir les options de formatage."}
           </div>
 
           {/* Text alignment guide */}
@@ -126,8 +126,8 @@ export function QuickFormatPanel() {
             </div>
             <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 6, lineHeight: 1.4 }}>
               {selectedText 
-                ? 'Utilisez les icônes ci-dessus ou cliquez droit sur le texte pour plus d'options de formatage.' 
-                : 'Cliquez sur un bloc de texte, puis sélectionnez le texte à formater.'}
+                ? "Utilisez les icônes ci-dessus ou cliquez droit sur le texte pour plus d'options de formatage." 
+                : "Cliquez sur un bloc de texte, puis sélectionnez le texte à formater."}
             </div>
           </div>
 
@@ -160,8 +160,8 @@ export function QuickFormatPanel() {
             </div>
             <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 6, lineHeight: 1.4 }}>
               {selectedText 
-                ? 'Appliquez Gras, Italique ou Souligné au texte sélectionné.' 
-                : 'Sélectionnez le texte pour accéder aux options de style.'}
+                ? "Appliquez Gras, Italique ou Souligné au texte sélectionné." 
+                : "Sélectionnez le texte pour accéder aux options de style."}
             </div>
           </div>
 

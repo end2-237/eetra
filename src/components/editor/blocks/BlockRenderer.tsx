@@ -765,7 +765,7 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
 
 export function BlockRenderer({
   block, color: co, entityName: en, pageId,
-  onUpdateTable, onUpdateContent, onUpdateChart, onUpdateImage,
+  onUpdateTable, onUpdateContent, onUpdateChart, onUpdateImage, onUpdateStyle,
   dragHandleProps, fontBody, fontTitle,
 }: Props) {
   const { type } = block

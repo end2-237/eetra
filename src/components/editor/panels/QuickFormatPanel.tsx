@@ -8,7 +8,6 @@ export function QuickFormatPanel() {
   const { pages } = useDocument()
   const [open, setOpen] = useState(true)
 
-  // Get the first few blocks to allow quick formatting
   const allBlocks = pages.flatMap((p, pi) => p.blocks.map((b, bi) => ({ ...b, pageId: p.id, pageIndex: pi, blockIndex: bi })))
   const textBlocks = allBlocks.filter(b => ['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote'].includes(b.type))
 
@@ -32,8 +31,14 @@ export function QuickFormatPanel() {
       <button
         onClick={() => setOpen(o => !o)}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 14px', border: 'none', background: 'transparent', cursor: 'pointer',
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 14px',
+          border: 'none',
+          background: 'transparent',
+          cursor: 'pointer',
         }}
       >
         <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--text4)' }}>
@@ -45,10 +50,9 @@ export function QuickFormatPanel() {
       {open && (
         <div style={{ padding: '10px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ fontSize: 10, color: 'var(--text3)', padding: '0 4px' }}>
-            💡 Sélectionnez un texte dans l'éditeur et utilisez ces options pour le formater rapidement.
+            💡 Sélectionnez un texte dans l&apos;éditeur et utilisez ces options pour le formater rapidement.
           </div>
 
-          {/* Text alignment guide */}
           <div>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 6 }}>
               Alignement du texte
@@ -61,10 +65,16 @@ export function QuickFormatPanel() {
                     key={opt.value}
                     title={opt.label}
                     style={{
-                      padding: '8px 6px', borderRadius: 6, border: '1px solid var(--border)',
-                      background: 'var(--surface)', cursor: 'help',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, color: 'var(--text3)',
+                      padding: '8px 6px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface)',
+                      cursor: 'help',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 10,
+                      color: 'var(--text3)',
                     }}
                   >
                     <Icon size={14} />
@@ -73,11 +83,10 @@ export function QuickFormatPanel() {
               })}
             </div>
             <div style={{ fontSize: 9, color: 'var(--text4)', marginTop: 6, lineHeight: 1.4 }}>
-              Cliquez sur un bloc de texte, puis utilisez les icônes d'alignement dans la barre d'outils flottante ou modifiez-le via le panneau de propriétés.
+              Cliquez sur un bloc de texte, puis utilisez les icônes d&apos;alignement dans la barre d&apos;outils flottante ou modifiez-le via le panneau de propriétés.
             </div>
           </div>
 
-          {/* Text styles guide */}
           <div>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 6 }}>
               Styles de texte
@@ -90,10 +99,18 @@ export function QuickFormatPanel() {
                     key={opt.value}
                     title={opt.label}
                     style={{
-                      flex: 1, padding: '8px 6px', borderRadius: 6, border: '1px solid var(--border)',
-                      background: 'var(--surface)', cursor: 'help',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
-                      fontSize: 9, color: 'var(--text3)',
+                      flex: 1,
+                      padding: '8px 6px',
+                      borderRadius: 6,
+                      border: '1px solid var(--border)',
+                      background: 'var(--surface)',
+                      cursor: 'help',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column',
+                      fontSize: 9,
+                      color: 'var(--text3)',
                     }}
                   >
                     <Icon size={14} style={{ marginBottom: 3 }} />
@@ -107,13 +124,14 @@ export function QuickFormatPanel() {
             </div>
           </div>
 
-          {/* Color & Size guide */}
           <div>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 6 }}>
-              Couleur & Taille de Police
+              Couleur &amp; Taille de Police
             </div>
             <div style={{
-              padding: '8px', borderRadius: 6, border: '1px solid var(--border)',
+              padding: '8px',
+              borderRadius: 6,
+              border: '1px solid var(--border)',
               background: 'var(--surface)',
             }}>
               <div style={{ fontSize: 9, color: 'var(--text3)', lineHeight: 1.5 }}>

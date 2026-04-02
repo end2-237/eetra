@@ -13,8 +13,8 @@ export function AnalyticsPanel() {
   const bars = [{ label: 'Mots', val: wordCount, max: 600 }, { label: 'Blocs', val: total, max: 12 }, { label: 'Pages', val: pages.length + 1, max: 8 }]
 
   return (
-    <div style={{ width: '100%', maxWidth: '280px', minWidth: '280px', borderRight: '1px solid var(--border)', overflowY: 'auto', background: 'var(--bg2)', borderColor: 'var(--border)' }} className="hide-scroll">
-      <div className="p-4">
+    <div style={{ width: '100%', maxWidth: '100%', minWidth: '100%', borderRight: '1px solid var(--border)', overflowY: 'auto', background: 'var(--bg2)', borderColor: 'var(--border)' }} className="hide-scroll">
+      <div className="p-4" style={{ maxWidth: '500px', margin: '0 auto' }}>
         <div className="flex items-center gap-2 mb-4">
           <BarChart2 size={13} color="var(--accent)" strokeWidth={2} />
           <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>Structure Analytics</span>

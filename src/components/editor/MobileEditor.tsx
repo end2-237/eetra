@@ -66,6 +66,20 @@ export function MobileEditor({ onExport }: Props) {
   }
 
   const showPanel = activeTab !== 'view'
+  
+  // Responsive scaling for mobile — show pages larger for better usability
+  // Calculate available width (minus padding)
+  const availableWidth = typeof window !== 'undefined' ? Math.max(320, window.innerWidth - 32) : 360
+  const responsiveScale = Math.min(0.95, availableWidth / PAGE_W)  // Much larger than 0.42 — now 0.60-0.85
+  
+  // Update page styles with responsive scale
+  const responsivePageStyle = { width: PAGE_W * responsiveScale, height: PAGE_H * responsiveScale, flexShrink: 0 as const }
+  const responsiveInnerStyle = {
+    width: PAGE_W, height: PAGE_H,
+    transform: `scale(${responsiveScale})`,
+    transformOrigin: 'top left',
+    marginBottom: -(PAGE_H - PAGE_H * responsiveScale),
+  }
 
   return (
     <div style={{
@@ -122,8 +136,8 @@ export function MobileEditor({ onExport }: Props) {
           transition: 'opacity .2s',
         }}>
           {/* Cover */}
-          <div style={{ ...pageStyle, borderRadius: 6, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,.12)' }}>
-            <div style={innerStyle}>
+          <div style={{ ...responsivePageStyle, borderRadius: 6, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,.12)' }}>
+            <div style={responsiveInnerStyle}>
               <CoverPage coverStyle={coverStyle} />
             </div>
           </div>
@@ -133,7 +147,7 @@ export function MobileEditor({ onExport }: Props) {
               key={page.id}
               onClick={() => setCurrentPageIndex(idx)}
               style={{
-                ...pageStyle,
+                ...responsivePageStyle,
                 borderRadius:  6,
                 overflow:      'hidden',
                 boxShadow:     idx === currentPageIndex
@@ -141,7 +155,7 @@ export function MobileEditor({ onExport }: Props) {
                   : '0 4px 20px rgba(0,0,0,.10)',
               }}
             >
-              <div style={innerStyle}>
+              <div style={responsiveInnerStyle}>
                 <ContentPage page={page} pageIndex={idx} totalPages={pages.length} />
               </div>
             </div>

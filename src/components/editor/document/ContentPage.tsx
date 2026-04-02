@@ -246,17 +246,15 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                   </div>
 
                   <BlockRenderer
-                    block={prefix ? { ...block, content: prefix + (block.content || '') } : block}
+                    block={block}
                     color={accentColor}
                     entityName={entityName}
                     pageId={page.id}
-                    onUpdateContent={(blockId, content) => {
-                      updateBlock(page.id, blockId, prefix ? content.replace(prefix, '').trim() : content)
-                    }}
-                    onUpdateTable={(blockId, td) => updateBlockTable(page.id, blockId, td)}
-                    onUpdateChart={(blockId, cd) => updateBlockChart(page.id, blockId, cd)}
-                    onUpdateImage={(blockId, id) => updateBlockImage(page.id, blockId, id)}
-                    dragHandleProps={{ style: { cursor: 'grab' } }}
+                    onUpdateTable={bt => updateBlockTable(page.id, block.id, bt)}
+                    onUpdateContent={(id, c) => updateBlock(page.id, id, c)}
+                    onUpdateChart={cd => updateBlockChart(page.id, block.id, cd)}
+                    onUpdateImage={id => updateBlockImage(page.id, block.id, id)}
+                    onUpdateStyle={(id, styles) => updateBlockStyle(page.id, id, styles)}
                   />
                 </div>
               )

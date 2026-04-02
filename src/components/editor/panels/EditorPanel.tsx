@@ -18,6 +18,7 @@ import { LayoutPanel }           from './LayoutPanel'
 import { OrientationZonePanel }  from './OrientationZonePanel'
 import { BlockStylePanel }       from './BlockStylePanel'
 import { QuickFormatPanel }      from './QuickFormatPanel'
+import { ShapeInsertPanel }      from './ShapeInsertPanel'
 
 interface BlockDef {
   type: BlockType; label: string; icon: React.ReactNode; desc: string; group: string
@@ -180,6 +181,12 @@ export function EditorPanel() {
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         <BlockLibrary />
+      </div>
+      <div style={{ borderTop: '1px solid var(--border)', padding: '10px 10px', flexShrink: 0 }}>
+        <ShapeInsertPanel onAddShape={(type, color, size) => {
+          // Create a divider block with shape properties
+          console.log('[v0] Adding shape:', type, color, size)
+        }} />
       </div>
       <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
         <StylePanel compact />

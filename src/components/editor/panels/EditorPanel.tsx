@@ -163,6 +163,22 @@ function BlockLibrary() {
 export function EditorPanel() {
   const { activeTab } = useDocument()
   const { toast, showToast } = useToast()
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(() => {
+    // Load from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('editor-panel-collapsed')
+      return saved === 'true'
+    }
+    return false
+  })
+
+  const togglePanelCollapse = () => {
+    const newState = !isPanelCollapsed
+    setIsPanelCollapsed(newState)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('editor-panel-collapsed', String(newState))
+    }
+  }
 
   if (activeTab === 'templates')   return (<><TemplatesPanel showToast={showToast} /><Toast {...toast} /></>)
   if (activeTab === 'analytics')   return <AnalyticsPanel />
@@ -172,26 +188,57 @@ export function EditorPanel() {
 
   return (
     <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <DocumentPropertiesPanel />
-      <QuickFormatPanel />
-      <div style={{ flexShrink: 0, padding: '10px 14px 6px' }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--text4)' }}>
-          Bibliothèque de Blocs
-        </div>
+      {/* Collapse button */}
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <button
+          onClick={togglePanelCollapse}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '6px 8px',
+            border: 'none',
+            background: 'var(--bg2)',
+            cursor: 'pointer',
+            borderRadius: 6,
+            fontSize: 10,
+            fontWeight: 700,
+            color: 'var(--text3)',
+            transition: 'all .15s',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg3)' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--bg2)' }}
+        >
+          <span>{isPanelCollapsed ? 'Afficher le panneau' : 'Masquer le panneau'}</span>
+          <ChevronUp size={11} style={{ transform: isPanelCollapsed ? 'rotate(180deg)' : '', transition: 'transform .15s' }} />
+        </button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
-        <BlockLibrary />
-      </div>
-      <div style={{ borderTop: '1px solid var(--border)', padding: '10px 10px', flexShrink: 0 }}>
-        <ShapeInsertPanel onAddShape={(type, color, size) => {
-          // Create a divider block as a container for the shape
-          addBlock('divider', JSON.stringify({ shapeType: type, color, size }))
-          showToast(`Forme ${type} ajoutée à la page`, 'ok')
-        }} />
-      </div>
-      <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-        <StylePanel compact />
-      </div>
+
+      {/* Content area - collapse/expand */}
+      {!isPanelCollapsed && (
+        <>
+          <DocumentPropertiesPanel />
+          <QuickFormatPanel />
+          <div style={{ flexShrink: 0, padding: '10px 14px 6px' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase', color: 'var(--text4)' }}>
+              Bibliothèque de Blocs
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <BlockLibrary />
+          </div>
+          <div style={{ borderTop: '1px solid var(--border)', padding: '10px 10px', flexShrink: 0 }}>
+            <ShapeInsertPanel onAddShape={(type, color, size) => {
+              addBlock('divider', JSON.stringify({ shapeType: type, color, size }))
+              showToast(`Forme ${type} ajoutée à la page`, 'ok')
+            }} />
+          </div>
+          <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+            <StylePanel compact />
+          </div>
+        </>
+      )}
       <Toast {...toast} />
     </div>
   )

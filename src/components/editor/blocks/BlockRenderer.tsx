@@ -306,79 +306,155 @@ function TextBlock({ block, onUpdateContent, onUpdateStyle, fontFamily }: { bloc
 
 // ─── Headings H1–H4 ───────────────────────────────────────────────────────────
 
-function H1Block({ block, onUpdateContent, autoNumber, ordinal }: {
-  block: DocBlock; onUpdateContent?: Props['onUpdateContent']; autoNumber?: boolean; ordinal?: number
+function H1Block({ block, onUpdateContent, onUpdateStyle, autoNumber, ordinal }: {
+  block: DocBlock; onUpdateContent?: Props['onUpdateContent']; onUpdateStyle?: Props['onUpdateStyle']; autoNumber?: boolean; ordinal?: number
 }) {
   const defaultText = block.content || 'Titre de niveau 1'
   const ref = useEditableRef(defaultText, block.id)
   const prefix = autoNumber && ordinal !== undefined ? `${ordinal + 1}. ` : ''
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-      {prefix && (
-        <span style={{ fontFamily: 'Times New Roman, serif', fontSize: 20, fontWeight: 900, color: '#111', flexShrink: 0 }}>
-          {prefix}
-        </span>
+    <div style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+        {prefix && (
+          <span style={{ fontFamily: 'Times New Roman, serif', fontSize: 20, fontWeight: 900, color: '#111', flexShrink: 0 }}>
+            {prefix}
+          </span>
+        )}
+        <h1 ref={ref} contentEditable suppressContentEditableWarning
+          onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            setContextMenu({ x: e.clientX, y: e.clientY })
+          }}
+          style={{
+            fontFamily: 'Times New Roman, serif', fontSize: 20, fontWeight: 900,
+            color: '#111', margin: 0, outline: 'none', cursor: 'text',
+            letterSpacing: '-.01em', lineHeight: 1.15, flex: 1,
+            ...applyBlockStyles(block),
+          }} />
+      </div>
+      {contextMenu && (
+        <TextContextMenu
+          block={block}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onUpdateStyle={(styles) => onUpdateStyle?.(block.id, styles)}
+          onUpdateContent={(content) => onUpdateContent?.(block.id, content)}
+        />
       )}
-      <h1 ref={ref} contentEditable suppressContentEditableWarning
-        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-        style={{
-          fontFamily: 'Times New Roman, serif', fontSize: 20, fontWeight: 900,
-          color: '#111', margin: 0, outline: 'none', cursor: 'text',
-          letterSpacing: '-.01em', lineHeight: 1.15, flex: 1,
-        }} />
     </div>
   )
 }
 
-function H2Block({ block, onUpdateContent, autoNumber, h1Ordinal, ordinal }: {
-  block: DocBlock; onUpdateContent?: Props['onUpdateContent']; autoNumber?: boolean; h1Ordinal?: number; ordinal?: number
+function H2Block({ block, onUpdateContent, onUpdateStyle, autoNumber, h1Ordinal, ordinal }: {
+  block: DocBlock; onUpdateContent?: Props['onUpdateContent']; onUpdateStyle?: Props['onUpdateStyle']; autoNumber?: boolean; h1Ordinal?: number; ordinal?: number
 }) {
   const defaultText = block.content || 'Titre de niveau 2'
   const ref = useEditableRef(defaultText, block.id)
   const prefix = autoNumber && h1Ordinal !== undefined && ordinal !== undefined
     ? `${h1Ordinal + 1}.${ordinal + 1} ` : ''
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-      {prefix && (
-        <span style={{ fontFamily: 'Times New Roman, serif', fontSize: 16, fontWeight: 800, color: '#222', flexShrink: 0 }}>
-          {prefix}
-        </span>
+    <div style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+        {prefix && (
+          <span style={{ fontFamily: 'Times New Roman, serif', fontSize: 16, fontWeight: 800, color: '#222', flexShrink: 0 }}>
+            {prefix}
+          </span>
+        )}
+        <h2 ref={ref} contentEditable suppressContentEditableWarning
+          onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            setContextMenu({ x: e.clientX, y: e.clientY })
+          }}
+          style={{
+            fontFamily: 'Times New Roman, serif', fontSize: 16, fontWeight: 800,
+            color: '#222', margin: 0, outline: 'none', cursor: 'text',
+            lineHeight: 1.25, flex: 1,
+            ...applyBlockStyles(block),
+          }} />
+      </div>
+      {contextMenu && (
+        <TextContextMenu
+          block={block}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onUpdateStyle={(styles) => onUpdateStyle?.(block.id, styles)}
+          onUpdateContent={(content) => onUpdateContent?.(block.id, content)}
+        />
       )}
-      <h2 ref={ref} contentEditable suppressContentEditableWarning
-        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-        style={{
-          fontFamily: 'Times New Roman, serif', fontSize: 16, fontWeight: 800,
-          color: '#222', margin: 0, outline: 'none', cursor: 'text',
-          lineHeight: 1.25, flex: 1,
-        }} />
     </div>
   )
 }
 
-function H3Block({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+function H3Block({ block, onUpdateContent, onUpdateStyle }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent']; onUpdateStyle?: Props['onUpdateStyle'] }) {
   const defaultText = block.content || 'Titre de niveau 3'
   const ref = useEditableRef(defaultText, block.id)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  
   return (
-    <h3 ref={ref} contentEditable suppressContentEditableWarning
-      onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-      style={{
-        fontFamily: 'Times New Roman, serif', fontSize: 14, fontWeight: 700,
-        color: '#333', margin: 0, outline: 'none', cursor: 'text', lineHeight: 1.3,
-      }} />
+    <div style={{ position: 'relative' }}>
+      <h3 ref={ref} contentEditable suppressContentEditableWarning
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          setContextMenu({ x: e.clientX, y: e.clientY })
+        }}
+        style={{
+          fontFamily: 'Times New Roman, serif', fontSize: 14, fontWeight: 700,
+          color: '#333', margin: 0, outline: 'none', cursor: 'text', lineHeight: 1.3,
+          ...applyBlockStyles(block),
+        }} />
+      {contextMenu && (
+        <TextContextMenu
+          block={block}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onUpdateStyle={(styles) => onUpdateStyle?.(block.id, styles)}
+          onUpdateContent={(content) => onUpdateContent?.(block.id, content)}
+        />
+      )}
+    </div>
   )
 }
 
-function H4Block({ block, onUpdateContent }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent'] }) {
+function H4Block({ block, onUpdateContent, onUpdateStyle }: { block: DocBlock; onUpdateContent?: Props['onUpdateContent']; onUpdateStyle?: Props['onUpdateStyle'] }) {
   const defaultText = block.content || 'Titre de niveau 4'
   const ref = useEditableRef(defaultText, block.id)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
+  
   return (
-    <h4 ref={ref} contentEditable suppressContentEditableWarning
-      onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-      style={{
-        fontFamily: 'Times New Roman, serif', fontSize: 13, fontWeight: 700,
-        fontStyle: 'italic', color: '#444', margin: 0, outline: 'none',
-        cursor: 'text', lineHeight: 1.35,
-      }} />
+    <div style={{ position: 'relative' }}>
+      <h4 ref={ref} contentEditable suppressContentEditableWarning
+        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
+        onContextMenu={(e) => {
+          e.preventDefault()
+          setContextMenu({ x: e.clientX, y: e.clientY })
+        }}
+        style={{
+          fontFamily: 'Times New Roman, serif', fontSize: 13, fontWeight: 700,
+          fontStyle: 'italic', color: '#444', margin: 0, outline: 'none',
+          cursor: 'text', lineHeight: 1.35,
+          ...applyBlockStyles(block),
+        }} />
+      {contextMenu && (
+        <TextContextMenu
+          block={block}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          onUpdateStyle={(styles) => onUpdateStyle?.(block.id, styles)}
+          onUpdateContent={(content) => onUpdateContent?.(block.id, content)}
+        />
+      )}
+    </div>
   )
 }
 
@@ -685,7 +761,7 @@ function InteractiveTable({ block, co, onUpdateTable }: { block: DocBlock; co: s
   )
 }
 
-// ─── Main BlockRenderer ──────────────────────────────���────────────────────────
+// ─── Main BlockRenderer ──────────────────────────────�����────────────────────────
 
 export function BlockRenderer({
   block, color: co, entityName: en, pageId,
@@ -709,10 +785,10 @@ export function BlockRenderer({
   )
 
   // ─��� Headings ────────────────────────────────────────────────────────────────
-  if (type === 'h1') return wrap(<H1Block block={block} onUpdateContent={onUpdateContent} />, 'H1')
-  if (type === 'h2') return wrap(<H2Block block={block} onUpdateContent={onUpdateContent} />, 'H2')
-  if (type === 'h3') return wrap(<H3Block block={block} onUpdateContent={onUpdateContent} />, 'H3')
-  if (type === 'h4') return wrap(<H4Block block={block} onUpdateContent={onUpdateContent} />, 'H4')
+  if (type === 'h1') return wrap(<H1Block block={block} onUpdateContent={onUpdateContent} onUpdateStyle={onUpdateStyle} />, 'H1')
+  if (type === 'h2') return wrap(<H2Block block={block} onUpdateContent={onUpdateContent} onUpdateStyle={onUpdateStyle} />, 'H2')
+  if (type === 'h3') return wrap(<H3Block block={block} onUpdateContent={onUpdateContent} onUpdateStyle={onUpdateStyle} />, 'H3')
+  if (type === 'h4') return wrap(<H4Block block={block} onUpdateContent={onUpdateContent} onUpdateStyle={onUpdateStyle} />, 'H4')
 
   // ── Lists ───────────────────────────────────────────────────────────────────
   if (type === 'bullet-list')   return wrap(<BulletListBlock block={block} onUpdateContent={onUpdateContent} />, 'Bullet List')

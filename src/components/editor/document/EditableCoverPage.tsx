@@ -36,7 +36,6 @@ type ExtBlock = CoverBlock & {
   blur?: number; useBlur?: boolean
   locked?: boolean
   groupId?: string
-  // Text inside shape
   innerText?: string
   innerFontSize?: number
   innerFontWeight?: string
@@ -55,10 +54,9 @@ interface PageConfig {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHAPE LIBRARY — ~120 shapes organized like Word/PowerPoint
+// SHAPE LIBRARY
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Helper: regular n-gon
 function ngon(n: number, cx=50, cy=50, r=48, start=-Math.PI/2): string {
   return Array.from({length:n},(_,i)=>{
     const a=start+(2*Math.PI*i/n)
@@ -66,7 +64,6 @@ function ngon(n: number, cx=50, cy=50, r=48, start=-Math.PI/2): string {
   }).join(' ')
 }
 
-// Helper: star
 function starPts(n: number, R=48, r=20, cx=50, cy=50): string {
   return Array.from({length:n*2},(_,i)=>{
     const a=-Math.PI/2+(Math.PI*i/n)
@@ -75,7 +72,6 @@ function starPts(n: number, R=48, r=20, cx=50, cy=50): string {
   }).join(' ')
 }
 
-// Helper: explosion (jagged star)
 function explosionPts(n: number, R=48, r=30): string {
   return Array.from({length:n*2},(_,i)=>{
     const a=-Math.PI/2+(Math.PI*i/n)+(i%2===1?Math.PI/n*0.3:0)
@@ -87,7 +83,6 @@ function explosionPts(n: number, R=48, r=30): string {
 type ShapeRender = { path?: string; special?: string; strokeOnly?: boolean; fill?: boolean }
 
 const SHAPE_LIB: Record<string, ShapeRender> = {
-  // ── LINES ──────────────────────────────────────────────────────────────────
   line:              { path:'M2,50 L98,50', strokeOnly:true },
   arrow_right:       { path:'M2,50 L78,50 M78,35 L98,50 L78,65 Z', strokeOnly:true },
   arrow_left:        { path:'M98,50 L22,50 M22,35 L2,50 L22,65 Z', strokeOnly:true },
@@ -103,8 +98,6 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   connector_curve_a2:{ path:'M25,90 L2,80 L25,70 M2,80 C30,80 70,20 98,20 M73,10 L98,20 L73,30', strokeOnly:true },
   curve:             { path:'M2,80 C25,10 75,90 98,20', strokeOnly:true },
   scribble:          { path:'M2,50 C10,35 15,65 25,50 C35,35 40,65 50,50 C60,35 65,65 75,50 C85,35 90,65 98,50', strokeOnly:true },
-
-  // ── RECTANGLES ─────────────────────────────────────────────────────────────
   rect:              { path:'M2,2 L98,2 L98,98 L2,98 Z' },
   rect_round:        { special:'rect_round' },
   rect_snip1:        { path:'M2,2 L80,2 L98,20 L98,98 L2,98 Z' },
@@ -114,8 +107,6 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   rect_fold:         { path:'M2,2 L80,2 L98,20 L98,98 L2,98 Z M80,2 L80,20 L98,20' },
   rect_fold_corner:  { path:'M2,2 L80,2 L80,20 L98,20 L98,98 L2,98 Z' },
   rect_round_same:   { special:'rect_round_same' },
-
-  // ── BASIC SHAPES ────────────────────────────────────────────────────────────
   ellipse:           { special:'ellipse' },
   triangle_iso:      { path:'M50,2 L98,98 L2,98 Z' },
   triangle_right:    { path:'M2,2 L98,98 L2,98 Z' },
@@ -148,8 +139,6 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   moon:              { path:'M50,5 A45,45 0 1,1 50,95 A28,45 0 1,0 50,5 Z' },
   cloud:             { special:'cloud' },
   larme:             { path:'M50,2 C80,2 98,30 98,50 A48,48 0 1,1 2,50 C2,30 20,2 50,2 Z' },
-
-  // ── BLOCK ARROWS ───────────────────────────────────────────────────────────
   barrow_r:   { path:'M2,30 L65,30 L65,10 L98,50 L65,90 L65,70 L2,70 Z' },
   barrow_l:   { path:'M98,30 L35,30 L35,10 L2,50 L35,90 L35,70 L98,70 Z' },
   barrow_u:   { path:'M30,98 L30,35 L10,35 L50,2 L90,35 L70,35 L70,98 Z' },
@@ -164,16 +153,12 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   barrow_circ:{ path:'M50,5 A45,45 0 0,1 85,70 L75,70 Q90,90 95,50 Q90,10 50,5 Z' },
   barrow_rib_u:{ path:'M20,98 L20,40 L2,40 L50,2 L98,40 L80,40 L80,98 L60,85 L50,98 L40,85 Z' },
   barrow_rib_d:{ path:'M20,2 L20,60 L2,60 L50,98 L98,60 L80,60 L80,2 L60,15 L50,2 L40,15 Z' },
-
-  // ── EQUATION ───────────────────────────────────────────────────────────────
   eq_plus:    { path:'M38,2 L62,2 L62,38 L98,38 L98,62 L62,62 L62,98 L38,98 L38,62 L2,62 L2,38 L38,38 Z' },
   eq_minus:   { path:'M2,38 L98,38 L98,62 L2,62 Z' },
   eq_multiply:{ path:`M${starPts(4,46,18)}Z` },
   eq_divide:  { path:'M35,40 L65,40 L65,60 L35,60 Z M45,15 A5,5 0 1,1 55,15 A5,5 0 1,1 45,15 Z M45,80 A5,5 0 1,1 55,80 A5,5 0 1,1 45,80 Z', special:'eq_divide' },
   eq_equal:   { path:'M2,32 L98,32 L98,45 L2,45 Z M2,55 L98,55 L98,68 L2,68 Z' },
   eq_notequal:{ path:'M2,32 L98,32 L98,45 L2,45 Z M2,55 L98,55 L98,68 L2,68 Z M65,5 L35,95', special:'eq_notequal' },
-
-  // ── FLOWCHART ──────────────────────────────────────────────────────────────
   fc_process:   { path:'M2,2 L98,2 L98,98 L2,98 Z' },
   fc_process_alt:{ path:'M15,2 L85,2 Q98,2 98,15 L98,85 Q98,98 85,98 L15,98 Q2,98 2,85 L2,15 Q2,2 15,2 Z' },
   fc_decision:  { path:'M50,2 L98,50 L50,98 L2,50 Z' },
@@ -199,8 +184,6 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   fc_magdisk:   { special:'fc_magdisk' },
   fc_direct:    { special:'fc_direct' },
   fc_display:   { path:'M20,2 L80,2 Q98,2 98,20 L98,80 Q98,98 80,98 L20,98 Q2,65 2,50 Q2,35 20,2 Z' },
-
-  // ── STARS & BANNERS ────────────────────────────────────────────────────────
   star4:    { path:`M${starPts(4,48,18)}Z` },
   star5:    { path:`M${starPts(5,48,20)}Z` },
   star6:    { path:`M${starPts(6,48,24)}Z` },
@@ -220,15 +203,11 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   banner_d: { path:'M2,70 L2,20 C2,10 98,10 98,20 L98,70 L75,50 L50,70 L25,50 Z' },
   scroll_h: { special:'scroll_h' },
   scroll_v: { special:'scroll_v' },
-
-  // ── BANNERS VISUELS ────────────────────────────────────────────────────────
   banner_cls:  { special:'banner_cls' },
   banner_3d:   { special:'banner_3d' },
   banner_plate:{ special:'banner_plate' },
   banner_wavy: { path:'M2,40 C18,24 32,58 50,40 C68,22 82,56 98,40 L98,60 C82,76 68,42 50,60 C32,78 18,44 2,60 Z' },
   banner_vcut: { path:'M2,28 L80,28 L98,50 L80,72 L2,72 L18,50 Z' },
-
-  // ── CALLOUTS ───────────────────────────────────────────────────────────────
   callout_rect:  { path:'M2,2 L98,2 L98,70 L55,70 L42,98 L38,70 L2,70 Z' },
   callout_round: { path:'M12,2 L88,2 Q98,2 98,12 L98,58 Q98,68 88,68 L55,68 L42,98 L38,68 L12,68 Q2,68 2,58 L2,12 Q2,2 12,2 Z' },
   callout_oval:  { special:'callout_oval' },
@@ -237,10 +216,6 @@ const SHAPE_LIB: Record<string, ShapeRender> = {
   callout_l2:    { path:'M2,2 L98,2 L98,70 L70,70 L60,85 L55,70 L2,70 Z' },
   callout_l3:    { path:'M2,2 L98,2 L98,70 L2,70 Z M50,70 L45,90 L55,90 Z' },
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SHAPE CATALOG (UI groups)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const SHAPE_CATALOG = [
   { group:'Lignes', shapes:[
@@ -360,130 +335,36 @@ function ShapeSVG({ b, accent }: { b: ExtBlock; accent: string }) {
         )}
         {b.useShadow&&b.shadow&&<filter id={filtId} x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx={b.shadow.x||0} dy={b.shadow.y||0} stdDeviation={b.shadow.blur||4} floodColor={b.shadow.color||'#000'} floodOpacity="0.6"/></filter>}
       </defs>
-
-      {/* PATH-BASED */}
       {def.path && !def.strokeOnly && !def.special && <path d={def.path} {...sp}/>}
       {def.path && def.strokeOnly && <path d={def.path} {...so}/>}
-
-      {/* SPECIALS */}
       {def.special==='ellipse'&&<ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/>}
       {def.special==='rect_round'&&<rect x="1" y="1" width="98" height="98" rx={b.radius||12} {...sp}/>}
       {def.special==='rect_round_same'&&<path d="M2,2 L80,2 Q98,2 98,20 L98,80 Q98,98 80,98 L2,98 Z" {...sp}/>}
-      {def.special==='cylinder'&&<>
-        <path d="M2,20 L2,80 Q2,98 50,98 Q98,98 98,80 L98,20" {...sp}/>
-        <ellipse cx="50" cy="20" rx="48" ry="12" {...sp}/>
-      </>}
-      {def.special==='cube'&&<>
-        <path d="M25,98 L2,75 L2,25 L50,2 L98,25 L98,75 L50,98 Z" {...sp}/>
-        <path d="M25,98 L25,48 L2,25 M25,48 L98,25 M50,2 L25,25" fill="none" stroke={bColor==='none'?`${b.fill||accent}88`:bColor} strokeWidth={Math.max(bWidth,1)}/>
-      </>}
-      {def.special==='frame'&&<>
-        <rect x="1" y="1" width="98" height="98" fill={fillVal} fillOpacity={op} stroke={bColor} strokeWidth={bWidth}/>
-        <rect x="14" y="14" width="72" height="72" fill="transparent" stroke={bColor==='none'?'transparent':bColor} strokeWidth={Math.max(bWidth/2,1)}/>
-      </>}
-      {def.special==='donut'&&<>
-        <ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/>
-        <ellipse cx="50" cy="50" rx="22" ry="22" fill={b.useGradient?'white':'white'} stroke="none"/>
-      </>}
-      {def.special==='no_sign'&&<>
-        <ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/>
-        <line x1="22" y1="22" x2="78" y2="78" stroke="white" strokeWidth="12" strokeLinecap="round"/>
-      </>}
-      {def.special==='smiley'&&<>
-        <ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/>
-        <ellipse cx="35" cy="38" rx="5" ry="5" fill="white"/>
-        <ellipse cx="65" cy="38" rx="5" ry="5" fill="white"/>
-        <path d="M30,62 Q50,80 70,62" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"/>
-      </>}
-      {def.special==='sun'&&<>
-        <circle cx="50" cy="50" r="28" {...sp}/>
-        {[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>(
-          <line key={a} x1={50+33*Math.cos(a*Math.PI/180)} y1={50+33*Math.sin(a*Math.PI/180)} x2={50+47*Math.cos(a*Math.PI/180)} y2={50+47*Math.sin(a*Math.PI/180)} stroke={b.fill||accent} strokeWidth="4" strokeLinecap="round"/>
-        ))}
-      </>}
+      {def.special==='cylinder'&&<><path d="M2,20 L2,80 Q2,98 50,98 Q98,98 98,80 L98,20" {...sp}/><ellipse cx="50" cy="20" rx="48" ry="12" {...sp}/></>}
+      {def.special==='cube'&&<><path d="M25,98 L2,75 L2,25 L50,2 L98,25 L98,75 L50,98 Z" {...sp}/><path d="M25,98 L25,48 L2,25 M25,48 L98,25 M50,2 L25,25" fill="none" stroke={bColor==='none'?`${b.fill||accent}88`:bColor} strokeWidth={Math.max(bWidth,1)}/></>}
+      {def.special==='frame'&&<><rect x="1" y="1" width="98" height="98" fill={fillVal} fillOpacity={op} stroke={bColor} strokeWidth={bWidth}/><rect x="14" y="14" width="72" height="72" fill="transparent" stroke={bColor==='none'?'transparent':bColor} strokeWidth={Math.max(bWidth/2,1)}/></>}
+      {def.special==='donut'&&<><ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/><ellipse cx="50" cy="50" rx="22" ry="22" fill="white" stroke="none"/></>}
+      {def.special==='no_sign'&&<><ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/><line x1="22" y1="22" x2="78" y2="78" stroke="white" strokeWidth="12" strokeLinecap="round"/></>}
+      {def.special==='smiley'&&<><ellipse cx="50" cy="50" rx="49" ry="49" {...sp}/><ellipse cx="35" cy="38" rx="5" ry="5" fill="white"/><ellipse cx="65" cy="38" rx="5" ry="5" fill="white"/><path d="M30,62 Q50,80 70,62" fill="none" stroke="white" strokeWidth="4" strokeLinecap="round"/></>}
+      {def.special==='sun'&&<><circle cx="50" cy="50" r="28" {...sp}/>{[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>(<line key={a} x1={50+33*Math.cos(a*Math.PI/180)} y1={50+33*Math.sin(a*Math.PI/180)} x2={50+47*Math.cos(a*Math.PI/180)} y2={50+47*Math.sin(a*Math.PI/180)} stroke={b.fill||accent} strokeWidth="4" strokeLinecap="round"/>))}</>}
       {def.special==='cloud'&&<path d="M25,70 Q10,70 8,55 Q6,40 20,38 Q18,20 35,18 Q42,8 58,12 Q70,8 78,20 Q95,20 95,38 Q98,55 85,60 Q88,75 72,75 Z" {...sp}/>}
-      {def.special==='double_plaque'&&<>
-        <path d="M7,12 L92,12 Q100,12 100,22 L100,92 Q100,100 92,100 L7,100 Q0,100 0,92 L0,22 Q0,12 7,12 Z" {...sp} transform="translate(-2,-2)"/>
-        <path d="M15,2 L93,2 Q98,2 98,8 L98,90 Q98,98 93,98 L15,98 Q2,98 2,90 L2,8 Q2,2 15,2 Z" {...sp}/>
-      </>}
-      {def.special==='fc_predefined'&&<>
-        <rect x="2" y="2" width="96" height="96" {...sp}/>
-        <line x1="18" y1="2" x2="18" y2="98" stroke="white" strokeWidth="3"/>
-        <line x1="82" y1="2" x2="82" y2="98" stroke="white" strokeWidth="3"/>
-      </>}
-      {def.special==='fc_internal'&&<>
-        <rect x="2" y="2" width="96" height="96" {...sp}/>
-        <line x1="18" y1="2" x2="18" y2="98" stroke="white" strokeWidth="3"/>
-        <line x1="2" y1="18" x2="98" y2="18" stroke="white" strokeWidth="3"/>
-      </>}
-      {def.special==='fc_multidoc'&&<>
-        <path d="M10,90 L10,15 Q10,5 20,5 L85,5 Q95,5 95,15 L95,72 C75,88 45,62 15,72" fill={fillVal} fillOpacity={op} stroke={bColor} strokeWidth={bWidth} transform="translate(0,-8)"/>
-        <path d="M2,95 L2,22 Q2,12 12,12 L88,12 Q98,12 98,22 L98,78 C78,95 38,68 2,78 Z" {...sp}/>
-      </>}
-      {def.special==='fc_punch'&&<>
-        <path d="M2,2 L98,2 L98,98 L2,98 Z" {...sp}/>
-        <path d="M15,2 C15,15 35,15 35,2" fill={fillVal} fillOpacity={op} stroke="white" strokeWidth="2"/>
-        <path d="M50,2 C50,15 70,15 70,2" fill={fillVal} fillOpacity={op} stroke="white" strokeWidth="2"/>
-      </>}
-      {def.special==='fc_magdisk'&&<>
-        <ellipse cx="50" cy="88" rx="48" ry="10" {...sp}/>
-        <path d="M2,88 L2,25" stroke={bColor==='none'?b.fill||accent:bColor} strokeWidth={bWidth} fill="none"/>
-        <path d="M98,88 L98,25" stroke={bColor==='none'?b.fill||accent:bColor} strokeWidth={bWidth} fill="none"/>
-        <ellipse cx="50" cy="25" rx="48" ry="10" {...sp}/>
-      </>}
-      {def.special==='fc_direct'&&<>
-        <ellipse cx="50" cy="50" rx="48" ry="48" {...sp}/>
-        <line x1="50" y1="2" x2="50" y2="98" stroke="white" strokeWidth="3"/>
-      </>}
-      {def.special==='fc_or'&&<>
-        <path d="M2,50 C2,2 98,2 98,50 C98,98 2,98 2,50 Z" {...sp}/>
-        <line x1="2" y1="50" x2="98" y2="50" stroke="white" strokeWidth="2"/>
-        <line x1="50" y1="2" x2="50" y2="98" stroke="white" strokeWidth="2"/>
-      </>}
-      {def.special==='eq_divide'&&<>
-        <rect x="2" y="42" width="96" height="16" {...sp}/>
-        <circle cx="50" cy="20" r="8" {...sp}/>
-        <circle cx="50" cy="80" r="8" {...sp}/>
-      </>}
-      {def.special==='eq_notequal'&&<>
-        <rect x="2" y="28" width="96" height="14" {...sp}/>
-        <rect x="2" y="58" width="96" height="14" {...sp}/>
-        <line x1="65" y1="5" x2="35" y2="95" stroke={b.fill||accent} strokeWidth="5" strokeLinecap="round"/>
-      </>}
-      {def.special==='scroll_h'&&<>
-        <path d="M15,10 Q10,2 20,2 L80,2 Q90,2 85,10 L85,90 Q90,98 80,98 L20,98 Q10,98 15,90 Z" {...sp}/>
-        <path d="M15,2 Q8,2 8,10 Q8,18 15,18" fill="none" stroke="white" strokeWidth="2"/>
-        <path d="M15,98 Q8,98 8,90 Q8,82 15,82" fill="none" stroke="white" strokeWidth="2"/>
-      </>}
-      {def.special==='scroll_v'&&<>
-        <path d="M10,15 Q2,10 2,20 L2,80 Q2,90 10,85 L90,85 Q98,90 98,80 L98,20 Q98,10 90,15 Z" {...sp}/>
-        <path d="M2,15 Q2,8 10,8 Q18,8 18,15" fill="none" stroke="white" strokeWidth="2"/>
-        <path d="M98,15 Q98,8 90,8 Q82,8 82,15" fill="none" stroke="white" strokeWidth="2"/>
-      </>}
-      {/* ── BANNER SPECIALS ── */}
-      {def.special==='banner_cls'&&<>
-        <path d="M5,50 L16,30 L16,46 C30,40 42,35 50,35 C58,35 70,40 84,46 L84,30 L95,50 L84,70 L84,54 C70,60 58,65 50,65 C42,65 30,60 16,54 L16,70 Z" {...sp}/>
-        <path d="M5,50 L16,70 L16,54 L5,50 Z" fill={b.useGradient?'rgba(0,0,0,.22)':`${b.fill||accent}55`} stroke="none"/>
-        <path d="M95,50 L84,70 L84,54 L95,50 Z" fill={b.useGradient?'rgba(0,0,0,.22)':`${b.fill||accent}55`} stroke="none"/>
-      </>}
-      {def.special==='banner_3d'&&<>
-        <path d="M5,65 L5,42 L86,13 L95,36 L95,58 L14,87 Z" {...sp}/>
-        <path d="M5,65 L14,87 L14,65 L5,42 Z" fill={b.useGradient?'rgba(0,0,0,.3)':`${b.fill||accent}55`} stroke="none"/>
-        <path d="M86,13 L95,36 L86,36 Z" fill={b.useGradient?'rgba(0,0,0,.3)':`${b.fill||accent}55`} stroke="none"/>
-      </>}
-      {def.special==='banner_plate'&&<>
-        <rect x="2" y="18" width="96" height="64" {...sp}/>
-        <rect x="8" y="24" width="84" height="52" fill="none" stroke={bColor==='none'?`${b.fill||accent}cc`:bColor} strokeWidth={Math.max(bWidth,2)}/>
-        <rect x="12" y="28" width="76" height="44" fill="none" stroke={bColor==='none'?`${b.fill||accent}66`:bColor} strokeWidth={Math.max(bWidth*.4,.8)}/>
-      </>}
-      {def.special==='callout_oval'&&<>
-        <ellipse cx="50" cy="42" rx="48" ry="38" {...sp}/>
-        <path d="M40,78 L30,98 L52,78 Z" {...sp}/>
-      </>}
-      {def.special==='callout_cloud'&&<>
-        <path d="M28,68 Q14,68 12,54 Q10,40 24,38 Q22,20 38,18 Q46,8 60,14 Q70,8 78,20 Q92,20 92,38 Q96,55 82,60 Q84,74 70,74 Z" {...sp}/>
-        <path d="M45,72 Q42,85 35,95 Q48,82 55,74 Z" {...sp}/>
-      </>}
+      {def.special==='double_plaque'&&<><path d="M7,12 L92,12 Q100,12 100,22 L100,92 Q100,100 92,100 L7,100 Q0,100 0,92 L0,22 Q0,12 7,12 Z" {...sp} transform="translate(-2,-2)"/><path d="M15,2 L93,2 Q98,2 98,8 L98,90 Q98,98 93,98 L15,98 Q2,98 2,90 L2,8 Q2,2 15,2 Z" {...sp}/></>}
+      {def.special==='fc_predefined'&&<><rect x="2" y="2" width="96" height="96" {...sp}/><line x1="18" y1="2" x2="18" y2="98" stroke="white" strokeWidth="3"/><line x1="82" y1="2" x2="82" y2="98" stroke="white" strokeWidth="3"/></>}
+      {def.special==='fc_internal'&&<><rect x="2" y="2" width="96" height="96" {...sp}/><line x1="18" y1="2" x2="18" y2="98" stroke="white" strokeWidth="3"/><line x1="2" y1="18" x2="98" y2="18" stroke="white" strokeWidth="3"/></>}
+      {def.special==='fc_multidoc'&&<><path d="M10,90 L10,15 Q10,5 20,5 L85,5 Q95,5 95,15 L95,72 C75,88 45,62 15,72" fill={fillVal} fillOpacity={op} stroke={bColor} strokeWidth={bWidth} transform="translate(0,-8)"/><path d="M2,95 L2,22 Q2,12 12,12 L88,12 Q98,12 98,22 L98,78 C78,95 38,68 2,78 Z" {...sp}/></>}
+      {def.special==='fc_punch'&&<><path d="M2,2 L98,2 L98,98 L2,98 Z" {...sp}/><path d="M15,2 C15,15 35,15 35,2" fill={fillVal} fillOpacity={op} stroke="white" strokeWidth="2"/><path d="M50,2 C50,15 70,15 70,2" fill={fillVal} fillOpacity={op} stroke="white" strokeWidth="2"/></>}
+      {def.special==='fc_magdisk'&&<><ellipse cx="50" cy="88" rx="48" ry="10" {...sp}/><path d="M2,88 L2,25" stroke={bColor==='none'?b.fill||accent:bColor} strokeWidth={bWidth} fill="none"/><path d="M98,88 L98,25" stroke={bColor==='none'?b.fill||accent:bColor} strokeWidth={bWidth} fill="none"/><ellipse cx="50" cy="25" rx="48" ry="10" {...sp}/></>}
+      {def.special==='fc_direct'&&<><ellipse cx="50" cy="50" rx="48" ry="48" {...sp}/><line x1="50" y1="2" x2="50" y2="98" stroke="white" strokeWidth="3"/></>}
+      {def.special==='fc_or'&&<><path d="M2,50 C2,2 98,2 98,50 C98,98 2,98 2,50 Z" {...sp}/><line x1="2" y1="50" x2="98" y2="50" stroke="white" strokeWidth="2"/><line x1="50" y1="2" x2="50" y2="98" stroke="white" strokeWidth="2"/></>}
+      {def.special==='eq_divide'&&<><rect x="2" y="42" width="96" height="16" {...sp}/><circle cx="50" cy="20" r="8" {...sp}/><circle cx="50" cy="80" r="8" {...sp}/></>}
+      {def.special==='eq_notequal'&&<><rect x="2" y="28" width="96" height="14" {...sp}/><rect x="2" y="58" width="96" height="14" {...sp}/><line x1="65" y1="5" x2="35" y2="95" stroke={b.fill||accent} strokeWidth="5" strokeLinecap="round"/></>}
+      {def.special==='scroll_h'&&<><path d="M15,10 Q10,2 20,2 L80,2 Q90,2 85,10 L85,90 Q90,98 80,98 L20,98 Q10,98 15,90 Z" {...sp}/><path d="M15,2 Q8,2 8,10 Q8,18 15,18" fill="none" stroke="white" strokeWidth="2"/><path d="M15,98 Q8,98 8,90 Q8,82 15,82" fill="none" stroke="white" strokeWidth="2"/></>}
+      {def.special==='scroll_v'&&<><path d="M10,15 Q2,10 2,20 L2,80 Q2,90 10,85 L90,85 Q98,90 98,80 L98,20 Q98,10 90,15 Z" {...sp}/><path d="M2,15 Q2,8 10,8 Q18,8 18,15" fill="none" stroke="white" strokeWidth="2"/><path d="M98,15 Q98,8 90,8 Q82,8 82,15" fill="none" stroke="white" strokeWidth="2"/></>}
+      {def.special==='banner_cls'&&<><path d="M5,50 L16,30 L16,46 C30,40 42,35 50,35 C58,35 70,40 84,46 L84,30 L95,50 L84,70 L84,54 C70,60 58,65 50,65 C42,65 30,60 16,54 L16,70 Z" {...sp}/><path d="M5,50 L16,70 L16,54 L5,50 Z" fill={b.useGradient?'rgba(0,0,0,.22)':`${b.fill||accent}55`} stroke="none"/><path d="M95,50 L84,70 L84,54 L95,50 Z" fill={b.useGradient?'rgba(0,0,0,.22)':`${b.fill||accent}55`} stroke="none"/></>}
+      {def.special==='banner_3d'&&<><path d="M5,65 L5,42 L86,13 L95,36 L95,58 L14,87 Z" {...sp}/><path d="M5,65 L14,87 L14,65 L5,42 Z" fill={b.useGradient?'rgba(0,0,0,.3)':`${b.fill||accent}55`} stroke="none"/><path d="M86,13 L95,36 L86,36 Z" fill={b.useGradient?'rgba(0,0,0,.3)':`${b.fill||accent}55`} stroke="none"/></>}
+      {def.special==='banner_plate'&&<><rect x="2" y="18" width="96" height="64" {...sp}/><rect x="8" y="24" width="84" height="52" fill="none" stroke={bColor==='none'?`${b.fill||accent}cc`:bColor} strokeWidth={Math.max(bWidth,2)}/><rect x="12" y="28" width="76" height="44" fill="none" stroke={bColor==='none'?`${b.fill||accent}66`:bColor} strokeWidth={Math.max(bWidth*.4,.8)}/></>}
+      {def.special==='callout_oval'&&<><ellipse cx="50" cy="42" rx="48" ry="38" {...sp}/><path d="M40,78 L30,98 L52,78 Z" {...sp}/></>}
+      {def.special==='callout_cloud'&&<><path d="M28,68 Q14,68 12,54 Q10,40 24,38 Q22,20 38,18 Q46,8 60,14 Q70,8 78,20 Q92,20 92,38 Q96,55 82,60 Q84,74 70,74 Z" {...sp}/><path d="M45,72 Q42,85 35,95 Q48,82 55,74 Z" {...sp}/></>}
     </svg>
   )
 }
@@ -522,23 +403,12 @@ const PALETTE=['#ffffff','#f8f9fa','#e9ecef','#dee2e6','#adb5bd','#6c757d','#495
   '#228be6','#1098ad','#0ca678','#37b24d','#74c0fc','#a9e34b','#ffa94d','#ff6b6b','#f783ac','#da77f2',
   '#1B4FD8','#059669','#DC2626','#7C3AED','#D97706','#0E7490','#EC4899','#F97316','#14B8A6','#6366F1']
 
-// ─── NEW: expanded page border styles ──────────────────────────────────────
 const PAGE_BORDER_STYLES=[
-  {id:'none',    l:'Aucun'},
-  {id:'simple',  l:'Simple'},
-  {id:'double',  l:'Double'},
-  {id:'thick',   l:'Épais'},
-  {id:'dashed',  l:'Tirets'},
-  {id:'dotted',  l:'Pointillés'},
-  {id:'ornate',  l:'Orné'},
-  {id:'shadow',  l:'Ombre'},
-  {id:'inset',   l:'Inset'},
-  {id:'wave',    l:'Vagues'},
-  {id:'glow',    l:'Lueur'},
-  {id:'ribbon',  l:'Ruban'},
-  {id:'frame3d', l:'Cadre 3D'},
-  {id:'blueprint',l:'Blueprint'},
-  {id:'neon',    l:'Néon'},
+  {id:'none',l:'Aucun'},{id:'simple',l:'Simple'},{id:'double',l:'Double'},
+  {id:'thick',l:'Épais'},{id:'dashed',l:'Tirets'},{id:'dotted',l:'Pointillés'},
+  {id:'ornate',l:'Orné'},{id:'shadow',l:'Ombre'},{id:'inset',l:'Inset'},
+  {id:'wave',l:'Vagues'},{id:'glow',l:'Lueur'},{id:'ribbon',l:'Ruban'},
+  {id:'frame3d',l:'Cadre 3D'},{id:'blueprint',l:'Blueprint'},{id:'neon',l:'Néon'},
 ]
 
 const PATTERNS=[{id:'dots',l:'Points'},{id:'lines',l:'Lignes'},{id:'grid',l:'Grille'},
@@ -553,21 +423,20 @@ const DEFAULT_PAGE_CONFIG: PageConfig={
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PAGE BACKGROUND
+// PAGE BACKGROUND & BORDER
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PageBackground({config}:{config:PageConfig}) {
   const {bgType,bgColor,bgColor2,bgGradAngle,bgPattern,bgPatternColor,bgPatternOpacity}=config
   const pat=useMemo(()=>{
-    const p={x:'0',y:'0',w:'20',h:'20'}
     switch(bgPattern) {
-      case 'dots':     return <pattern id="pp" {...p} width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1.5" fill={bgPatternColor} opacity={bgPatternOpacity}/></pattern>
-      case 'lines':    return <pattern id="pp" {...p} width="20" height="20" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="20" stroke={bgPatternColor} strokeWidth="0.8" opacity={bgPatternOpacity}/></pattern>
-      case 'grid':     return <pattern id="pp" {...p} width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20,0 L0,0 0,20" fill="none" stroke={bgPatternColor} strokeWidth="0.5" opacity={bgPatternOpacity}/></pattern>
-      case 'diagonal': return <pattern id="pp" {...p} width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="20" stroke={bgPatternColor} strokeWidth="1" opacity={bgPatternOpacity}/></pattern>
-      case 'cross':    return <pattern id="pp" {...p} width="20" height="20" patternUnits="userSpaceOnUse"><path d="M10,0 L10,20 M0,10 L20,10" fill="none" stroke={bgPatternColor} strokeWidth="0.5" opacity={bgPatternOpacity}/></pattern>
-      case 'wave':     return <pattern id="pp" {...p} width="40" height="20" patternUnits="userSpaceOnUse"><path d="M0,10 C10,0 30,20 40,10" fill="none" stroke={bgPatternColor} strokeWidth="1" opacity={bgPatternOpacity}/></pattern>
-      case 'chevron':  return <pattern id="pp" {...p} width="20" height="20" patternUnits="userSpaceOnUse"><polyline points="0,10 10,0 20,10" fill="none" stroke={bgPatternColor} strokeWidth="1" opacity={bgPatternOpacity}/></pattern>
+      case 'dots':     return <pattern id="pp" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1.5" fill={bgPatternColor} opacity={bgPatternOpacity}/></pattern>
+      case 'lines':    return <pattern id="pp" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="0" y2="20" stroke={bgPatternColor} strokeWidth="0.8" opacity={bgPatternOpacity}/></pattern>
+      case 'grid':     return <pattern id="pp" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20,0 L0,0 0,20" fill="none" stroke={bgPatternColor} strokeWidth="0.5" opacity={bgPatternOpacity}/></pattern>
+      case 'diagonal': return <pattern id="pp" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="20" stroke={bgPatternColor} strokeWidth="1" opacity={bgPatternOpacity}/></pattern>
+      case 'cross':    return <pattern id="pp" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M10,0 L10,20 M0,10 L20,10" fill="none" stroke={bgPatternColor} strokeWidth="0.5" opacity={bgPatternOpacity}/></pattern>
+      case 'wave':     return <pattern id="pp" x="0" y="0" width="40" height="20" patternUnits="userSpaceOnUse"><path d="M0,10 C10,0 30,20 40,10" fill="none" stroke={bgPatternColor} strokeWidth="1" opacity={bgPatternOpacity}/></pattern>
+      case 'chevron':  return <pattern id="pp" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><polyline points="0,10 10,0 20,10" fill="none" stroke={bgPatternColor} strokeWidth="1" opacity={bgPatternOpacity}/></pattern>
       default: return null
     }
   },[bgPattern,bgPatternColor,bgPatternOpacity])
@@ -579,125 +448,38 @@ function PageBackground({config}:{config:PageConfig}) {
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PAGE BORDER — extended with new styles
-// ─────────────────────────────────────────────────────────────────────────────
-
 function PageBorder({config}:{config:PageConfig}) {
   const {borderStyle:bs,borderColor:bc,borderWidth:bw}=config
   if (bs==='none') return null
-
   const base: React.CSSProperties={position:'absolute',inset:0,pointerEvents:'none',zIndex:200,boxSizing:'border-box'}
-
-  // ── existing styles ──
   if (bs==='simple')  return <div style={{...base,border:`${bw}px solid ${bc}`}}/>
   if (bs==='double')  return <div style={{...base,border:`${bw}px double ${bc}`}}/>
   if (bs==='thick')   return <div style={{...base,border:`${bw*2}px solid ${bc}`}}/>
   if (bs==='dashed')  return <div style={{...base,border:`${bw}px dashed ${bc}`}}/>
   if (bs==='dotted')  return <div style={{...base,border:`${bw}px dotted ${bc}`}}/>
   if (bs==='shadow')  return <div style={{...base,boxShadow:`inset 0 0 0 ${bw}px ${bc},inset 0 0 ${bw*3}px ${bc}40`}}/>
-  if (bs==='inset')   return <div style={{...base}}>
-    <div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw/2)}px solid ${bc}`,boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
-  </div>
-  if (bs==='ornate')  return <div style={{...base}}>
-    <div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',inset:bw+4,border:`${Math.max(1,bw/3)}px solid ${bc}`,boxSizing:'border-box',opacity:.5}}/>
-    {[[bw/2-bw,bw/2-bw],[bw/2-bw,undefined],[undefined,bw/2-bw],[undefined,undefined]].map(([t,l],i)=>(
-      <div key={i} style={{position:'absolute',width:bw*3,height:bw*3,background:bc,borderRadius:'50%',top:t!==undefined?t:undefined,bottom:t===undefined?bw/2-bw:undefined,left:l!==undefined?l:undefined,right:l===undefined?bw/2-bw:undefined}}/>
-    ))}
-  </div>
-
-  // ── new styles ──
-
-  // WAVE: SVG sinusoïdale sur chaque côté
+  if (bs==='inset')   return <div style={{...base}}><div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw/2)}px solid ${bc}`,boxSizing:'border-box'}}/><div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/></div>
+  if (bs==='ornate')  return <div style={{...base}}><div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/><div style={{position:'absolute',inset:bw+4,border:`${Math.max(1,bw/3)}px solid ${bc}`,boxSizing:'border-box',opacity:.5}}/></div>
   if (bs==='wave') {
-    const amp=bw*1.2, freq=40
-    const W=PAGE_W, H=PAGE_H
-    // top wave path
+    const amp=bw*1.2,freq=40,W=PAGE_W,H=PAGE_H
     const topPts=Array.from({length:Math.ceil(W/freq)+1},(_,i)=>`${i*freq},${amp*Math.sin(i*Math.PI)}`)
     const botPts=Array.from({length:Math.ceil(W/freq)+1},(_,i)=>`${i*freq},${H-amp*Math.sin(i*Math.PI)}`)
     const leftPts=Array.from({length:Math.ceil(H/freq)+1},(_,i)=>`${amp*Math.sin(i*Math.PI)},${i*freq}`)
     const rightPts=Array.from({length:Math.ceil(H/freq)+1},(_,i)=>`${W-amp*Math.sin(i*Math.PI)},${i*freq}`)
-    return <svg style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:200,overflow:'visible'}} width={W} height={H}>
-      <polyline points={topPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
-      <polyline points={botPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
-      <polyline points={leftPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
-      <polyline points={rightPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/>
-    </svg>
+    return <svg style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:200,overflow:'visible'}} width={W} height={H}><polyline points={topPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/><polyline points={botPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/><polyline points={leftPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/><polyline points={rightPts.join(' ')} fill="none" stroke={bc} strokeWidth={bw} strokeLinecap="round"/></svg>
   }
-
-  // GLOW: lueur diffuse intérieure
-  if (bs==='glow') return <div style={{...base,
-    boxShadow:`inset 0 0 ${bw*2}px ${bc}, inset 0 0 ${bw*5}px ${bc}55, inset 0 0 ${bw*10}px ${bc}22`,
-    border:`1px solid ${bc}44`
-  }}/>
-
-  // RIBBON: bande colorée de chaque côté avec liseret central
-  if (bs==='ribbon') return <div style={{...base}}>
-    {/* 4 bandes colorées */}
-    <div style={{position:'absolute',top:0,left:0,right:0,height:bw,background:bc,boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',bottom:0,left:0,right:0,height:bw,background:bc,boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',top:0,left:0,bottom:0,width:bw,background:bc,boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',top:0,right:0,bottom:0,width:bw,background:bc,boxSizing:'border-box'}}/>
-    {/* liseret blanc central */}
-    <div style={{position:'absolute',top:Math.round(bw*.35),left:Math.round(bw*.35),right:Math.round(bw*.35),height:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',bottom:Math.round(bw*.35),left:Math.round(bw*.35),right:Math.round(bw*.35),height:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',left:Math.round(bw*.35),top:Math.round(bw*.35),bottom:Math.round(bw*.35),width:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
-    <div style={{position:'absolute',right:Math.round(bw*.35),top:Math.round(bw*.35),bottom:Math.round(bw*.35),width:Math.max(1,Math.round(bw*.3)),background:'rgba(255,255,255,.55)',boxSizing:'border-box'}}/>
-  </div>
-
-  // FRAME3D: effet biseau 3D avec clair/foncé
+  if (bs==='glow') return <div style={{...base,boxShadow:`inset 0 0 ${bw*2}px ${bc}, inset 0 0 ${bw*5}px ${bc}55, inset 0 0 ${bw*10}px ${bc}22`,border:`1px solid ${bc}44`}}/>
+  if (bs==='ribbon') return <div style={{...base}}><div style={{position:'absolute',top:0,left:0,right:0,height:bw,background:bc}}/><div style={{position:'absolute',bottom:0,left:0,right:0,height:bw,background:bc}}/><div style={{position:'absolute',top:0,left:0,bottom:0,width:bw,background:bc}}/><div style={{position:'absolute',top:0,right:0,bottom:0,width:bw,background:bc}}/></div>
   if (bs==='frame3d') {
-    const light='rgba(255,255,255,0.6)', dark='rgba(0,0,0,0.35)'
-    return <div style={{...base}}>
-      {/* outer shadow */}
-      <div style={{position:'absolute',inset:0,borderTop:`${bw}px solid ${light}`,borderLeft:`${bw}px solid ${light}`,borderBottom:`${bw}px solid ${dark}`,borderRight:`${bw}px solid ${dark}`,boxSizing:'border-box'}}/>
-      {/* colored fill ring */}
-      <div style={{position:'absolute',inset:bw,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
-      {/* inner highlight */}
-      <div style={{position:'absolute',inset:bw*2,borderTop:`${Math.max(1,bw*.5)}px solid ${dark}`,borderLeft:`${Math.max(1,bw*.5)}px solid ${dark}`,borderBottom:`${Math.max(1,bw*.5)}px solid ${light}`,borderRight:`${Math.max(1,bw*.5)}px solid ${light}`,boxSizing:'border-box'}}/>
-    </div>
+    const light='rgba(255,255,255,0.6)',dark='rgba(0,0,0,0.35)'
+    return <div style={{...base}}><div style={{position:'absolute',inset:0,borderTop:`${bw}px solid ${light}`,borderLeft:`${bw}px solid ${light}`,borderBottom:`${bw}px solid ${dark}`,borderRight:`${bw}px solid ${dark}`,boxSizing:'border-box'}}/><div style={{position:'absolute',inset:bw,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/></div>
   }
-
-  // BLUEPRINT: style technique avec croix aux coins et pointillés
-  if (bs==='blueprint') {
-    const cross=bw*3
-    return <div style={{...base}}>
-      {/* border pointillé */}
-      <div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw*.5)}px dashed ${bc}`,boxSizing:'border-box',opacity:.5}}/>
-      <div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/>
-      {/* croix coins */}
-      {[
-        {top:-cross/2,  left:bw/2-cross/2},
-        {top:-cross/2,  right:bw/2-cross/2},
-        {bottom:-cross/2,left:bw/2-cross/2},
-        {bottom:-cross/2,right:bw/2-cross/2},
-      ].map((pos,i)=>(
-        <div key={i} style={{position:'absolute',...pos as any,width:cross,height:cross,pointerEvents:'none'}}>
-          <div style={{position:'absolute',top:'50%',left:0,right:0,height:Math.max(1,bw*.5),background:bc,transform:'translateY(-50%)'}}/>
-          <div style={{position:'absolute',left:'50%',top:0,bottom:0,width:Math.max(1,bw*.5),background:bc,transform:'translateX(-50%)'}}/>
-        </div>
-      ))}
-    </div>
-  }
-
-  // NEON: lueur colorée extérieure et intérieure style néon
-  if (bs==='neon') return <div style={{...base,
-    border:`${Math.max(1,bw*.4)}px solid ${bc}`,
-    boxShadow:[
-      `inset 0 0 ${bw}px ${bc}`,
-      `inset 0 0 ${bw*3}px ${bc}88`,
-      `0 0 ${bw}px ${bc}`,
-      `0 0 ${bw*3}px ${bc}88`,
-      `0 0 ${bw*6}px ${bc}44`,
-    ].join(',')
-  }}/>
-
+  if (bs==='blueprint') return <div style={{...base}}><div style={{position:'absolute',inset:bw,border:`${Math.max(1,bw*.5)}px dashed ${bc}`,boxSizing:'border-box',opacity:.5}}/><div style={{position:'absolute',inset:0,border:`${bw}px solid ${bc}`,boxSizing:'border-box'}}/></div>
+  if (bs==='neon') return <div style={{...base,border:`${Math.max(1,bw*.4)}px solid ${bc}`,boxShadow:[`inset 0 0 ${bw}px ${bc}`,`inset 0 0 ${bw*3}px ${bc}88`,`0 0 ${bw}px ${bc}`,`0 0 ${bw*3}px ${bc}88`,`0 0 ${bw*6}px ${bc}44`].join(',')}}/>
   return null
 }
 
-function SnapGuides({guides}:{guides:{x?:number;y?:number}[]}) {  
+function SnapGuides({guides}:{guides:{x?:number;y?:number}[]}) {
   return <>{guides.map((g,i)=>
     g.x!==undefined
     ?<div key={i} style={{position:'absolute',left:g.x-.5,top:0,width:1,height:'100%',background:'#1B4FD8',opacity:.8,pointerEvents:'none',zIndex:500}}/>
@@ -705,7 +487,7 @@ function SnapGuides({guides}:{guides:{x?:number;y?:number}[]}) {
   )}</>
 }
 
-// ──────────────────────────────────────────────────────────────────────────��──
+// ─────────────────────────────────────────────────────────────────────────────
 // UI HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -766,9 +548,13 @@ function Slider({label,min,max,value,onChange,accent,unit}:any){
 
 type PanelTab='elements'|'texte'|'inner'|'couleur'|'effets'|'page'|'calques'
 
-interface Props{zoom:number}
+interface Props {
+  zoom: number
+  /** When true, renders the properties panel below the canvas (mobile layout) */
+  mobileLayout?: boolean
+}
 
-export function EditableCoverPage({zoom}:Props){
+export function EditableCoverPage({zoom, mobileLayout=false}:Props){
   const {title,subtitle,ref:docRef,destination,confidentiality,docStyle,coverStyle,setCoverStyle}=useDocument()
   const {profile}=useProfile()
   const {planId}=usePlan()
@@ -788,7 +574,7 @@ export function EditableCoverPage({zoom}:Props){
   const [editId,setEditId]=useState<string|null>(null)
   const [innerEditId,setInnerEditId]=useState<string|null>(null)
   const [panelTab,setPanelTab]=useState<PanelTab>('elements')
-  const [showPanel,setShowPanel]=useState(false)
+  const [showPanel,setShowPanel]=useState(mobileLayout) // auto-open on mobile
   const [guides,setGuides]=useState<{x?:number;y?:number}[]>([])
   const [fontSearch,setFontSearch]=useState('')
   const [shapeSearch,setShapeSearch]=useState('')
@@ -896,11 +682,8 @@ export function EditableCoverPage({zoom}:Props){
         const dx=(e.clientX-sx)/dW,dy=(e.clientY-sy)/dH
         const updated=blocks.map(b=>{
           const start=starts.find(s=>s.id===b.id);if(!start)return b
-          // ── FIX: clamp generously — allow blocks to approach/cross edges freely.
-          // Only prevent the anchor point from going wildly out of bounds (-0.5 .. 1.5).
-          // The old Math.min(1-b.w, ...) was clamping too aggressively for wide blocks.
-          const nx=Math.max(-0.5, Math.min(1.5, start.bx+dx))
-          const ny=Math.max(-0.5, Math.min(1.5, start.by+dy))
+          const nx=Math.max(-0.5,Math.min(1.5,start.bx+dx))
+          const ny=Math.max(-0.5,Math.min(1.5,start.by+dy))
           if(ids.length===1){const{sx:snx,sy:sny}=computeSnap(b.id,nx,ny,b.w,b.h);return{...b,x:snx,y:sny}}
           return{...b,x:nx,y:ny}
         })
@@ -914,7 +697,6 @@ export function EditableCoverPage({zoom}:Props){
         if(handle.includes('s'))nh=Math.max(.005,bh+dy)
         if(handle.includes('w')){nx=bx+dx;nw=Math.max(.02,bw-dx)}
         if(handle.includes('n')){ny=by+dy;nh=Math.max(.005,bh-dy)}
-        // ── FIX: don't over-clamp on right/bottom — allow resize across the centre-line
         nx=Math.max(-0.5,nx);ny=Math.max(-0.5,ny)
         nw=Math.min(2,nw);nh=Math.min(2,nh)
         upd(id,{x:nx,y:ny,w:nw,h:nh})
@@ -980,36 +762,23 @@ export function EditableCoverPage({zoom}:Props){
           <span style={{fontSize:8*zoom,fontWeight:700}}>Cliquer pour choisir</span>
         </div>
       )
-      if(b.useBlur&&b.blur)content=<div style={{filter:`blur(${b.blur}px)`,width:'100%',height:'100%'}}>{content}</div>
     } else {
-      // Shape block
-      let shapeEl: React.ReactNode=<ShapeSVG b={b} accent={accent}/>
-      if(b.useBlur&&b.blur)shapeEl=<div style={{filter:`blur(${b.blur}px)`,width:'100%',height:'100%'}}>{shapeEl}</div>
-
       const hasInner=b.innerText&&b.innerText.length>0
       const showInnerEdit=isInnerEdit
       const minPadding=Math.max(100,4*zoom)
       content=(
         <div style={{position:'relative',width:'100%',height:'100%'}}>
-          {shapeEl}
+          {b.useBlur&&b.blur?<div style={{filter:`blur(${b.blur}px)`,width:'100%',height:'100%'}}><ShapeSVG b={b} accent={accent}/></div>:<ShapeSVG b={b} accent={accent}/>}
           {(hasInner||showInnerEdit)&&(
-            <div
-              contentEditable={showInnerEdit}
-              suppressContentEditableWarning
+            <div contentEditable={showInnerEdit} suppressContentEditableWarning
               onInput={e=>upd(b.id,{innerText:(e.currentTarget as HTMLElement).innerText})}
               onBlur={()=>setInnerEditId(null)}
-              style={{
-                position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',
-                pointerEvents:showInnerEdit?'text':'none' as any,
-                cursor:showInnerEdit?'text':'inherit',
-                outline:'none',overflow:'hidden',
-                padding:`${minPadding}px`,textAlign:b.innerAlign||'center',
-                fontSize:innerFs,fontWeight:b.innerBold?700:400,
-                fontStyle:b.innerItalic?'italic':'normal',
-                color:b.innerColor||'#ffffff',
-                fontFamily:(b as any).innerFontFamily||fontTitle,
-                lineHeight:1.3,wordBreak:'break-word',
-                whiteSpace:'pre-wrap',
+              style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',
+                pointerEvents:showInnerEdit?'text':'none' as any,cursor:showInnerEdit?'text':'inherit',
+                outline:'none',overflow:'hidden',padding:`${minPadding}px`,textAlign:b.innerAlign||'center',
+                fontSize:innerFs,fontWeight:b.innerBold?700:400,fontStyle:b.innerItalic?'italic':'normal',
+                color:b.innerColor||'#ffffff',fontFamily:(b as any).innerFontFamily||fontTitle,
+                lineHeight:1.3,wordBreak:'break-word',whiteSpace:'pre-wrap',
               }}
               dangerouslySetInnerHTML={showInnerEdit?undefined:{__html:(b.innerText||'').replace(/\n/g,'<br/>')}}
             />
@@ -1050,7 +819,7 @@ export function EditableCoverPage({zoom}:Props){
     )
   }
 
-  // ── Panel ─────────────────────────────────────────────────────────────────
+  // ── Panel content ────────────────────────────────────────────────────────
 
   const renderPanel=()=>{
 
@@ -1061,7 +830,7 @@ export function EditableCoverPage({zoom}:Props){
           group.shapes.length===0?null:
           <div key={group.group}>
             {!shapeSearch&&<label style={{...LBL,marginBottom:3,color:'var(--text3)'}}>{group.group}</label>}
-            <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:2,marginBottom:4}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:2,marginBottom:4}}>
               {group.shapes.map(({s,i,l})=>(
                 <button key={s} onClick={()=>add('rect',s)} title={l}
                   style={{display:'flex',flexDirection:'column',alignItems:'center',gap:1,padding:'5px 2px',borderRadius:6,border:'1px solid var(--border)',background:'var(--bg)',cursor:'pointer',transition:'all .1s'}}
@@ -1092,7 +861,7 @@ export function EditableCoverPage({zoom}:Props){
           <Divider/>
           {isShape&&<>
             <label style={LBL}>Changer la forme</label>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:2,maxHeight:120,overflowY:'auto'}}>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(6,1fr)',gap:2,maxHeight:100,overflowY:'auto'}}>
               {ALL_SHAPES.map(({s,i})=>(
                 <button key={s} onClick={()=>upd(sel.id,{shape:s})} title={s}
                   style={{padding:'4px',borderRadius:4,border:`1.5px solid ${(sel as any).shape===s?accent:'var(--border)'}`,background:(sel as any).shape===s?`${accent}18`:'transparent',cursor:'pointer',fontSize:11,transition:'all .1s'}}>
@@ -1100,10 +869,6 @@ export function EditableCoverPage({zoom}:Props){
                 </button>
               ))}
             </div>
-            {((sel as any).shape==='rect'||(sel as any).shape==='rect_round')&&<>
-              <label style={LBL}>Coins arrondis</label>
-              <Slider label="" min={0} max={50} value={sel.radius||0} onChange={(v:number)=>upd(sel.id,{radius:v})} accent={accent} unit="px"/>
-            </>}
           </>}
           <label style={LBL}>Position & Taille</label>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:4}}>
@@ -1130,24 +895,6 @@ export function EditableCoverPage({zoom}:Props){
             <button onClick={()=>dup()} style={{...ICOBTN,padding:'5px',fontSize:10}}>⧉ Dupliquer</button>
             <button onClick={()=>del()} style={{...ICOBTN,padding:'5px',fontSize:10,color:'#DC2626',borderColor:'rgba(220,38,38,.3)'}}>✕ Supprimer</button>
           </div>
-          <label style={LBL}>Aligner</label>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:2}}>
-            {[['⟵','left'],['⬌','center-h'],['⟶','right'],['⬆','top'],['⬍','center-v'],['⬇','bottom']].map(([lbl,al])=>(
-              <button key={al} onClick={()=>{
-                const sb=blocks.filter(b=>selIds.has(b.id));if(!sb.length)return
-                const minX=Math.min(...sb.map(b=>b.x)),maxX=Math.max(...sb.map(b=>b.x+b.w))
-                const minY=Math.min(...sb.map(b=>b.y)),maxY=Math.max(...sb.map(b=>b.y+b.h))
-                const cx=(minX+maxX)/2,cy=(minY+maxY)/2
-                saveBlocks(blocks.map(b=>{
-                  if(!selIds.has(b.id))return b
-                  if(al==='left')return{...b,x:minX};if(al==='right')return{...b,x:maxX-b.w}
-                  if(al==='center-h')return{...b,x:cx-b.w/2};if(al==='top')return{...b,y:minY}
-                  if(al==='bottom')return{...b,y:maxY-b.h};if(al==='center-v')return{...b,y:cy-b.h/2}
-                  return b
-                }))
-              }} style={{...ICOBTN,padding:'4px',fontSize:11,textAlign:'center'}}>{lbl}</button>
-            ))}
-          </div>
         </>}
       </div>
     )
@@ -1158,7 +905,7 @@ export function EditableCoverPage({zoom}:Props){
         <textarea rows={3} value={sel!.text||''} onChange={e=>upd(sel!.id,{text:e.target.value})} style={{...INP,height:56,resize:'vertical',lineHeight:1.4}}/>
         <label style={LBL}>Police</label>
         <input placeholder="🔍 Rechercher…" value={fontSearch} onChange={e=>setFontSearch(e.target.value)} style={{...INP,fontSize:10,marginBottom:2}}/>
-        <div style={{maxHeight:160,overflowY:'auto',display:'flex',flexDirection:'column',gap:1,border:'1px solid var(--border)',borderRadius:7,padding:4}}>
+        <div style={{maxHeight:140,overflowY:'auto',display:'flex',flexDirection:'column',gap:1,border:'1px solid var(--border)',borderRadius:7,padding:4}}>
           {(fontSearch?[{label:'Résultats',fonts:FONTS.filter(f=>f.toLowerCase().includes(fontSearch.toLowerCase()))}]:FONT_GROUPS).map(group=>(
             <div key={group.label}>
               {!fontSearch&&<div style={{fontSize:8,fontWeight:800,letterSpacing:'.08em',color:'var(--text4)',textTransform:'uppercase',padding:'4px 6px 2px'}}>{group.label}</div>}
@@ -1205,7 +952,7 @@ export function EditableCoverPage({zoom}:Props){
             <button key={v} onClick={()=>upd(sel!.id,{textTransform:v as any})} style={{flex:1,padding:'3px',borderRadius:4,border:'1px solid',cursor:'pointer',fontSize:9,fontWeight:700,borderColor:((sel as any).textTransform||'none')===v?accent:'var(--border)',background:((sel as any).textTransform||'none')===v?`${accent}18`:'transparent',color:((sel as any).textTransform||'none')===v?accent:'var(--text4)'}}>{l}</button>
           ))}
         </div>
-        <Slider label="Espacement lettres" min={-10} max={80} value={Math.round((sel!.letterSpacing||0)*100)} onChange={(v:number)=>upd(sel!.id,{letterSpacing:v/100})} accent={accent} unit="%"/>
+        <Slider label="Espacement" min={-10} max={80} value={Math.round((sel!.letterSpacing||0)*100)} onChange={(v:number)=>upd(sel!.id,{letterSpacing:v/100})} accent={accent} unit="%"/>
         <Slider label="Interligne" min={60} max={400} value={Math.round((sel!.lineHeight||1.35)*100)} onChange={(v:number)=>upd(sel!.id,{lineHeight:v/100})} accent={accent} unit="%"/>
         <label style={LBL}>Couleur</label>
         <ColorRow value={sel!.color||'#0D1117'} onChange={v=>upd(sel!.id,{color:v})}/>
@@ -1225,8 +972,7 @@ export function EditableCoverPage({zoom}:Props){
           💡 Double-cliquez sur la forme dans le canvas pour éditer le texte directement
         </div>
         <label style={LBL}>Texte intérieur</label>
-        <textarea rows={3} value={sel.innerText||''} onChange={e=>upd(sel.id,{innerText:e.target.value})}
-          style={{...INP,height:56,resize:'vertical',lineHeight:1.4}} placeholder="Entrez le texte de la forme…"/>
+        <textarea rows={3} value={sel.innerText||''} onChange={e=>upd(sel.id,{innerText:e.target.value})} style={{...INP,height:56,resize:'vertical',lineHeight:1.4}} placeholder="Entrez le texte de la forme…"/>
         <label style={LBL}>Police</label>
         <select value={(sel as any).innerFontFamily||fontTitle} onChange={e=>upd(sel.id,{innerFontFamily:e.target.value})} style={INP}>
           {FONTS.map(f=><option key={f} value={f} style={{fontFamily:f}}>{f}</option>)}
@@ -1251,10 +997,7 @@ export function EditableCoverPage({zoom}:Props){
         </div>
         <label style={LBL}>Couleur du texte</label>
         <ColorRow value={sel.innerColor||'#ffffff'} onChange={v=>upd(sel.id,{innerColor:v})}/>
-        {sel.innerText&&<>
-          <Divider/>
-          <button onClick={()=>upd(sel.id,{innerText:''})} style={{...ICOBTN,width:'100%',padding:'6px',color:'#DC2626',borderColor:'rgba(220,38,38,.3)',background:'#FEF2F2',fontSize:10}}>Effacer le texte intérieur</button>
-        </>}
+        {sel.innerText&&<><Divider/><button onClick={()=>upd(sel.id,{innerText:''})} style={{...ICOBTN,width:'100%',padding:'6px',color:'#DC2626',borderColor:'rgba(220,38,38,.3)',background:'#FEF2F2',fontSize:10}}>Effacer le texte intérieur</button></>}
       </div>
     )
 
@@ -1275,11 +1018,8 @@ export function EditableCoverPage({zoom}:Props){
         {isImg&&<>
           <label style={LBL}>Image</label>
           <button onClick={()=>fileRef.current?.click()} style={{width:'100%',padding:'10px',border:'1px dashed var(--border2)',borderRadius:8,background:'var(--bg)',cursor:'pointer',fontSize:11,fontWeight:700,color:'var(--text3)'}}>📁 Choisir une image…</button>
-          {sel!.src&&<>
-            <div style={{borderRadius:8,overflow:'hidden',border:'1px solid var(--border)',background:'#f5f7fa',aspectRatio:'4/3'}}><img src={sel!.src} style={{width:'100%',height:'100%',objectFit:'contain'}} alt=""/></div>
-            <div style={{display:'flex',gap:3}}>
-              {(['contain','cover','fill'] as const).map(m=><button key={m} onClick={()=>upd(sel!.id,{objectFit:m})} style={{flex:1,padding:'4px',borderRadius:5,border:'1px solid',cursor:'pointer',fontSize:9,fontWeight:700,borderColor:sel!.objectFit===m?accent:'var(--border)',background:sel!.objectFit===m?`${accent}18`:'transparent',color:sel!.objectFit===m?accent:'var(--text4)'}}>{m}</button>)}
-            </div>
+          {sel!.src&&<><div style={{borderRadius:8,overflow:'hidden',border:'1px solid var(--border)',background:'#f5f7fa',aspectRatio:'4/3'}}><img src={sel!.src} style={{width:'100%',height:'100%',objectFit:'contain'}} alt=""/></div>
+            <div style={{display:'flex',gap:3}}>{(['contain','cover','fill'] as const).map(m=><button key={m} onClick={()=>upd(sel!.id,{objectFit:m})} style={{flex:1,padding:'4px',borderRadius:5,border:'1px solid',cursor:'pointer',fontSize:9,fontWeight:700,borderColor:sel!.objectFit===m?accent:'var(--border)',background:sel!.objectFit===m?`${accent}18`:'transparent',color:sel!.objectFit===m?accent:'var(--text4)'}}>{m}</button>)}</div>
             <button onClick={()=>upd(sel!.id,{src:undefined})} style={{width:'100%',padding:'5px',border:'1px solid rgba(220,38,38,.3)',background:'#FEF2F2',borderRadius:6,cursor:'pointer',fontSize:10,fontWeight:700,color:'#DC2626'}}>Retirer l'image</button>
           </>}
           <label style={LBL}>Fond placeholder</label>
@@ -1327,11 +1067,6 @@ export function EditableCoverPage({zoom}:Props){
         {isText&&<><Divider/>
           <label style={LBL}>Ombre texte CSS</label>
           <input placeholder="2px 2px 4px rgba(0,0,0,.5)" value={(sel as any).textShadow||''} onChange={e=>upd(sel.id,{textShadow:e.target.value})} style={{...INP,fontFamily:'monospace',fontSize:10}}/>
-          <div style={{display:'flex',flexDirection:'column',gap:2}}>
-            {['2px 2px 4px rgba(0,0,0,.4)','0 0 20px rgba(255,255,255,.9)','4px 4px 0px #000','-1px -1px 0 #fff,1px 1px 0 #000'].map(p=>(
-              <button key={p} onClick={()=>upd(sel.id,{textShadow:p})} style={{padding:'3px 7px',borderRadius:5,border:'1px solid var(--border)',background:'var(--bg)',cursor:'pointer',fontSize:9,color:'var(--text4)',textAlign:'left',fontFamily:'monospace'}}>{p}</button>
-            ))}
-          </div>
         </>}
       </div>
     )
@@ -1358,14 +1093,10 @@ export function EditableCoverPage({zoom}:Props){
         </>}
         <Divider/>
         <label style={LBL}>Encadrement de page</label>
-        {/* ── Grid 3 columns for the expanded list ── */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:3}}>
           {PAGE_BORDER_STYLES.map(({id,l})=>(
             <button key={id} onClick={()=>saveConf({borderStyle:id as PageBorderStyle})}
-              style={{padding:'5px 3px',borderRadius:6,border:'1px solid',cursor:'pointer',fontSize:9,fontWeight:600,lineHeight:1.2,textAlign:'center',
-                borderColor:pageConf.borderStyle===id?accent:'var(--border)',
-                background:pageConf.borderStyle===id?`${accent}18`:'transparent',
-                color:pageConf.borderStyle===id?accent:'var(--text4)'}}>
+              style={{padding:'5px 3px',borderRadius:6,border:'1px solid',cursor:'pointer',fontSize:9,fontWeight:600,lineHeight:1.2,textAlign:'center',borderColor:pageConf.borderStyle===id?accent:'var(--border)',background:pageConf.borderStyle===id?`${accent}18`:'transparent',color:pageConf.borderStyle===id?accent:'var(--text4)'}}>
               {l}
             </button>
           ))}
@@ -1401,7 +1132,6 @@ export function EditableCoverPage({zoom}:Props){
               <span style={{fontSize:9,fontWeight:600,color:'var(--text2)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.type==='text'?(b.text||'Texte').slice(0,14):b.innerText?(b.innerText).slice(0,12):((b as any).shape||b.type)+` #${i+1}`}</span>
               {b.locked&&<span style={{fontSize:8}}>🔒</span>}
               {b.groupId&&<span style={{fontSize:7,padding:'1px 3px',borderRadius:3,background:'var(--accentS)',color:'var(--accent)',fontWeight:700}}>G</span>}
-              {b.innerText&&<span style={{fontSize:7,padding:'1px 3px',borderRadius:3,background:'rgba(16,185,129,.1)',color:'#059669',fontWeight:700}}>T</span>}
               <div style={{display:'flex',gap:1,flexShrink:0}}>
                 <button onClick={e=>{e.stopPropagation();upd(b.id,{z:(b.z||1)+1})}} style={{...ICOBTN,padding:'1px 4px'}}>↑</button>
                 <button onClick={e=>{e.stopPropagation();upd(b.id,{z:Math.max(1,(b.z||1)-1)})}} style={{...ICOBTN,padding:'1px 4px'}}>↓</button>
@@ -1426,6 +1156,197 @@ export function EditableCoverPage({zoom}:Props){
     ['calques','≡','Calques'],
   ]
 
+  // ── Shared: the A4 canvas ────────────────────────────────────────────────
+
+  const canvasEl = (
+    <div style={{width:dW,height:dH,position:'relative',flexShrink:0,overflow:'hidden'}}>
+      <div id="eetra-page-cover" ref={canvasRef}
+        style={{
+          width:PAGE_W,height:PAGE_H,
+          position:'absolute',top:0,left:0,
+          transform:`scale(${zoom})`,transformOrigin:'top left',
+          overflow:'hidden',cursor:'default',
+        }}
+        onClick={e=>{if(!(e.target as HTMLElement).closest('[data-block]')){setSelIds(new Set());setEditId(null);setInnerEditId(null)}}}>
+        <PageBackground config={pageConf}/>
+        <div className="pdf-hidden" style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(circle,rgba(0,0,0,.025) 1px,transparent 1px)',backgroundSize:'14px 14px',pointerEvents:'none',zIndex:2}}/>
+        {/* DEFAULT PREVIEW */}
+        {!hasBlocks&&(
+          <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:3,display:'flex',flexDirection:'column',boxSizing:'border-box'}}>
+            <div style={{position:'absolute',left:0,top:0,width:6,height:'100%',background:accent}}/>
+            <div style={{position:'absolute',left:6,top:0,width:1.5,height:'100%',background:`${accent}22`}}/>
+            <div style={{position:'absolute',top:-80,right:-80,width:240,height:240,borderRadius:'50%',background:`${accent}07`}}/>
+            <div style={{padding:'44px 56px 0 68px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexShrink:0}}>
+              {profile.logoDataUrl?(
+                <img src={profile.logoDataUrl} alt="logo" style={{height:46,maxWidth:155,objectFit:'contain'}}/>
+              ):profile.name?(
+                <div style={{display:'flex',alignItems:'center',gap:10}}>
+                  <div style={{width:42,height:42,borderRadius:11,background:accent,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:`0 3px 16px ${accent}40`}}>
+                    <span style={{color:'#fff',fontWeight:900,fontSize:19,fontFamily:`'${fontTitle}',sans-serif`}}>{(profile.name||'E').charAt(0)}</span>
+                  </div>
+                  <div>
+                    <div style={{fontFamily:`'${fontTitle}',sans-serif`,fontWeight:900,fontSize:16,color:'#0A0F1E'}}>{profile.name}</div>
+                    {profile.tagline&&<div style={{fontSize:9.5,color:'#9aa8b8',marginTop:1.5}}>{profile.tagline}</div>}
+                  </div>
+                </div>
+              ):null}
+              {confidentiality&&(
+                <div style={{display:'inline-flex',alignItems:'center',gap:7,padding:'6px 14px 6px 10px',borderRadius:4,border:`1.5px solid ${accent}`,background:`${accent}14`}}>
+                  <div style={{width:7,height:7,borderRadius:'50%',background:accent}}/>
+                  <span style={{fontSize:8.5,fontWeight:800,letterSpacing:'.26em',textTransform:'uppercase',color:accent}}>{confidentiality}</span>
+                </div>
+              )}
+            </div>
+            <div style={{flex:1,padding:'0 56px 0 68px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
+              <div style={{maxWidth:580}}>
+                {subtitle&&(
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
+                    <div style={{width:28,height:2.5,borderRadius:2,background:accent,flexShrink:0}}/>
+                    <span style={{fontSize:10,fontWeight:700,letterSpacing:'.32em',textTransform:'uppercase',color:accent}}>{subtitle}</span>
+                  </div>
+                )}
+                <h1 style={{fontFamily:`'${fontTitle}',serif`,fontSize:(({sm:34,md:44,lg:56,xl:70} as Record<string,number>)[cv.titleSize as string]??56),fontWeight:900,letterSpacing:'-.035em',lineHeight:1.06,color:'#0A0F1E',margin:0,wordBreak:'break-word'}}>
+                  {title||'TITRE DU DOCUMENT'}
+                </h1>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginTop:24,marginBottom:20}}>
+                  <div style={{width:40,height:3.5,borderRadius:2,background:accent}}/>
+                  <div style={{width:6,height:6,borderRadius:'50%',background:`${accent}55`}}/>
+                </div>
+                {(docRef||destination)&&(
+                  <div style={{display:'flex',gap:48,flexWrap:'wrap'}}>
+                    {docRef&&<div><div style={{fontSize:7.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',color:'#a8b4c4',marginBottom:5}}>Référence</div><div style={{fontSize:13,fontWeight:700,color:accent,letterSpacing:'.05em',fontFamily:'monospace'}}>{docRef}</div></div>}
+                    {destination&&<div><div style={{fontSize:7.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',color:'#a8b4c4',marginBottom:5}}>Destinataire</div><div style={{fontSize:16,fontWeight:700,color:'#0A0F1E',lineHeight:1.2}}>{destination}</div></div>}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{padding:'24px 56px 36px 68px',flexShrink:0}}>
+              <div style={{height:1,background:`linear-gradient(90deg,${accent}44 0%,transparent 70%)`,marginBottom:20}}/>
+              <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
+                <div>
+                  <div style={{fontSize:7.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',color:'#a8b4c4',marginBottom:5}}>Date d'émission</div>
+                  <div style={{fontSize:13,fontWeight:600,color:'#0A0F1E'}}>{new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:16}}>
+                  {showWatermark&&<span style={{fontSize:7,letterSpacing:'.12em',color:'#d0d8e4'}}>Généré par EETRA</span>}
+                  {pageConf.showQr&&qrDataUrl&&<div style={{padding:5,borderRadius:7,background:'#fff',border:'1px solid #edf2f7'}}><img src={qrDataUrl} alt="QR" style={{width:40,height:40,display:'block'}}/></div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {[...blocks].sort((a,b)=>(a.z||0)-(b.z||0)).map(renderBlock)}
+        <SnapGuides guides={guides}/>
+        <PageBorder config={pageConf}/>
+        {!hasBlocks&&(
+          <div className="pdf-hidden" onClick={e=>{e.stopPropagation();add('text')}}
+            style={{position:'absolute',bottom:10,right:10,zIndex:210,display:'flex',alignItems:'center',gap:4,padding:'5px 9px',borderRadius:7,border:`1px dashed ${accent}`,background:`${accent}14`,cursor:'pointer',color:accent,fontSize:9,fontWeight:700}}>
+            + Personnaliser
+          </div>
+        )}
+        {pageConf.showQr&&qrDataUrl&&hasBlocks&&<div style={{position:'absolute',bottom:6,right:6,pointerEvents:'none',zIndex:205}}><img src={qrDataUrl} alt="QR" style={{width:32,height:32}}/></div>}
+        {showWatermark&&hasBlocks&&<div style={{position:'absolute',bottom:5,left:8,fontSize:6,color:'#ccc',pointerEvents:'none',zIndex:205}}>Généré par EETRA</div>}
+      </div>
+    </div>
+  )
+
+  // ── Shared: the panel tabs bar ───────────────────────────────────────────
+
+  const panelTabBar = (
+    <div style={{display:'flex',borderBottom:'1px solid var(--border)',flexShrink:0,overflowX:'auto',
+      // hide scrollbar
+      scrollbarWidth:'none',
+    }}>
+      {panelTabs.map(([id,icon,label])=>(
+        <button key={id} onClick={()=>setPanelTab(id)}
+          style={{flex:1,minWidth:40,display:'flex',flexDirection:'column',alignItems:'center',gap:1,padding:'7px 2px',border:'none',cursor:'pointer',background:'transparent',fontSize:12,borderBottom:`2px solid ${panelTab===id?accent:'transparent'}`,color:panelTab===id?accent:'var(--text4)',transition:'all .1s',whiteSpace:'nowrap'}}>
+          <span>{icon}</span><span style={{fontSize:7,fontWeight:700}}>{label}</span>
+        </button>
+      ))}
+    </div>
+  )
+
+  // ── Quick-action bar (mobile) ─────────────────────────────────────────────
+
+  const quickBar = (
+    <div className="pdf-hidden" style={{display:'flex',alignItems:'center',gap:3,padding:'6px 10px',borderBottom:'1px solid var(--border)',background:'var(--surface)',overflowX:'auto',scrollbarWidth:'none',flexShrink:0}}>
+      {[{s:'rect',i:'▬'},{s:'ellipse',i:'●'},{s:'triangle_iso',i:'▲'},{s:'star5',i:'★'},{s:'heart',i:'♥'},{s:'ribbon_u',i:'🎀'},{s:'callout_rect',i:'💬'}].map(({s,i})=>(
+        <button key={s} onClick={()=>add('rect',s)} title={s}
+          style={{width:30,height:30,borderRadius:6,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:13,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          {i}
+        </button>
+      ))}
+      <button onClick={()=>add('text')} style={{width:30,height:30,borderRadius:6,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:11,fontWeight:900,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>T</button>
+      <button onClick={()=>add('image')} style={{width:30,height:30,borderRadius:6,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:13,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>🖼</button>
+      {selIds.size>0&&<>
+        <div style={{width:1,height:20,background:'var(--border)',flexShrink:0,margin:'0 2px'}}/>
+        <button onClick={()=>dup()} style={{...ICOBTN,flexShrink:0,fontSize:13}}>⧉</button>
+        <button onClick={()=>del()} style={{...ICOBTN,border:'1px solid rgba(220,38,38,.3)',background:'#FEF2F2',color:'#DC2626',flexShrink:0}}>✕</button>
+      </>}
+      <div style={{marginLeft:'auto',flexShrink:0}}>
+        <Toggle value={pageConf.showQr} onChange={v=>saveConf({showQr:v})} accent={accent}/>
+      </div>
+    </div>
+  )
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MOBILE LAYOUT: canvas on top, panel snapped below
+  // ─────────────────────────────────────────────────────────────────────────
+
+  if (mobileLayout) {
+    return (
+      <div style={{display:'flex',flexDirection:'column',width:'100%'}}>
+        {/* The scaled A4 page */}
+        {canvasEl}
+
+        {/* Snackbar panel — always visible, attached to bottom of page */}
+        <div className="pdf-hidden" style={{
+          width:'100%',
+          background:'var(--surface)',
+          borderTop:'2px solid var(--border)',
+          borderRadius:'0 0 12px 12px',
+          boxShadow:'0 6px 24px rgba(0,0,0,.10)',
+          display:'flex',
+          flexDirection:'column',
+          overflow:'hidden',
+        }}>
+          {/* Quick shape/text shortcuts */}
+          {quickBar}
+
+          {/* Tab selector */}
+          {panelTabBar}
+
+          {/* Panel content — scrollable, max height so it doesn't eat entire screen */}
+          <div style={{
+            maxHeight: 320,
+            overflowY:'auto',
+            overflowX:'hidden',
+            scrollbarWidth:'none',
+          }}>
+            {renderPanel()}
+          </div>
+
+          {/* Bottom action row when something is selected */}
+          {selIds.size>0&&(
+            <div style={{padding:'6px 10px',borderTop:'1px solid var(--border)',display:'flex',gap:4,flexShrink:0,background:'var(--surface)'}}>
+              <button onClick={()=>dup()} style={{flex:1,padding:'7px',borderRadius:6,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:10,fontWeight:700,color:'var(--text3)'}}>⧉ Dupliquer</button>
+              <button onClick={()=>del()} style={{flex:1,padding:'7px',borderRadius:6,border:'1px solid rgba(220,38,38,.3)',background:'#FEF2F2',cursor:'pointer',fontSize:10,fontWeight:700,color:'#DC2626'}}>✕ Supprimer</button>
+            </div>
+          )}
+        </div>
+
+        <input type="file" ref={fileRef} accept="image/*" style={{display:'none'}} onChange={e=>{
+          const f=e.target.files?.[0];if(!f||![...selIds][0])return
+          const r=new FileReader();r.onload=ev=>upd([...selIds][0],{src:ev.target?.result as string});r.readAsDataURL(f)
+        }}/>
+      </div>
+    )
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DESKTOP LAYOUT: original side panel
+  // ─────────────────────────────────────────────────────────────────────────
+
   return(
     <div style={{position:'relative',display:'flex',flexDirection:'column',alignItems:'center'}}>
 
@@ -1434,149 +1355,31 @@ export function EditableCoverPage({zoom}:Props){
         <span style={{fontSize:9,fontWeight:700,color:'var(--text3)',whiteSpace:'nowrap',marginRight:2}}>{hasBlocks?`${blocks.length} él.`:'Couverture'}</span>
         <div style={{width:1,height:18,background:'var(--border)',flexShrink:0}}/>
         {[{s:'rect',i:'▬'},{s:'ellipse',i:'●'},{s:'triangle_iso',i:'▲'},{s:'star5',i:'★'},{s:'ribbon_u',i:'🎀'},{s:'heart',i:'♥'},{s:'barrow_r',i:'▶'},{s:'callout_rect',i:'💬'},{s:'line',i:'─'}].map(({s,i})=>(
-          <button key={s} onClick={()=>add('rect',s)} title={s} style={{width:25,height:25,borderRadius:5,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:12,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .1s'}}
-            onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor=accent;el.style.color=accent}}
-            onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor='var(--border)';el.style.color='var(--text3)'}}>
-            {i}
-          </button>
+          <button key={s} onClick={()=>add('rect',s)} title={s} style={{width:25,height:25,borderRadius:5,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:12,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{i}</button>
         ))}
-        <button onClick={()=>add('text')} style={{width:25,height:25,borderRadius:5,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:10,fontWeight:900,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}
-          onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor=accent;el.style.color=accent}}
-          onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.borderColor='var(--border)';el.style.color='var(--text3)'}}>T</button>
+        <button onClick={()=>add('text')} style={{width:25,height:25,borderRadius:5,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:10,fontWeight:900,color:'var(--text3)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>T</button>
         <button onClick={()=>add('image')} style={{width:25,height:25,borderRadius:5,border:'1px solid var(--border)',background:'var(--bg2)',cursor:'pointer',fontSize:12,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>🖼</button>
-
         {selIds.size>0&&<>
           <div style={{width:1,height:18,background:'var(--border)',flexShrink:0}}/>
-          <button onClick={()=>dup()} title="Ctrl+D" style={{...ICOBTN,flexShrink:0}}>⧉</button>
+          <button onClick={()=>dup()} style={{...ICOBTN,flexShrink:0}}>⧉</button>
           {selIds.size>1&&<button onClick={group} style={{...ICOBTN,flexShrink:0}}>⊞</button>}
           {blocks.some(b=>selIds.has(b.id)&&b.groupId)&&<button onClick={ungroup} style={{...ICOBTN,flexShrink:0}}>⊟</button>}
           <button onClick={()=>del()} style={{...ICOBTN,border:'1px solid rgba(220,38,38,.3)',background:'#FEF2F2',color:'#DC2626',flexShrink:0}}>✕</button>
         </>}
         <div style={{width:1,height:18,background:'var(--border)',flexShrink:0,marginLeft:'auto'}}/>
         <button onClick={()=>saveConf({showQr:!pageConf.showQr})} style={{...ICOBTN,flexShrink:0,opacity:pageConf.showQr?1:.4,fontSize:11,padding:'3px 7px'}}>QR</button>
-        <button onClick={()=>setShowPanel(v=>!v)} style={{display:'flex',alignItems:'center',gap:4,padding:'4px 8px',borderRadius:7,border:`1px solid ${showPanel?accent:'var(--border)'}`,background:showPanel?`${accent}14`:'var(--bg2)',color:showPanel?accent:'var(--text3)',cursor:'pointer',fontSize:10,fontWeight:700,transition:'all .12s',flexShrink:0}}>
+        <button onClick={()=>setShowPanel(v=>!v)} style={{display:'flex',alignItems:'center',gap:4,padding:'4px 8px',borderRadius:7,border:`1px solid ${showPanel?accent:'var(--border)'}`,background:showPanel?`${accent}14`:'var(--bg2)',color:showPanel?accent:'var(--text3)',cursor:'pointer',fontSize:10,fontWeight:700,flexShrink:0}}>
           {showPanel?'✕':'⚙'} {showPanel?'Fermer':'Propriétés'}
         </button>
       </div>
 
-      {/* CANVAS + PANEL */}
+      {/* CANVAS + SIDE PANEL */}
       <div style={{display:'flex',alignItems:'flex-start'}}>
-        <div style={{width:dW,height:dH,position:'relative',flexShrink:0,overflow:'hidden'}}>
-        <div id="eetra-page-cover" ref={canvasRef}
-          style={{
-            width:PAGE_W,height:PAGE_H,
-            position:'absolute',top:0,left:0,
-            transform:`scale(${zoom})`,transformOrigin:'top left',
-            overflow:'hidden',cursor:'default',
-          }}
-          onClick={e=>{if(!(e.target as HTMLElement).closest('[data-block]')){setSelIds(new Set());setEditId(null);setInnerEditId(null)}}}>
-          <PageBackground config={pageConf}/>
-          <div className="pdf-hidden" style={{position:'absolute',inset:0,backgroundImage:'radial-gradient(circle,rgba(0,0,0,.025) 1px,transparent 1px)',backgroundSize:'14px 14px',pointerEvents:'none',zIndex:2}}/>
-          {/* ── DEFAULT PREVIEW (no custom blocks) ── */}
-          {!hasBlocks&&(
-            <div style={{position:'absolute',inset:0,pointerEvents:'none',zIndex:3,display:'flex',flexDirection:'column',boxSizing:'border-box'}}>
-              <div style={{position:'absolute',left:0,top:0,width:6,height:'100%',background:accent}}/>
-              <div style={{position:'absolute',left:6,top:0,width:1.5,height:'100%',background:`${accent}22`}}/>
-              <div style={{position:'absolute',top:-80,right:-80,width:240,height:240,borderRadius:'50%',background:`${accent}07`}}/>
-              <div style={{position:'absolute',top:-30,right:-30,width:120,height:120,borderRadius:'50%',background:`${accent}05`}}/>
-              <div style={{padding:'44px 56px 0 68px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',flexShrink:0}}>
-                {profile.logoDataUrl?(
-                  <img src={profile.logoDataUrl} alt="logo" style={{height:46,maxWidth:155,objectFit:'contain'}}/>
-                ):profile.name?(
-                  <div style={{display:'flex',alignItems:'center',gap:10}}>
-                    <div style={{width:42,height:42,borderRadius:11,background:accent,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:`0 3px 16px ${accent}40`}}>
-                      <span style={{color:'#fff',fontWeight:900,fontSize:19,fontFamily:`'${fontTitle}',sans-serif`}}>{(profile.name||'E').charAt(0)}</span>
-                    </div>
-                    <div>
-                      <div style={{fontFamily:`'${fontTitle}',sans-serif`,fontWeight:900,fontSize:16,color:'#0A0F1E',letterSpacing:'-.02em'}}>{profile.name}</div>
-                      {profile.tagline&&<div style={{fontSize:9.5,color:'#9aa8b8',marginTop:1.5}}>{profile.tagline}</div>}
-                    </div>
-                  </div>
-                ):null}
-                {confidentiality&&(
-                  <div style={{display:'inline-flex',alignItems:'center',gap:7,padding:'6px 14px 6px 10px',borderRadius:4,border:`1.5px solid ${accent}`,background:`${accent}14`}}>
-                    <div style={{width:7,height:7,borderRadius:'50%',background:accent}}/>
-                    <span style={{fontSize:8.5,fontWeight:800,letterSpacing:'.26em',textTransform:'uppercase',color:accent}}>{confidentiality}</span>
-                  </div>
-                )}
-              </div>
-              <div style={{flex:1,padding:'0 56px 0 68px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
-                <div style={{maxWidth:580}}>
-                  {subtitle&&(
-                    <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16}}>
-                      <div style={{width:28,height:2.5,borderRadius:2,background:accent,flexShrink:0}}/>
-                      <span style={{fontSize:10,fontWeight:700,letterSpacing:'.32em',textTransform:'uppercase',color:accent}}>{subtitle}</span>
-                    </div>
-                  )}
-                  <h1 style={{fontFamily:`'${fontTitle}',serif`,fontSize:(({sm:34,md:44,lg:56,xl:70} as Record<string,number>)[cv.titleSize as string]??56),fontWeight:900,letterSpacing:'-.035em',lineHeight:1.06,color:'#0A0F1E',margin:0,wordBreak:'break-word'}}>
-                    {title||'TITRE DU DOCUMENT'}
-                  </h1>
-                  <div style={{display:'flex',alignItems:'center',gap:8,marginTop:24,marginBottom:20}}>
-                    <div style={{width:40,height:3.5,borderRadius:2,background:accent}}/>
-                    <div style={{width:6,height:6,borderRadius:'50%',background:`${accent}55`}}/>
-                    <div style={{width:20,height:1.5,borderRadius:1,background:`${accent}30`}}/>
-                  </div>
-                  {(docRef||destination)&&(
-                    <div style={{display:'flex',gap:48,flexWrap:'wrap'}}>
-                      {docRef&&(
-                        <div>
-                          <div style={{fontSize:7.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',color:'#a8b4c4',marginBottom:5}}>Référence</div>
-                          <div style={{fontSize:13,fontWeight:700,color:accent,letterSpacing:'.05em',fontFamily:'monospace'}}>{docRef}</div>
-                        </div>
-                      )}
-                      {destination&&(
-                        <div>
-                          <div style={{fontSize:7.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',color:'#a8b4c4',marginBottom:5}}>Destinataire</div>
-                          <div style={{fontSize:16,fontWeight:700,color:'#0A0F1E',lineHeight:1.2}}>{destination}</div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div style={{padding:'24px 56px 36px 68px',flexShrink:0}}>
-                <div style={{height:1,background:`linear-gradient(90deg,${accent}44 0%,transparent 70%)`,marginBottom:20}}/>
-                <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between'}}>
-                  <div>
-                    <div style={{fontSize:7.5,fontWeight:800,letterSpacing:'.24em',textTransform:'uppercase',color:'#a8b4c4',marginBottom:5}}>Date d'émission</div>
-                    <div style={{fontSize:13,fontWeight:600,color:'#0A0F1E'}}>{new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})}</div>
-                  </div>
-                  <div style={{display:'flex',alignItems:'center',gap:16}}>
-                    {showWatermark&&<span style={{fontSize:7,letterSpacing:'.12em',color:'#d0d8e4'}}>Généré par EETRA</span>}
-                    {pageConf.showQr&&qrDataUrl&&(
-                      <div style={{padding:5,borderRadius:7,background:'#fff',border:'1px solid #edf2f7'}}>
-                        <img src={qrDataUrl} alt="QR" style={{width:40,height:40,display:'block'}}/>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {[...blocks].sort((a,b)=>(a.z||0)-(b.z||0)).map(renderBlock)}
-          <SnapGuides guides={guides}/>
-          <PageBorder config={pageConf}/>
-          {!hasBlocks&&(
-            <div className="pdf-hidden" onClick={e=>{e.stopPropagation();add('text')}}
-              style={{position:'absolute',bottom:10,right:10,zIndex:210,display:'flex',alignItems:'center',gap:4,padding:'5px 9px',borderRadius:7,border:`1px dashed ${accent}`,background:`${accent}14`,cursor:'pointer',color:accent,fontSize:9,fontWeight:700}}>
-              + Personnaliser
-            </div>
-          )}
-          {pageConf.showQr&&qrDataUrl&&hasBlocks&&<div style={{position:'absolute',bottom:6,right:6,pointerEvents:'none',zIndex:205}}><img src={qrDataUrl} alt="QR" style={{width:32,height:32}}/></div>}
-          {showWatermark&&hasBlocks&&<div style={{position:'absolute',bottom:5,left:8,fontSize:6,color:'#ccc',pointerEvents:'none',zIndex:205}}>Généré par EETRA</div>}
-        </div>
-        </div>
+        {canvasEl}
 
         {showPanel&&(
           <div className="pdf-hidden" style={{width:240,height:dH,background:'var(--surface)',borderLeft:'1px solid var(--border)',display:'flex',flexDirection:'column',flexShrink:0,overflow:'hidden'}}>
-            <div style={{display:'flex',borderBottom:'1px solid var(--border)',flexShrink:0,overflowX:'auto'}}>
-              {panelTabs.map(([id,icon,label])=>(
-                <button key={id} onClick={()=>setPanelTab(id)}
-                  style={{flex:1,minWidth:38,display:'flex',flexDirection:'column',alignItems:'center',gap:1,padding:'6px 2px',border:'none',cursor:'pointer',background:'transparent',fontSize:12,borderBottom:`2px solid ${panelTab===id?accent:'transparent'}`,color:panelTab===id?accent:'var(--text4)',transition:'all .1s'}}>
-                  <span>{icon}</span><span style={{fontSize:7,fontWeight:700}}>{label}</span>
-                </button>
-              ))}
-            </div>
+            {panelTabBar}
             <div style={{flex:1,overflowY:'auto'}}>{renderPanel()}</div>
             {selIds.size>0&&(
               <div style={{padding:'6px 10px',borderTop:'1px solid var(--border)',display:'flex',gap:4,flexShrink:0}}>

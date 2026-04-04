@@ -59,17 +59,71 @@ const CSS = `
   .plan-track { height:3px; border-radius:99px; background:var(--border); overflow:hidden; margin-top:7px; }
   .plan-fill  { height:100%; border-radius:99px; transition:width 1s ease; }
   .db-main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
-  .db-top { height:52px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 18px; gap:10px; min-width:0; }
-  .db-top-left { display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
-  .db-top-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-  .db-search { display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:6px; padding:4px 10px; background:var(--bg); height:28px; }
+
+  /* ── Topbar ─────────────────────────────────────────────────────────────── */
+  .db-top {
+    height:52px; flex-shrink:0;
+    border-bottom:1px solid var(--border);
+    background:var(--surface);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 16px; gap:8px; min-width:0;
+  }
+  .db-top-left {
+    display:flex; align-items:center; gap:8px;
+    flex:1; min-width:0; overflow:hidden;
+  }
+  .db-top-right {
+    display:flex; align-items:center; gap:6px;
+    flex-shrink:0;
+  }
+  .db-search {
+    display:flex; align-items:center; gap:7px;
+    border:1px solid var(--border); border-radius:6px;
+    padding:4px 10px; background:var(--bg); height:28px;
+    flex:1; min-width:0; max-width:240px;
+  }
   .db-search:focus-within { border-color:var(--accent); }
-  .db-search input { border:none; outline:none; background:transparent; font-size:12px; color:var(--text); width:176px; }
+  .db-search input {
+    border:none; outline:none; background:transparent;
+    font-size:12px; color:var(--text);
+    flex:1; min-width:0; width:100%;
+  }
   .db-search input::placeholder { color:var(--text4); }
-  .db-icon-btn { width:28px; height:28px; border-radius:6px; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color .12s,background .12s; }
+
+  /* ── Icon & avatar buttons ──────────────────────────────────────────────── */
+  .db-icon-btn {
+    width:28px; height:28px; border-radius:6px;
+    border:1px solid var(--border); background:var(--bg2);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition:border-color .12s,background .12s;
+    flex-shrink:0;
+  }
   .db-icon-btn:hover { border-color:var(--border2); background:var(--bg3); }
-  .db-avatar-btn { display:flex; align-items:center; gap:7px; padding:3px 9px 3px 4px; border-radius:6px; border:1px solid var(--border); background:var(--bg2); cursor:pointer; }
+  .db-avatar-btn {
+    display:flex; align-items:center; gap:7px;
+    padding:3px 9px 3px 4px;
+    border-radius:6px; border:1px solid var(--border);
+    background:var(--bg2); cursor:pointer; flex-shrink:0;
+  }
   .db-avatar-btn:hover { border-color:var(--border2); }
+  .db-avatar-name {
+    font-size:12px; font-weight:500; color:var(--text);
+    max-width:100px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+
+  /* ── Hamburger ──────────────────────────────────────────────────────────── */
+  .db-hamburger {
+    display:none;
+    width:32px; height:32px;
+    border:1px solid var(--border); background:transparent;
+    border-radius:6px; cursor:pointer; color:var(--text3);
+    align-items:center; justify-content:center;
+    padding:0; flex-shrink:0;
+    transition:background .12s;
+  }
+  .db-hamburger:hover { background:var(--bg2); }
+
+  /* ── Rest of layout ─────────────────────────────────────────────────────── */
   .db-body { flex:1; overflow-y:auto; }
   .db-inner { display:flex; gap:0; height:100%; }
   .db-center { flex:1; padding:22px; min-width:0; overflow-y:auto; }
@@ -102,14 +156,43 @@ const CSS = `
   .btn-sm { padding:4px 10px; font-size:11px; }
   .btn-full { width:100%; justify-content:center; }
   .bdg { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; font-weight:600; }
-  
+
+  /* ── Mobile overlay + menu ──────────────────────────────────────────────── */
   .db-menu-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:98; }
   .db-menu-overlay.open { display:block; }
-  .db-hamburger { display:none; width:32px; height:32px; border:1px solid var(--border); background:transparent; border-radius:6px; cursor:pointer; color:var(--text3); align-items:center; justify-content:center; padding:0; transition:background .12s; }
-  .db-hamburger:hover { background:var(--bg2); }
-  
   .db-mobile-menu { position:fixed; left:0; top:0; width:280px; height:100vh; background:var(--surface); border-right:1px solid var(--border); transform:translateX(-100%); transition:transform .25s ease; z-index:99; display:flex; flex-direction:column; }
   .db-mobile-menu.open { transform:translateX(0); }
+
+  /* ── Responsive overrides ───────────────────────────────────────────────── */
+
+  /* Tablet (768–1023px) : sidebar visible, topbar OK, search un peu plus étroite */
+  @media(max-width:1023px){
+    .db-right { display:none; }
+    .db-search { max-width:180px; }
+  }
+
+  /* Mobile (≤767px) : sidebar cachée, hamburger visible, search flexible */
+  @media(max-width:767px){
+    .db-side { display:none; }
+    .db-hamburger { display:flex; }
+    .db-top { padding:0 10px; gap:6px; height:50px; }
+    .db-top-left { gap:6px; }
+    .db-top-right { gap:4px; }
+    .db-search { max-width:none; flex:1; }
+    .db-avatar-name { display:none; }
+    .db-avatar-btn { padding:3px 4px; gap:0; }
+    .db-right { display:none; }
+    .db-center { padding:12px; }
+    .stat-grid { grid-template-columns:1fr 1fr; gap:8px; }
+    .tpl-grid { grid-template-columns:1fr 1fr; }
+  }
+
+  /* Très petits écrans (≤479px) : on cache la recherche, icônes seules */
+  @media(max-width:479px){
+    .db-search { display:none; }
+    .db-top { padding:0 8px; gap:4px; }
+    .db-top-right { gap:3px; }
+  }
 `
 
 export default function DashboardPage() {
@@ -142,20 +225,19 @@ export default function DashboardPage() {
 
   const newDoc = async () => {
     const allowed = await checkDocumentLimit()
-    if (!allowed) return // upgrade modal shown automatically
+    if (!allowed) return
     try { localStorage.removeItem(STORAGE_DRAFT) } catch {}
     router.push('/editor')
   }
 
   const openDoc = (doc: any) => {
-    // Opening an EXISTING document — no limit check needed
     try { localStorage.setItem(STORAGE_DRAFT, JSON.stringify({ title: doc.title, subtitle: doc.subtitle, ref: doc.ref, destination: doc.destination, confidentiality: doc.confidentiality, pages: doc.pages, docStyle: doc.docStyle })) } catch {}
     router.push('/editor')
   }
 
   const useTpl = async (id: string) => {
     const allowed = await checkDocumentLimit()
-    if (!allowed) return // upgrade modal shown automatically
+    if (!allowed) return
     try { localStorage.removeItem(STORAGE_DRAFT); sessionStorage.setItem('eetra-pending-template', id) } catch {}
     router.push('/editor')
   }
@@ -164,7 +246,6 @@ export default function DashboardPage() {
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
-      {/* Plan upgrade modal — rendered at root level of page */}
       <PlanUpgradeModal />
 
       <div className="db">
@@ -212,8 +293,8 @@ export default function DashboardPage() {
         </aside>
 
         {/* Mobile menu overlay */}
-        <div 
-          className={`db-menu-overlay${sideOpen ? ' open' : ''}`} 
+        <div
+          className={`db-menu-overlay${sideOpen ? ' open' : ''}`}
           onClick={() => setSideOpen(false)}
         />
 
@@ -240,24 +321,43 @@ export default function DashboardPage() {
 
         {/* Main content */}
         <div className="db-main">
-          {/* Top bar */}
+          {/* ── Topbar ─────────────────────────────────────────────────────── */}
           <header className="db-top">
+            {/* Left : burger + search */}
             <div className="db-top-left">
-              <button className="db-hamburger" onClick={() => setSideOpen(!sideOpen)} title="Menu" style={{ display: 'flex' }}>
+              <button
+                className="db-hamburger"
+                onClick={() => setSideOpen(!sideOpen)}
+                title="Menu"
+              >
                 {sideOpen ? <X size={18} /> : <Menu size={18} />}
               </button>
+
               <div className="db-search">
-                <Search size={12} color="var(--text4)" />
-                <input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)} />
+                <Search size={12} color="var(--text4)" style={{ flexShrink: 0 }} />
+                <input
+                  placeholder="Rechercher…"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
               </div>
             </div>
+
+            {/* Right : theme · notif · settings · avatar */}
             <div className="db-top-right">
               <ThemeToggle />
+
               <div style={{ position: 'relative' }}>
                 <button className="db-icon-btn" onClick={() => setShowNotifs(v => !v)}>
                   <Bell size={13} color="var(--text3)" />
                   {unreadCount > 0 && (
-                    <span style={{ position: 'absolute', top: -4, right: -4, width: 14, height: 14, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 7, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{
+                      position: 'absolute', top: -4, right: -4,
+                      width: 14, height: 14, borderRadius: '50%',
+                      background: 'var(--accent)', color: '#fff',
+                      fontSize: 7, fontWeight: 800,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
@@ -268,15 +368,25 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-              <button className="db-icon-btn" onClick={() => go('/settings')}><Settings size={13} color="var(--text3)" /></button>
+
+              <button className="db-icon-btn" onClick={() => go('/settings')}>
+                <Settings size={13} color="var(--text3)" />
+              </button>
+
               <button className="db-avatar-btn" onClick={() => go('/onboarding')}>
-                <div style={{ width: 22, height: 22, borderRadius: 5, background: 'var(--accentS)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 5,
+                  background: 'var(--accentS)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  overflow: 'hidden', flexShrink: 0,
+                }}>
                   {profile.logoDataUrl
                     ? <img src={profile.logoDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 2 }} />
                     : <span style={{ fontSize: 8, fontWeight: 800, color: 'var(--accent)' }}>{getInitials(profile.name || 'EE')}</span>
                   }
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {/* Nom masqué sur mobile via .db-avatar-name */}
+                <span className="db-avatar-name">
                   {profile.name || 'Mon espace'}
                 </span>
               </button>
@@ -314,10 +424,7 @@ export default function DashboardPage() {
                       {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
-                  <button
-                    className="btn-primary"
-                    onClick={newDoc}
-                  >
+                  <button className="btn-primary" onClick={newDoc}>
                     <Plus size={13} />
                     Nouveau document
                   </button>
@@ -353,10 +460,7 @@ export default function DashboardPage() {
                     <div style={{ padding: '36px 16px', textAlign: 'center' }}>
                       <FolderOpen size={24} color="var(--text4)" style={{ marginBottom: 10 }} />
                       <p style={{ fontSize: 12, color: 'var(--text3)', margin: '0 0 12px' }}>Aucun document — créez-en un pour commencer.</p>
-                      <button
-                        className="btn-primary btn-sm"
-                        onClick={newDoc}
-                      >
+                      <button className="btn-primary btn-sm" onClick={newDoc}>
                         <Plus size={11} />
                         Créer un document
                       </button>
@@ -490,8 +594,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      <style>{`@media(max-width:767px){ .db-hamburger { display:flex!important; } }`}</style>
     </>
   )
 }

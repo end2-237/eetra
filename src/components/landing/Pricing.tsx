@@ -150,7 +150,7 @@ export function Pricing() {
           {/* Header */}
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 99, background: 'var(--accentS2)', color: 'var(--accent)', fontSize: 11, fontWeight: 800, letterSpacing: '.16em', textTransform: 'uppercase', marginBottom: 22 }}>
-              <Sparkles size={12} /> Tarification
+              <Sparkles size={12} /> Tarification EETRA
             </div>
             <h2 style={{ fontSize: 'clamp(28px, 4vw, 56px)', fontWeight: 900, letterSpacing: '-.04em', lineHeight: .92, color: 'var(--text)', marginBottom: 16 }}>
               Simple. Transparent. En FCFA.

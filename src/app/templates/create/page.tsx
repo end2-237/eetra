@@ -8,8 +8,9 @@ import {
   ArrowLeft, Save, Plus, Trash2, GripVertical,
   Palette, Layout, Type, Layers, Settings, ChevronDown, ChevronUp,
   Check, X, Sparkles, PenTool, Globe, Lock, Eye, EyeOff,
-  Loader2, ZoomIn, ZoomOut, Undo2, Redo2,
+  ZoomIn, ZoomOut, Undo2, Redo2,
 } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { useCustomTemplates, type CoverLayout, type CoverStyle, DEFAULT_COVER_STYLE } from '@/contexts/CustomTemplateContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePlan } from '@/contexts/PlanContext'
@@ -615,16 +616,16 @@ function TemplateCreatorContent() {
             disabled={publishing || (!savedId && !editId)}
             className="w-full p-3 rounded-xl border-none cursor-pointer font-bold text-[13px] flex items-center justify-center gap-2"
             style={{ background: '#059669', color: '#fff', opacity: publishing || (!savedId && !editId) ? .6 : 1 }}>
-            {publishing ? <Loader2 size={14} className="animate-spin"/> : <Globe size={14} />}
-            {publishing ? 'Publication…' : 'Publier dans la communauté'}
+      {publishing ? <LoadingSpinner size={14} className="text-current" /> : <Globe size={14} />}
+      {publishing ? 'Publication…' : 'Publier dans la communauté'}
           </button>
         ) : (
           <button onClick={handleUnpublish}
             disabled={publishing}
             className="w-full p-3 rounded-xl cursor-pointer font-bold text-[12px] flex items-center justify-center gap-2"
             style={{ background: 'transparent', border: '1px solid rgba(220,38,38,.3)', color: '#DC2626', opacity: publishing ? .6 : 1 }}>
-            {publishing ? <Loader2 size={13} className="animate-spin"/> : <EyeOff size={13} />}
-            {publishing ? 'Retrait…' : 'Retirer de la communauté'}
+      {publishing ? <LoadingSpinner size={13} className="text-current" /> : <EyeOff size={13} />}
+      {publishing ? 'Retrait…' : 'Retirer de la communauté'}
           </button>
         )}
       </div>
@@ -680,10 +681,10 @@ function TemplateCreatorContent() {
             <Globe size={12} /> {isPublic ? 'Gérer' : 'Publier'}
           </Button>
           <Button variant="primary" size="sm" onClick={handleSave} disabled={saving}>
-            {saving
-              ? <><Loader2 size={12} className="animate-spin" /> Sauvegarde…</>
-              : <><Save size={12} /> {editId ? 'Mettre à jour' : 'Enregistrer'}</>
-            }
+  {saving
+    ? <><LoadingSpinner size={12} className="text-current" /> Sauvegarde…</>
+    : <><Save size={12} /> {editId ? 'Mettre à jour' : 'Enregistrer'}</>
+  }
           </Button>
         </div>
       </div>

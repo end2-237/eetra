@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 import { forwardRef, type ButtonHTMLAttributes } from 'react'
-import { Loader2 } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/Loading'
 
 // Variant styles
 const variants = {
@@ -72,7 +72,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <LoadingSpinner size={16} className="text-current" />
             <span>Chargement...</span>
           </>
         ) : (

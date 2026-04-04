@@ -6,8 +6,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   LayoutGrid, Plus, Search, ArrowLeft, FileText,
-  Trash2, Copy, Edit3, Check, X, Globe, Lock, Loader2,
+  Trash2, Copy, Edit3, Check, X, Globe, Lock,
 } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { useCustomTemplates, type CustomTemplate } from '@/contexts/CustomTemplateContext'
 import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -481,9 +482,9 @@ export default function TemplatesPage() {
           {/* ── Communauté ── */}
           {showCommunity && (
             <div style={{ marginBottom:28 }}>
-              {communityLoading ? (
-                <div style={{ textAlign:'center', padding:'48px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
-                  <Loader2 size={22} color="var(--text4)" className="spin"/>
+  {communityLoading ? (
+    <div style={{ textAlign:'center', padding:'48px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+      <LoadingSpinner size={22} className="text-[var(--text4)]" />
                   <span style={{ fontSize:12, color:'var(--text4)' }}>Chargement des templates communautaires…</span>
                 </div>
               ) : filterCommunity.length === 0 ? (
@@ -501,7 +502,7 @@ export default function TemplatesPage() {
                     <Globe size={12}/>
                     Communauté · {filterCommunity.length} template{filterCommunity.length > 1 ? 's' : ''}
                     <button onClick={refreshCommunity} style={{ marginLeft:'auto', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:5, border:'1px solid var(--border)', background:'var(--bg2)', color:'var(--text4)', cursor:'pointer', display:'flex', alignItems:'center', gap:4 }}>
-                      {communityLoading ? <Loader2 size={10} className="spin"/> : '↻'} Actualiser
+                      {communityLoading ? <LoadingSpinner size={10} className="text-current" /> : '↻'} Actualiser
                     </button>
                   </div>
                   <div className="comm-grid">
@@ -538,9 +539,9 @@ export default function TemplatesPage() {
           {/* ── Mes templates ── */}
           {showCustom && (
             <div style={{ marginBottom:28 }}>
-              {loading ? (
-                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'24px 0' }}>
-                  <Loader2 size={16} color="var(--text4)" className="spin"/>
+  {loading ? (
+    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'24px 0' }}>
+      <LoadingSpinner size={16} className="text-[var(--text4)]" />
                   <span style={{ fontSize:12, color:'var(--text4)' }}>Chargement de vos templates…</span>
                 </div>
               ) : custom.length === 0 && cat === 'Mes templates' ? (
@@ -557,7 +558,7 @@ export default function TemplatesPage() {
                   <div className="tpl-section-label">
                     <LayoutGrid size={12}/>
                     Mes templates personnalisés
-                    {loading && <Loader2 size={11} className="spin" color="var(--text4)"/>}
+                    {loading && <LoadingSpinner size={11} className="text-[var(--text4)]" />}
                   </div>
                   <div className="tpl-table">
                     <div className="tpl-th" style={{ gridTemplateColumns:colsCustom }}>
@@ -595,10 +596,10 @@ export default function TemplatesPage() {
                             disabled={busyIds.has(tpl.id)}
                             onClick={() => handlePublishToggle(tpl)}
                           >
-                            {busyIds.has(tpl.id)
-                              ? <Loader2 size={10} className="spin"/>
-                              : tpl.isPublic ? <Lock size={10}/> : <Globe size={10}/>
-                            }
+    {busyIds.has(tpl.id)
+      ? <LoadingSpinner size={10} className="text-current" />
+      : tpl.isPublic ? <Lock size={10}/> : <Globe size={10}/>
+    }
                           </button>
 
                           {/* Éditer */}
@@ -615,10 +616,10 @@ export default function TemplatesPage() {
                             disabled={busyIds.has(tpl.id + '_dup')}
                             onClick={() => handleDuplicate(tpl.id)}
                           >
-                            {busyIds.has(tpl.id + '_dup')
-                              ? <Loader2 size={10} className="spin"/>
-                              : <Copy size={10}/>
-                            }
+      {busyIds.has(tpl.id + '_dup')
+        ? <LoadingSpinner size={10} className="text-current" />
+        : <Copy size={10}/>
+      }
                           </button>
 
                           {/* Supprimer */}
@@ -627,10 +628,10 @@ export default function TemplatesPage() {
                             disabled={busyIds.has(tpl.id)}
                             onClick={() => handleDelete(tpl.id)}
                           >
-                            {busyIds.has(tpl.id)
-                              ? <Loader2 size={10} className="spin"/>
-                              : <Trash2 size={10}/>
-                            }
+      {busyIds.has(tpl.id)
+        ? <LoadingSpinner size={10} className="text-current" />
+        : <Trash2 size={10}/>
+      }
                           </button>
                         </div>
                       </div>

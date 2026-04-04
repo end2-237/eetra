@@ -8,6 +8,7 @@ import { useHistory } from '@/contexts/HistoryContext'
 import { useNotifications } from '@/contexts/NotificationContext'
 import { usePlan } from '@/contexts/PlanContext'
 import { Button } from '@/components/ui/Button'
+import { Loading } from '@/components/ui/Loading'
 import { generateId } from '@/lib/utils'
 
 interface Props {
@@ -482,17 +483,19 @@ export function ExportModal({ onClose }: Props) {
 
           {/* LOADING */}
           {step === 'loading' && (
-            <div style={{ textAlign: 'center', padding: '20px 0' }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', border: '3px solid var(--accentS)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite', margin: '0 auto 20px' }} />
-              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
-                {format === 'pdf' ? 'Génération du PDF…' : 'Génération Word…'}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text4)', marginBottom: 20 }}>{progressLabel}</div>
-              <div style={{ height: 6, borderRadius: 10, background: 'var(--bg3)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', borderRadius: 10, background: 'var(--accent)', width: `${progress}%`, transition: 'width .5s ease' }} />
-              </div>
-              <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 6 }}>{progress}%</div>
+            <div style={{ padding: '40px 0' }}>
+              <Loading
+                size="md"
+                context="export"
+                text={format === 'pdf' ? 'Génération du PDF…' : 'Génération Word…'}
+                progress={progress}
+                showTips={false}
+              />
+              {progressLabel && (
+                <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text3)', marginTop: 16 }}>
+                  {progressLabel}
+                </div>
+              )}
             </div>
           )}
 

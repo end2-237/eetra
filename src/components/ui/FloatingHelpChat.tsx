@@ -369,7 +369,7 @@ export function FloatingHelpChat() {
               aria-label="Envoyer"
             >
               {isLoading ? (
-                <Loader2 size={18} color="var(--text4)" style={{ animation: 'spin 1s linear infinite' }} />
+                <LoadingSpinner size={18} className="text-[var(--text4)]" />
               ) : (
                 <Send size={18} color={input.trim() ? '#fff' : 'var(--text4)'} />
               )}

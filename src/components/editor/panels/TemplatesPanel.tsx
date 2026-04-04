@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Grid, Layout, Globe, Star, Search, Crown, Lock, Loader2, RefreshCw } from 'lucide-react'
+import { Grid, Layout, Globe, Star, Search, Crown, Lock, RefreshCw } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { usePlan } from '@/contexts/PlanContext'
@@ -266,8 +267,8 @@ export function TemplatesPanel({ showToast }: Props) {
                   disabled={communityLoading}
                   style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', cursor: 'pointer', fontSize: 10, color: 'var(--text4)' }}
                 >
-                  {communityLoading
-                    ? <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} />
+  {communityLoading
+    ? <LoadingSpinner size={10} className="text-[var(--text4)]" />
                     : <RefreshCw size={10} />}
                   Actualiser
                 </button>
@@ -285,9 +286,9 @@ export function TemplatesPanel({ showToast }: Props) {
                 </div>
               )}
 
-              {communityLoading ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                  <Loader2 size={22} color="var(--text4)" style={{ animation: 'spin 1s linear infinite' }} />
+  {communityLoading ? (
+    <div style={{ textAlign: 'center', padding: '32px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+      <LoadingSpinner size={22} className="text-[var(--text4)]" />
                   <span style={{ fontSize: 12, color: 'var(--text4)' }}>Chargement des templates…</span>
                 </div>
               ) : filteredCommunity.length === 0 ? (

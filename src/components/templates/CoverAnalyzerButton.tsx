@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Sparkles, Upload, Loader2, X } from 'lucide-react'
+import { Sparkles, Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { useToast } from '@/hooks/useToast'
 import type { CoverStyle } from '@/contexts/CustomTemplateContext'
 
@@ -190,7 +191,7 @@ export function CoverAnalyzerButton({ onApplyCover, currentTitle, isPro }: Cover
                 >
                   {isAnalyzing ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
+                      <LoadingSpinner size={16} className="text-current" />
                       Analyse...
                     </>
                   ) : (

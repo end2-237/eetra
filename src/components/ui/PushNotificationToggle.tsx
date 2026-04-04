@@ -1,6 +1,7 @@
 'use client'
 
-import { Bell, BellOff, Smartphone, Check, Loader2 } from 'lucide-react'
+import { Bell, BellOff, Smartphone, Check } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 /**
@@ -75,7 +76,7 @@ export function PushNotificationToggle() {
               opacity: loading ? .7 : 1,
             }}
           >
-            {loading ? <Loader2 size={10} style={{ animation: 'spin 1s linear infinite' }} /> : <Bell size={10} />}
+            {loading ? <LoadingSpinner size={10} className="text-current" /> : <Bell size={10} />}
             {status === 'denied' ? 'Bloquées' : 'Activer'}
           </button>
         )}

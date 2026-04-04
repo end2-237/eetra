@@ -78,8 +78,8 @@ function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             <Image src={logo} alt="EETRA" width={36} height={36} className="rounded-lg" />
-            <span className="text-lg font-extrabold tracking-tight text-[var(--text)]">EETRA</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 bg-[var(--accentS)] text-[var(--accent)] rounded-full border border-[var(--accent)]/25 tracking-widest">2026</span>
+            <span className="text-lg font-extrabold tracking-tight text-[var(--text)] hidden sm:inline">EETRA</span>
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-[var(--accentS)] text-[var(--accent)] rounded-full border border-[var(--accent)]/25 tracking-widest whitespace-nowrap sm:px-2">2026</span>
           </Link>
 
           {/* Desktop nav */}
@@ -757,24 +757,24 @@ function FAQ() {
             <span className="font-serif font-normal italic text-[var(--text2)]">frequentes.</span>
           </h2>
           <p className="sr-left text-sm text-[var(--text3)] leading-relaxed">
-            Une question ? <a href="mailto:contact@eetra.app" className="text-[var(--accent)] hover:underline">contact@eetra.app</a>
+            Une question ? <a href="mailto:contact@eetra.buyticle.com" className="text-[var(--accent)] hover:underline">contact@eetra.buyticle.com</a>
           </p>
         </div>
 
-        <div className="lg:col-span-2 flex flex-col gap-1.5">
+        <div className="lg:col-span-2 flex flex-col gap-2">
           {faqs.map((faq, i) => (
-            <div key={i} className={`sr-hidden rounded-2xl border overflow-hidden transition-all ${open === i ? 'border-[var(--accent)]/30 bg-[var(--accentS)]' : 'border-[var(--border)] bg-[var(--surface)]'}`} style={{ transitionDelay: `${i * 0.06}s` }}>
-              <button onClick={() => setOpen(open === i ? -1 : i)} className="w-full flex justify-between items-center p-4.5 text-left gap-4">
-                <div className="flex items-center gap-3">
-                  <span className={`font-mono text-[11px] font-medium ${open === i ? 'text-[var(--accent)]' : 'text-[var(--text3)]'}`}>{String(i + 1).padStart(2, '0')}</span>
+            <div key={i} className={`sr-hidden rounded-2xl border overflow-hidden transition-all duration-300 ${open === i ? 'border-[var(--accent)]/40 bg-[var(--accentS)] shadow-lg shadow-[var(--accent)]/10' : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/20'}`} style={{ transitionDelay: `${i * 0.06}s` }}>
+              <button onClick={() => setOpen(open === i ? -1 : i)} className="w-full flex justify-between items-center p-5 text-left gap-4 hover:bg-[var(--bg2)]/40 transition-colors">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <span className={`font-mono text-[11px] font-bold flex-shrink-0 ${open === i ? 'text-[var(--accent)]' : 'text-[var(--text3)]'}`}>{String(i + 1).padStart(2, '0')}</span>
                   <span className="text-sm font-semibold text-[var(--text)] leading-snug">{faq.q}</span>
                 </div>
-                <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${open === i ? 'bg-[var(--accent)]' : 'bg-[var(--bg3)]'}`}>
-                  <ChevronDown size={14} className={`transition-transform ${open === i ? 'rotate-180 text-white' : 'text-[var(--text3)]'}`} />
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${open === i ? 'bg-[var(--accent)] shadow-lg shadow-[var(--accent)]/30' : 'bg-[var(--bg3)]'}`}>
+                  <ChevronDown size={16} className={`transition-transform duration-300 ${open === i ? 'rotate-180 text-white' : 'text-[var(--text3)]'}`} />
                 </div>
               </button>
-              <div className={`overflow-hidden transition-all ${open === i ? 'max-h-48' : 'max-h-0'}`}>
-                <div className="px-4.5 pb-4.5 pl-12 text-sm text-[var(--text3)] leading-relaxed">{faq.a}</div>
+              <div className={`overflow-hidden transition-all duration-300 ${open === i ? 'max-h-96' : 'max-h-0'}`}>
+                <div className="px-5 pb-5 pl-12 text-sm text-[var(--text2)] leading-relaxed border-t border-[var(--border)]/30">{faq.a}</div>
               </div>
             </div>
           ))}
@@ -832,9 +832,7 @@ function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           <div>
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent)] to-[var(--electric)] flex items-center justify-center">
-                <FileText size={16} className="text-white" strokeWidth={2.5} />
-              </div>
+              <Image src={logo} alt="EETRA" width={32} height={32} className="rounded-lg" />
               <div>
                 <div className="text-[17px] font-extrabold tracking-tight text-[var(--text)]">EETRA</div>
                 <div className="text-[9px] text-[var(--text3)] tracking-widest uppercase">Document Intelligence</div>
@@ -842,8 +840,8 @@ function Footer() {
             </div>
             <p className="text-sm text-[var(--text3)] leading-relaxed mb-5">Plateforme B2B de creation de documents professionnels pour l&apos;Afrique de l&apos;Ouest.</p>
             <div className="flex flex-col gap-2">
-              {[['Douala, Cameroun'], ['contact@eetra.app'], ['eetra.buyticle.com']].map(([t]) => (
-                <span key={t} className="text-xs text-[var(--text3)]">{t}</span>
+              {[['Douala, Cameroun'], ['+237 696 995 879'], ['contact@eetra.buyticle.com']].map(([t]) => (
+                <a key={t} href={t.includes('@') ? `mailto:${t}` : t.includes('+') ? `tel:${t}` : '#'} className="text-xs text-[var(--text3)] hover:text-[var(--accent)] transition-colors">{t}</a>
               ))}
             </div>
           </div>

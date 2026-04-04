@@ -208,7 +208,25 @@ const MAIN_CATS = ['Tous', 'Business', 'Audit', 'Juridique', 'Comptabilité', 'P
 
 const CSS = `
   /* ── Base ────────────────────────────────────────────────────────────────── */
-  .tpl-page { min-height:100vh; background:var(--bg); color:var(--text); font-size:13px; font-family:var(--font-bricolage,sans-serif); }
+  .tpl-page { min-height:100vh; background:var(--bg); color:var(--text); font-size:16px; font-family:var(--font-bricolage,sans-serif); }
+
+.tpl-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.tpl-card {
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--surface);
+  overflow:hidden;
+  cursor:pointer;
+  transition:border-color .15s,transform .15s,box-shadow .15s;
+  min-height: 200px; /* Augmenter la hauteur des cartes */
+}
+
+.tpl-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.09); }
 
   /* ── Topbar ──────────────────────────────────────────────────────────────── */
   .tpl-top {
@@ -260,8 +278,8 @@ const CSS = `
   .tpl-section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
 
   /* ── Template grid (built-in & community) ────────────────────────────────── */
-  .tpl-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
-  .comm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
+  .tpl-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,2fr)); gap:14px; margin-bottom:28px; }
+  .comm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,2fr)); gap:14px; margin-bottom:28px; }
 
   /* ── Template card ───────────────────────────────────────────────────────── */
   .tpl-card { border:1px solid var(--border); border-radius:8px; background:var(--surface); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s,box-shadow .15s; }
@@ -327,8 +345,8 @@ const CSS = `
 
   /* ── Tablet 768-1023px ───────────────────────────────────────────────────── */
   @media(max-width:1023px){
-    .tpl-grid  { grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:12px; }
-    .comm-grid { grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:12px; }
+    .tpl-grid  { grid-template-columns:repeat(auto-fill,minmax(165px,2fr)); gap:12px; }
+    .comm-grid { grid-template-columns:repeat(auto-fill,minmax(165px,2fr)); gap:12px; }
   }
 
   /* ── Mobile ≤767px ───────────────────────────────────────────────────────── */
@@ -355,8 +373,8 @@ const CSS = `
     .tpl-cat { padding:6px 10px; font-size:11px; }
 
     /* Grids */
-    .tpl-grid  { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
-    .comm-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+    .tpl-grid  { grid-template-columns:repeat(auto-fill,minmax(140px,2fr)); gap:10px; }
+    .comm-grid { grid-template-columns:repeat(auto-fill,minmax(140px,2fr)); gap:10px; }
     .tpl-card-cover { height:110px; padding:8px; }
     .tpl-card-cover-inner { width:64px; }
     .tpl-card-body { padding:8px 10px 10px; }
@@ -406,8 +424,8 @@ const CSS = `
 
   /* ── XS phones ≤479px ────────────────────────────────────────────────────── */
   @media(max-width:479px){
-    .tpl-grid  { grid-template-columns:1fr 1fr; gap:8px; }
-    .comm-grid { grid-template-columns:1fr 1fr; gap:8px; }
+    .tpl-grid  { grid-template-columns:2fr 2fr; gap:8px; }
+    .comm-grid { grid-template-columns:2fr 2fr; gap:8px; }
     .tpl-card-cover { height:96px; padding:6px; }
     .tpl-card-cover-inner { width:54px; }
     .tpl-card-name { font-size:11px; }

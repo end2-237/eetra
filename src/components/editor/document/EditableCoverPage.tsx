@@ -697,11 +697,11 @@ function PageBorder({config}:{config:PageConfig}) {
   return null
 }
 
-function SnapGuides({guides,zoom}:{guides:{x?:number;y?:number}[];zoom:number}) {
+function SnapGuides({guides}:{guides:{x?:number;y?:number}[]}) {  
   return <>{guides.map((g,i)=>
     g.x!==undefined
-      ?<div key={i} style={{position:'absolute',left:g.x*zoom-.5,top:0,width:1,height:'100%',background:'#1B4FD8',opacity:.8,pointerEvents:'none',zIndex:500}}/>
-      :<div key={i} style={{position:'absolute',top:g.y!*zoom-.5,left:0,height:1,width:'100%',background:'#1B4FD8',opacity:.8,pointerEvents:'none',zIndex:500}}/>
+    ?<div key={i} style={{position:'absolute',left:g.x-.5,top:0,width:1,height:'100%',background:'#1B4FD8',opacity:.8,pointerEvents:'none',zIndex:500}}/>
+    :<div key={i} style={{position:'absolute',top:g.y!-.5,left:0,height:1,width:'100%',background:'#1B4FD8',opacity:.8,pointerEvents:'none',zIndex:500}}/>
   )}</>
 }
 
@@ -941,10 +941,10 @@ export function EditableCoverPage({zoom}:Props){
   // ── Render block ─────────────────────────────────────────────────────────
 
   const renderBlock=(b:ExtBlock)=>{
-    const bx=b.x*dW,by=b.y*dH,bw=b.w*dW,bh=b.h*dH
+    const bx=b.x*PAGE_W,by=b.y*PAGE_H,bw=b.w*PAGE_W,bh=b.h*PAGE_H
     const isSel=selIds.has(b.id),isEdit=editId===b.id,isInnerEdit=innerEditId===b.id
-    const fs=((b.fontSize||16)/72)*96*zoom
-    const innerFs=((b.innerFontSize||16)/72)*96*zoom
+    const fs=((b.fontSize||16)/72)*96
+    const innerFs=((b.innerFontSize||16)/72)*96
     const textDec=[b.underline&&'underline',b.strikethrough&&'line-through',b.overline&&'overline'].filter(Boolean).join(' ')||'none'
     const isGradT=b.gradient_text&&b.useGradient&&b.gradient
 
@@ -1000,7 +1000,7 @@ export function EditableCoverPage({zoom}:Props){
               onBlur={()=>setInnerEditId(null)}
               style={{
                 position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',
-                pointerEvents:showInnerEdit?'text':'none',
+                pointerEvents:showInnerEdit?'text':'none' as any,
                 cursor:showInnerEdit?'text':'inherit',
                 outline:'none',overflow:'hidden',
                 padding:`${minPadding}px`,textAlign:b.innerAlign||'center',
@@ -1554,7 +1554,7 @@ export function EditableCoverPage({zoom}:Props){
             </div>
           )}
           {[...blocks].sort((a,b)=>(a.z||0)-(b.z||0)).map(renderBlock)}
-          <SnapGuides guides={guides} zoom={zoom}/>
+          <SnapGuides guides={guides}/>
           <PageBorder config={pageConf}/>
           {!hasBlocks&&(
             <div className="pdf-hidden" onClick={e=>{e.stopPropagation();add('text')}}

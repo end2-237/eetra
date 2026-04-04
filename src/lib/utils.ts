@@ -1,5 +1,9 @@
 import { clsx, type ClassValue } from 'clsx'
-export function cn(...inputs: ClassValue[]) { return clsx(inputs) }
+import { twMerge } from 'tailwind-merge'
+
+export function cn(...inputs: ClassValue[]) { 
+  return twMerge(clsx(inputs)) 
+}
 export function generateDocId(): string { return 'EE-' + Math.random().toString(36).slice(2, 7).toUpperCase() }
 export function generateId(): string { return Math.random().toString(36).slice(2, 10) }
 export function formatDate(date: Date): string {

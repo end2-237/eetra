@@ -18,6 +18,7 @@ import { CustomTemplateProvider } from '@/contexts/CustomTemplateContext'
 import { RealtimeProvider }       from '@/contexts/RealtimeContext'
 import { NextAuthProvider }       from '@/components/providers/NextAuthProvider'
 import { FloatingHelpChat }       from '@/components/ui/FloatingHelpChat'
+import { Toaster }                from '@/components/ui/Sonner'
 
 const bricolage    = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-bricolage',     display: 'swap' })
 const playfair     = Playfair_Display   ({ subsets: ['latin'], variable: '--font-playfair',      display: 'swap' })
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                           <RealtimeProvider>
                             {children}
                             <FloatingHelpChat />
+                            <Toaster />
                           </RealtimeProvider>
                         </TeamProvider>
                       </HistoryProvider>

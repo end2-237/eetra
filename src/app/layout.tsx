@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import {
   Bricolage_Grotesque, Playfair_Display, DM_Serif_Display, Syne,
   Space_Grotesk, Cormorant_Garamond, Libre_Caslon_Text, Source_Serif_4,
@@ -35,8 +35,13 @@ const dmMono       = DM_Mono            ({ weight: ['400','500'],      subsets: 
 export const metadata: Metadata = {
   title:       'EETRA — Documents Professionnels',
   description: "Plateforme de création de documents professionnels pour l'Afrique de l'Ouest",
-  viewport:    'width=device-width, initial-scale=1, viewport-fit=cover',
-  themeColor:  '#1B4FD8',
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#1B4FD8',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -1,480 +1,952 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useEffect, useCallback } from 'react'
-import { Navbar } from '@/components/landing/Navbar'
-import { Hero } from '@/components/landing/Hero'
-import { Features } from '@/components/landing/Features'
-import { Pricing } from '@/components/landing/Pricing'
-import { FAQ } from '@/components/landing/FAQ'
-import { Footer } from '@/components/landing/Footer'
-import { TEMPLATES } from '@/lib/templates'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { ArrowRight, Zap, Shield, FileText, Users, Download, BarChart3, ChevronDown, Check, X, Star, Globe, Lock, Sparkles, Play, TrendingUp, Clock, Award, Menu } from 'lucide-react'
+import logo from './icon.png'
+// ─── CSS Variables & Global Styles ────────────────────────────────────────────
+const GlobalStyle = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap');
 
-// ── Scroll reveal engine ────────────────────────────────────────────────────
-function useScrollReveal() {
+    :root {
+      --bg: #06070A;
+      --bg2: #0C0E14;
+      --bg3: #111420;
+      --surface: rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.07);
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #F0F2FF;
+      --text2: #A8ADBF;
+      --text3: #6B7094;
+      --accent: #5B7FFF;
+      --accent2: #7C6FFF;
+      --green: #2DD4BF;
+      --pink: #F472B6;
+      --amber: #FBBF24;
+      --glow: rgba(91,127,255,0.15);
+      --glow2: rgba(124,111,255,0.1);
+      --font: 'Outfit', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --serif: 'Instrument Serif', serif;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+      --r: 12px;
+      --r2: 20px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+    .sr-hidden { opacity: 0; transform: translateY(32px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+    .sr-hidden.visible { opacity: 1; transform: translateY(0); }
+    .sr-left { opacity: 0; transform: translateX(-32px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+    .sr-left.visible { opacity: 1; transform: translateX(0); }
+    .sr-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+    .sr-scale.visible { opacity: 1; transform: scale(1); }
+
+    @keyframes float { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-12px)} }
+    @keyframes pulse-glow { 0%,100%{opacity:0.4} 50%{opacity:0.8} }
+    @keyframes spin-slow { to{transform:rotate(360deg)} }
+    @keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes counter { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes shimmer { 0%{background-position:-200% center} 100%{background-position:200% center} }
+    @keyframes gradient-x { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--green) 100%);
+      background-size: 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradient-x 6s ease infinite;
+    }
+
+    .card-glow {
+      position: relative;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      border-radius: var(--r2);
+      transition: border-color 0.3s, transform 0.3s var(--ease), box-shadow 0.3s;
+    }
+    .card-glow:hover {
+      border-color: var(--border2);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 80px rgba(91,127,255,0.12);
+    }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 28px;
+      background: var(--accent);
+      color: #fff; border: none; border-radius: var(--r);
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.25s var(--ease);
+      position: relative; overflow: hidden;
+      white-space: nowrap;
+    }
+    .btn-primary::before {
+      content:''; position:absolute; inset:0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(91,127,255,0.4); }
+    .btn-primary:hover::before { opacity: 1; }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 13px 24px;
+      background: transparent; color: var(--text2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r); font-family: var(--font); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: all 0.25s var(--ease); white-space: nowrap;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.3); color: var(--text); background: var(--surface2); }
+
+    .noise { position:fixed; inset:0; pointer-events:none; z-index:0; opacity:0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(91,127,255,0.3); border-radius: 2px; }
+
+    section { position: relative; }
+
+    @media (max-width: 768px) {
+      .hide-mobile { display: none !important; }
+    }
+  `}</style>
+)
+
+// ─── Scroll Observer Hook ─────────────────────────────────────────────────────
+function useScrollObserver() {
   useEffect(() => {
-    const io = new IntersectionObserver(
-      entries => entries.forEach(e => {
-        if (e.isIntersecting) e.target.classList.add('sr-in')
-      }),
-      { threshold: 0.07, rootMargin: '0px 0px -48px 0px' }
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
+      { threshold: 0.08, rootMargin: '0px 0px -60px 0px' }
     )
-    document.querySelectorAll('[data-sr]').forEach(el => io.observe(el))
-    return () => io.disconnect()
+    document.querySelectorAll('.sr-hidden,.sr-left,.sr-scale').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
   }, [])
 }
 
-// ── Parallax engine ─────────────────────────────────────────────────────────
-function useParallax() {
+// ─── Animated Counter ─────────────────────────────────────────────────────────
+function Counter({ end, suffix = '', prefix = '', duration = 2000 }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef(null)
+  const started = useRef(false)
   useEffect(() => {
-    let raf: number
-    const tick = () => {
-      const sy = window.scrollY
-      document.querySelectorAll<HTMLElement>('[data-p]').forEach(el => {
-        const r = parseFloat(el.dataset.p || '0.2')
-        el.style.transform = `translateY(${sy * r}px)`
-      })
-      raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [])
+    const obs = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && !started.current) {
+        started.current = true
+        const t0 = performance.now()
+        const tick = now => {
+          const p = Math.min((now - t0) / duration, 1)
+          const ease = 1 - Math.pow(1 - p, 4)
+          setCount(Math.floor(ease * end))
+          if (p < 1) requestAnimationFrame(tick); else setCount(end)
+        }
+        requestAnimationFrame(tick)
+      }
+    }, { threshold: 0.5 })
+    if (ref.current) obs.observe(ref.current)
+    return () => obs.disconnect()
+  }, [end, duration])
+  return <span ref={ref}>{prefix}{count.toLocaleString('fr-FR')}{suffix}</span>
 }
 
-// ── Progress bar ────────────────────────────────────────────────────────────
-function ProgressBar() {
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+function Navbar() {
+  const [scrolled, setScrolled] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+
   useEffect(() => {
-    const bar = document.getElementById('__pg')
-    const onScroll = () => {
-      if (!bar) return
-      const h = document.documentElement.scrollHeight - window.innerHeight
-      bar.style.width = h > 0 ? `${(window.scrollY / h) * 100}%` : '0%'
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const fn = () => setScrolled(window.scrollY > 20)
+    window.addEventListener('scroll', fn, { passive: true })
+    return () => window.removeEventListener('scroll', fn)
   }, [])
-  return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: 3, zIndex: 9999, pointerEvents: 'none' }}>
-      <div id="__pg" style={{
-        height: '100%', width: '0%',
-        background: 'linear-gradient(90deg,#1B4FD8,#5B9BFF 50%,#7C3AED)',
-        boxShadow: '0 0 14px rgba(91,155,255,.7)',
-        transition: 'width .04s linear',
-      }} />
-    </div>
-  )
-}
 
-// ── SR wrapper ───────────────────────────────────────────────────────────────
-function SR({ children, d = 0, from = 'up', style = {}, className = '' }:
-  { children: React.ReactNode; d?: number; from?: 'up'|'left'|'right'|'scale'|'fade'; style?: React.CSSProperties; className?: string }) {
-  const t: Record<string,string> = {
-    up: 'translateY(44px)', left: 'translateX(-36px)', right: 'translateX(36px)',
-    scale: 'scale(0.91)', fade: 'translateY(16px)',
-  }
   return (
-    <div data-sr className={className} style={{
-      opacity: 0, transform: t[from] || t.up,
-      transition: `opacity .75s cubic-bezier(.23,1,.32,1) ${d}ms, transform .75s cubic-bezier(.23,1,.32,1) ${d}ms`,
-      ...style,
+    <header style={{
+      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+      padding: scrolled ? '12px 0' : '20px 0',
+      transition: 'all 0.4s var(--ease)',
+      background: scrolled ? 'rgba(6,7,10,0.85)' : 'transparent',
+      backdropFilter: scrolled ? 'blur(24px)' : 'none',
+      borderBottom: scrolled ? '1px solid var(--border)' : 'none',
     }}>
-      {children}
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, var(--accent), var(--accent2))', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src={logo} alt="" />
+          </div>
+          <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)' }}>EETRA</span>
+          <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', background: 'rgba(91,127,255,0.15)', color: 'var(--accent)', borderRadius: 99, border: '1px solid rgba(91,127,255,0.25)', letterSpacing: '0.08em' }}>2026</span>
+        </div>
+
+        {/* Desktop nav */}
+        <nav className="hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {['Fonctionnalités', 'Templates', 'Designs', 'Tarifs', 'FAQ'].map(item => (
+            <button key={item} style={{ padding: '8px 16px', background: 'none', border: 'none', color: 'var(--text3)', fontSize: 14, fontWeight: 500, cursor: 'pointer', borderRadius: 8, fontFamily: 'var(--font)', transition: 'color 0.2s, background 0.2s' }}
+              onMouseEnter={e => { e.target.style.color = 'var(--text)'; e.target.style.background = 'var(--surface)' }}
+              onMouseLeave={e => { e.target.style.color = 'var(--text3)'; e.target.style.background = 'none' }}>
+              {item}
+            </button>
+          ))}
+        </nav>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button className="btn-ghost hide-mobile" style={{ padding: '9px 18px', fontSize: 13 }}>Se connecter</button>
+          <button className="btn-primary" style={{ padding: '9px 18px', fontSize: 13 }}>
+            Démarrer <ArrowRight size={14} />
+          </button>
+          <button className="hide-mobile" style={{ display: 'none' }} />
+          <button onClick={() => setMobileOpen(!mobileOpen)} style={{ display: 'none', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 8, cursor: 'pointer', color: 'var(--text)' }}
+            className="mobile-menu-btn">
+            <Menu size={18} />
+          </button>
+        </div>
+      </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .mobile-menu-btn { display: flex !important; }
+        }
+      `}</style>
+    </header>
+  )
+}
+
+// ─── Hero Section ─────────────────────────────────────────────────────────────
+function Hero() {
+  const canvasRef = useRef(null)
+  const [typed, setTyped] = useState('')
+  const words = ['Business Plans', 'Audits', 'Contrats OHADA', 'Appels d\'Offres']
+  const wordIdx = useRef(0)
+  const charIdx = useRef(0)
+  const deleting = useRef(false)
+  const timeout = useRef(null)
+
+  useEffect(() => {
+    const tick = () => {
+      const word = words[wordIdx.current]
+      if (!deleting.current) {
+        setTyped(word.slice(0, ++charIdx.current))
+        if (charIdx.current === word.length) { deleting.current = true; timeout.current = setTimeout(tick, 1800); return }
+      } else {
+        setTyped(word.slice(0, --charIdx.current))
+        if (charIdx.current === 0) { deleting.current = false; wordIdx.current = (wordIdx.current + 1) % words.length }
+      }
+      timeout.current = setTimeout(tick, deleting.current ? 40 : 80)
+    }
+    timeout.current = setTimeout(tick, 600)
+    return () => clearTimeout(timeout.current)
+  }, [])
+
+  // Particle canvas
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let w = canvas.width = canvas.offsetWidth
+    let h = canvas.height = canvas.offsetHeight
+    const particles = Array.from({ length: 60 }, () => ({
+      x: Math.random() * w, y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
+      r: Math.random() * 1.5 + 0.5, o: Math.random() * 0.5 + 0.1
+    }))
+    let raf
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h)
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy
+        if (p.x < 0) p.x = w; if (p.x > w) p.x = 0
+        if (p.y < 0) p.y = h; if (p.y > h) p.y = 0
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(91,127,255,${p.o})`; ctx.fill()
+      })
+      particles.forEach((a, i) => particles.slice(i + 1).forEach(b => {
+        const d = Math.hypot(a.x - b.x, a.y - b.y)
+        if (d < 100) {
+          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y)
+          ctx.strokeStyle = `rgba(91,127,255,${0.08 * (1 - d / 100)})`; ctx.stroke()
+        }
+      }))
+      raf = requestAnimationFrame(draw)
+    }
+    draw()
+    const resize = () => { w = canvas.width = canvas.offsetWidth; h = canvas.height = canvas.offsetHeight }
+    window.addEventListener('resize', resize)
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize) }
+  }, [])
+
+  return (
+    <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '120px 24px 80px', position: 'relative', overflow: 'hidden' }}>
+      {/* Particle canvas */}
+      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }} />
+
+      {/* Radial glows */}
+      <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translateX(-50%)', width: 600, height: 600, background: 'radial-gradient(ellipse, rgba(91,127,255,0.12) 0%, transparent 70%)', pointerEvents: 'none', animation: 'pulse-glow 6s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', top: '40%', left: '20%', width: 400, height: 400, background: 'radial-gradient(ellipse, rgba(45,212,191,0.07) 0%, transparent 70%)', pointerEvents: 'none', animation: 'pulse-glow 8s ease-in-out infinite 2s' }} />
+      <div style={{ position: 'absolute', top: '30%', right: '15%', width: 350, height: 350, background: 'radial-gradient(ellipse, rgba(244,114,182,0.06) 0%, transparent 70%)', pointerEvents: 'none', animation: 'pulse-glow 7s ease-in-out infinite 4s' }} />
+
+      {/* Grid overlay */}
+      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '64px 64px', pointerEvents: 'none' }} />
+
+      <div style={{ maxWidth: 900, width: '100%', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        {/* Badge */}
+        <div className="sr-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', background: 'rgba(91,127,255,0.1)', border: '1px solid rgba(91,127,255,0.2)', borderRadius: 99, marginBottom: 32 }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px var(--green)', animation: 'pulse-glow 2s infinite' }} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Document Intelligence · Afrique de l'Ouest</span>
+        </div>
+
+        {/* Headline */}
+        <h1 className="sr-hidden" style={{ fontSize: 'clamp(40px, 6vw, 80px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 0.95, color: 'var(--text)', marginBottom: 24 }}>
+          <span style={{ display: 'block' }}>Créez des</span>
+          <span style={{ display: 'block', fontFamily: 'var(--serif)', fontWeight: 400, fontStyle: 'italic', fontSize: '1.1em', color: 'var(--text2)' }}>
+            {typed}<span style={{ animation: 'blink 1s infinite', display: 'inline-block', width: 3, height: '0.9em', background: 'var(--accent)', marginLeft: 3, borderRadius: 1, verticalAlign: 'text-bottom' }} />
+          </span>
+          <span style={{ display: 'block' }}>
+            <span className="gradient-text">de niveau exécutif.</span>
+          </span>
+        </h1>
+
+        {/* Subline */}
+        <p className="sr-hidden" style={{ fontSize: 18, color: 'var(--text3)', lineHeight: 1.7, maxWidth: 600, margin: '0 auto 40px', transitionDelay: '0.1s' }}>
+          La plateforme B2B qui transforme vos idées en documents professionnels — avec IA, charte graphique, cadre OHADA et export PDF·Word.
+        </p>
+
+        {/* CTAs */}
+        <div className="sr-hidden" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 56, transitionDelay: '0.2s' }}>
+          <button className="btn-primary" style={{ fontSize: 15, padding: '16px 32px' }}>
+            Commencer gratuitement <ArrowRight size={16} />
+          </button>
+          <button className="btn-ghost" style={{ fontSize: 15, padding: '15px 28px' }}>
+            <Play size={14} fill="currentColor" /> Voir la démo
+          </button>
+        </div>
+
+        {/* Social proof */}
+        <div className="sr-hidden" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24, flexWrap: 'wrap', transitionDelay: '0.3s' }}>
+          {[
+            { icon: <Shield size={14} />, text: 'Aucune CB requise' },
+            { icon: <Clock size={14} />, text: 'Setup en 3 min' },
+            { icon: <Star size={14} />, text: '+500 entreprises' },
+          ].map(({ icon, text }) => (
+            <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text3)', fontSize: 13 }}>
+              <span style={{ color: 'var(--accent)' }}>{icon}</span> {text}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Hero mockup */}
+      <div className="sr-scale" style={{ maxWidth: 900, width: '100%', marginTop: 64, position: 'relative', transitionDelay: '0.4s' }}>
+        <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)', backdropFilter: 'blur(20px)' }}>
+          {/* Window bar */}
+          <div style={{ padding: '14px 20px', background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['#FF5F57','#FEBC2E','#28C840'].map(c => <div key={c} style={{ width: 12, height: 12, borderRadius: '50%', background: c }} />)}
+            </div>
+            <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: 6, padding: '5px 12px', fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Lock size={10} /> eetra.app/editor
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn-primary" style={{ padding: '5px 12px', fontSize: 11, gap: 4 }}>
+                <Download size={11} /> Exporter
+              </button>
+            </div>
+          </div>
+
+          {/* Editor layout */}
+          <div style={{ display: 'flex', height: 420 }}>
+            {/* Sidebar */}
+            <div style={{ width: 220, borderRight: '1px solid var(--border)', padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', padding: '0 8px', marginBottom: 6 }}>Structure</div>
+              {[
+                { label: 'Résumé Exécutif', active: true },
+                { label: 'Analyse Marché', active: false },
+                { label: 'Projections', active: false },
+                { label: 'Équipe', active: false },
+              ].map(({ label, active }) => (
+                <div key={label} style={{ padding: '8px 10px', borderRadius: 8, background: active ? 'rgba(91,127,255,0.15)' : 'transparent', border: active ? '1px solid rgba(91,127,255,0.2)' : '1px solid transparent', color: active ? 'var(--accent)' : 'var(--text3)', fontSize: 12, fontWeight: active ? 600 : 400, cursor: 'pointer' }}>
+                  {label}
+                </div>
+              ))}
+              <div style={{ marginTop: 'auto' }}>
+                <div style={{ padding: '10px', borderRadius: 10, background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.15)', textAlign: 'center' }}>
+                  <Sparkles size={14} color="var(--accent)" style={{ margin: '0 auto 4px' }} />
+                  <div style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 600 }}>IA Rédactionnelle</div>
+                  <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>Générer intro</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Canvas */}
+            <div style={{ flex: 1, background: '#1a1c26', padding: 20, display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
+              <div style={{ width: '100%', maxWidth: 340, background: '#fff', borderRadius: 4, padding: '24px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', color: '#111' }}>
+                <div style={{ background: 'linear-gradient(135deg, #1B4FD8, #5B7FFF)', margin: '-24px -20px 16px', padding: '16px 20px', borderRadius: '4px 4px 0 0' }}>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 6 }}>ACACIA CONSULTING · CONFIDENTIEL</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.1 }}>BUSINESS PLAN<br/>2026 — 2030</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}>
+                  {[['12M', 'CA'], ['+34%', 'Croissance'], ['47', 'Effectifs']].map(([v, l]) => (
+                    <div key={l} style={{ background: '#F5F7FB', borderTop: '3px solid #1B4FD8', borderRadius: '0 0 6px 6px', padding: '8px 6px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 14, fontWeight: 900, color: '#0D1117' }}>{v}</div>
+                      <div style={{ fontSize: 7, color: '#999', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{l}</div>
+                    </div>
+                  ))}
+                </div>
+                {[90, 75, 85, 60].map((w, i) => (
+                  <div key={i} style={{ height: 6, background: '#F0F0F0', borderRadius: 3, marginBottom: 6, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${w}%`, background: i === 0 ? '#1B4FD8' : '#E8ECFB', borderRadius: 3 }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right panel */}
+            <div style={{ width: 200, borderLeft: '1px solid var(--border)', padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--text3)', padding: '0 4px', marginBottom: 4 }}>Propriétés</div>
+              {[['Couleur', '#1B4FD8'], ['Design', 'Classic'], ['Police', 'Outfit']].map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 8px', background: 'var(--surface)', borderRadius: 6, fontSize: 11 }}>
+                  <span style={{ color: 'var(--text3)' }}>{k}</span>
+                  <span style={{ color: 'var(--text)', fontWeight: 500, fontFamily: k === 'Couleur' ? 'var(--mono)' : 'inherit' }}>{v}</span>
+                </div>
+              ))}
+              <div style={{ marginTop: 8, padding: 10, background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.15)', borderRadius: 10 }}>
+                <div style={{ fontSize: 10, color: 'var(--green)', fontWeight: 600, marginBottom: 4 }}>Score IA</div>
+                <div style={{ height: 6, background: 'rgba(45,212,191,0.15)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '87%', background: 'var(--green)', borderRadius: 3, transition: 'width 1s var(--ease)' }} />
+                </div>
+                <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 3 }}>87% · Document complet</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Floating badges */}
+        {[
+          { text: 'PDF exporté · 12 pages', sub: 'Il y a 2 min', color: '#2DD4BF', icon: <Download size={12} />, style: { top: -20, left: -20 } },
+          { text: 'Contrat signé', sub: 'Orange Telecom CI', color: '#5B7FFF', icon: <Check size={12} />, style: { bottom: 40, right: -20 } },
+        ].map(({ text, sub, color, icon, style }) => (
+          <div key={text} style={{
+            position: 'absolute', ...style,
+            background: 'rgba(6,7,10,0.9)', border: '1px solid var(--border)',
+            borderRadius: 12, padding: '10px 14px', backdropFilter: 'blur(20px)',
+            display: 'flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)', animation: 'float 5s ease-in-out infinite',
+          }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: `${color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>{icon}</div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{text}</div>
+              <div style={{ fontSize: 10, color: 'var(--text3)' }}>{sub}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Scroll indicator */}
+      <div style={{ position: 'absolute', bottom: 32, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--text3)', fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+        <span>Défiler</span>
+        <div style={{ width: 1, height: 40, background: 'linear-gradient(to bottom, var(--text3), transparent)' }} />
+      </div>
+    </section>
+  )
+}
+
+// ─── Stats Bar ────────────────────────────────────────────────────────────────
+function StatsBar() {
+  return (
+    <section style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'var(--bg2)', padding: '48px 24px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 32 }}>
+        {[
+          { value: 8000, suffix: '+', label: 'Documents créés', icon: <FileText size={20} /> },
+          { value: 500, suffix: '+', label: 'Entreprises actives', icon: <Globe size={20} /> },
+          { value: 99, suffix: '%', label: 'Satisfaction client', icon: <Star size={20} /> },
+          { value: 3, suffix: ' min', label: 'Setup initial', icon: <Zap size={20} /> },
+        ].map(({ value, suffix, label, icon }) => (
+          <div key={label} className="sr-hidden" style={{ textAlign: 'center' }}>
+            <div style={{ color: 'var(--accent)', marginBottom: 10, opacity: 0.7 }}>{icon}</div>
+            <div style={{ fontSize: 'clamp(28px, 3vw, 44px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', marginBottom: 6 }}>
+              <Counter end={value} suffix={suffix} />
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--text3)', fontWeight: 500 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ─── Features Bento ───────────────────────────────────────────────────────────
+function Features() {
+  const features = [
+    {
+      icon: <Zap size={24} />, title: 'IA Rédactionnelle',
+      desc: 'Génération d\'introductions professionnelles, reformulation corporate, suggestions contextuelles.',
+      color: 'var(--accent)', span: 2,
+      badge: 'GPT-4 Turbo + Claude',
+      visual: (
+        <div style={{ marginTop: 16, background: 'rgba(0,0,0,0.3)', borderRadius: 10, padding: 12, fontFamily: 'var(--mono)', fontSize: 11 }}>
+          <div style={{ color: 'var(--text3)', marginBottom: 6 }}>// Génération en cours...</div>
+          <div style={{ color: 'var(--green)' }}>→ "Dans un contexte de croissance soutenue,</div>
+          <div style={{ color: 'var(--green)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            votre entreprise se positionne comme<span style={{ display: 'inline-block', width: 8, height: 14, background: 'var(--green)', borderRadius: 1, animation: 'blink 1s infinite', marginLeft: 2 }} />
+          </div>
+        </div>
+      )
+    },
+    {
+      icon: <Shield size={24} />, title: 'Cadre OHADA',
+      desc: '17 pays membres, clauses conformes, contrats certifiés.',
+      color: 'var(--pink)', span: 1,
+      badge: '17 pays',
+    },
+    {
+      icon: <Download size={24} />, title: 'Export PDF & Word',
+      desc: 'PDF haute résolution A4, .docx Microsoft Word éditable.',
+      color: 'var(--green)', span: 1,
+      badge: 'Instant',
+    },
+    {
+      icon: <BarChart3 size={24} />, title: 'Analytics Temps Réel',
+      desc: 'Score de complétude, répartition des blocs, KPIs documentaires.',
+      color: 'var(--amber)', span: 1,
+      badge: 'Live',
+    },
+    {
+      icon: <Users size={24} />, title: 'Collaboration Équipe',
+      desc: 'Curseurs en temps réel, annotations, gestion des rôles et accès.',
+      color: 'var(--accent2)', span: 2,
+      badge: 'Realtime',
+    },
+  ]
+
+  return (
+    <section id="features" style={{ padding: '120px 24px', background: 'var(--bg)' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+          <div className="sr-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.15)', borderRadius: 99, marginBottom: 20 }}>
+            <Sparkles size={12} color="var(--accent)" />
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Fonctionnalités</span>
+          </div>
+          <h2 className="sr-hidden" style={{ fontSize: 'clamp(32px, 4vw, 56px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 0.95, transitionDelay: '0.1s' }}>
+            Tout ce qu'une direction
+            <br /><span style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontStyle: 'italic', color: 'var(--text2)' }}>a besoin.</span>
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, gridTemplateRows: 'auto auto' }}>
+          {features.map(({ icon, title, desc, color, span, badge, visual }, i) => (
+            <div key={title} className="sr-hidden card-glow" style={{
+              gridColumn: `span ${span}`, padding: 28, transitionDelay: `${i * 0.07}s`,
+              background: `linear-gradient(135deg, rgba(6,7,10,0.8), var(--bg3))`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: `${color}15`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
+                  {icon}
+                </div>
+                {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: '4px 10px', background: `${color}15`, color, borderRadius: 99, border: `1px solid ${color}25`, letterSpacing: '0.06em' }}>{badge}</span>}
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.02em' }}>{title}</h3>
+              <p style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.65 }}>{desc}</p>
+              {visual}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Marquee Banner ───────────────────────────────────────────────────────────
+function MarqueeBanner() {
+  const items = ['Business Plan', 'Rapport d\'Audit', 'Appel d\'Offres', 'Contrat OHADA', 'Note de Direction', 'Devis Pro', 'Export PDF', 'Export Word', 'IA Rédactionnelle']
+  const doubled = [...items, ...items]
+  return (
+    <div style={{ borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: 'linear-gradient(135deg, var(--bg2), var(--bg3))', padding: '16px 0', overflow: 'hidden', position: 'relative' }}>
+      <div style={{ display: 'flex', width: '200%', animation: 'marquee 30s linear infinite' }}>
+        {doubled.map((item, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 24, padding: '0 24px', flexShrink: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: i % 2 === 0 ? 'var(--text2)' : 'var(--text3)', letterSpacing: '0.08em', whiteSpace: 'nowrap', textTransform: 'uppercase' }}>{item}</span>
+            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--accent)', opacity: 0.4, flexShrink: 0 }} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-// ── Icons ────────────────────────────────────────────────────────────────────
-const Ico = {
-  bp: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M7 16l4-5 4 3 4-7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-  ao: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M14 2v6h6M9 13h6M9 17h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  audit: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M16.5 16.5L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M8 11h6M11 8v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  memo: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M7 8h10M7 12h10M7 16h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  contrat: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-  devis: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M2 9h20" stroke="currentColor" strokeWidth="1.5"/><path d="M6 14h4M14 14h4M6 17h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-}
-
-// ── Mini cover SVGs ───────────────────────────────────────────────────────────
-function Classic({ a }: { a: string }) {
-  return <svg viewBox="0 0 120 170" style={{ width:'100%',height:'100%',display:'block' }}>
-    <rect width="120" height="170" fill="#fff"/>
-    <rect x="0" y="0" width="5" height="170" fill={a}/>
-    <rect x="5" y="0" width="115" height="3" fill={a} opacity=".15"/>
-    <rect x="14" y="14" width="28" height="28" rx="6" fill={a} opacity=".1"/>
-    <rect x="18" y="20" width="12" height="2.5" rx="1.25" fill={a}/>
-    <rect x="18" y="25" width="16" height="2.5" rx="1.25" fill={a} opacity=".55"/>
-    <rect x="18" y="30" width="10" height="2" rx="1" fill={a} opacity=".35"/>
-    <rect x="47" y="22" width="36" height="3.5" rx="1.75" fill="#111" opacity=".8"/>
-    <rect x="47" y="29" width="24" height="2.5" rx="1.25" fill="#999" opacity=".55"/>
-    <rect x="14" y="52" width="22" height="2.5" rx="1.25" fill={a}/>
-    <rect x="38" y="53" width="68" height="1" fill="#E8E8E8"/>
-    <rect x="14" y="60" width="48" height="2.5" rx="1.25" fill={a} opacity=".45"/>
-    <rect x="14" y="72" width="88" height="7.5" rx="3.75" fill="#0D1117" opacity=".88"/>
-    <rect x="14" y="84" width="68" height="7.5" rx="3.75" fill="#0D1117" opacity=".82"/>
-    <rect x="14" y="97" width="44" height="5" rx="2.5" fill="#555" opacity=".38"/>
-    <rect x="14" y="114" width="92" height="28" rx="5" fill="#F5F7FA"/>
-    {[0,1,2].map(i=><g key={i}><rect x={19+i*33} y="119" width="18" height="2.5" rx="1.25" fill="#BBB"/><rect x={19+i*33} y="125" width="24" height="2.5" rx="1.25" fill="#555"/></g>)}
-    <rect x="14" y="152" width="92" height=".75" fill="#F0F0F0"/>
-    <rect x="14" y="158" width="40" height="2.5" rx="1.25" fill="#CCC"/>
-    <rect x="96" y="153" width="14" height="14" rx="3" fill="#F5F5F5"/>
-    <rect x="98" y="155" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="104" y="155" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="98" y="161" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="104" y="161" width="2" height="2" rx=".5" fill="#DDD"/>
-  </svg>
-}
-
-function Bold({ a }: { a: string }) {
-  return <svg viewBox="0 0 120 170" style={{ width:'100%',height:'100%',display:'block' }}>
-    <rect width="120" height="170" fill={a}/>
-    <circle cx="108" cy="28" r="52" fill="rgba(255,255,255,.06)"/>
-    <circle cx="12" cy="152" r="32" fill="rgba(255,255,255,.04)"/>
-    <rect x="12" y="16" width="26" height="26" rx="6" fill="rgba(255,255,255,.16)"/>
-    <rect x="17" y="22" width="10" height="2" rx="1" fill="rgba(255,255,255,.8)"/>
-    <rect x="17" y="26" width="14" height="2" rx="1" fill="rgba(255,255,255,.5)"/>
-    <rect x="17" y="30" width="8" height="2" rx="1" fill="rgba(255,255,255,.35)"/>
-    <rect x="60" y="18" width="48" height="10" rx="5" fill="rgba(255,255,255,.12)"/>
-    <rect x="64" y="21.5" width="28" height="3" rx="1.5" fill="rgba(255,255,255,.6)"/>
-    <rect x="12" y="72" width="55" height="3" rx="1.5" fill="rgba(255,255,255,.45)"/>
-    <rect x="12" y="82" width="88" height="10" rx="5" fill="rgba(255,255,255,.92)"/>
-    <rect x="12" y="96" width="66" height="10" rx="5" fill="rgba(255,255,255,.88)"/>
-    <rect x="12" y="112" width="44" height="5" rx="2.5" fill="rgba(255,255,255,.38)"/>
-    <rect x="12" y="125" width="22" height="2" rx="1" fill="rgba(255,255,255,.3)"/>
-    <rect x="12" y="133" width="30" height="3" rx="1.5" fill="rgba(255,255,255,.65)"/>
-    <rect x="50" y="133" width="30" height="3" rx="1.5" fill="rgba(255,255,255,.65)"/>
-    <rect x="0" y="156" width="120" height="14" fill="rgba(0,0,0,.22)"/>
-    <rect x="12" y="161" width="40" height="2.5" rx="1.25" fill="rgba(255,255,255,.42)"/>
-    <rect x="96" y="158" width="12" height="12" rx="2" fill="rgba(255,255,255,.14)"/>
-    <rect x="97.5" y="159.5" width="3.5" height="3.5" rx=".5" fill="rgba(255,255,255,.5)"/>
-    <rect x="103" y="159.5" width="3.5" height="3.5" rx=".5" fill="rgba(255,255,255,.5)"/>
-    <rect x="97.5" y="165" width="3.5" height="3.5" rx=".5" fill="rgba(255,255,255,.5)"/>
-  </svg>
-}
-
-function Minimal({ a }: { a: string }) {
-  return <svg viewBox="0 0 120 170" style={{ width:'100%',height:'100%',display:'block' }}>
-    <rect width="120" height="170" fill="#fff"/>
-    <rect x="0" y="167" width="120" height="3" fill={a}/>
-    <rect x="12" y="16" width="50" height="3" rx="1.5" fill="#999" opacity=".55"/>
-    <rect x="12" y="22" width="32" height="2" rx="1" fill="#CCC" opacity=".45"/>
-    <rect x="12" y="68" width="96" height="11" rx="5.5" fill="#0D1117" opacity=".9"/>
-    <rect x="12" y="84" width="74" height="9" rx="4.5" fill="#0D1117" opacity=".82"/>
-    <rect x="12" y="99" width="52" height="6.5" rx="3.25" fill="#444" opacity=".36"/>
-    <rect x="12" y="115" width="96" height=".75" fill="#E0E0E0"/>
-    {[0,1,2].map(i=><g key={i}>
-      <rect x="12" y={123+i*9} width="22" height="2.5" rx="1.25" fill="#BBB"/>
-      <rect x="38" y={123+i*9} width={[36,44,28][i]} height="2.5" rx="1.25" fill="#555"/>
-    </g>)}
-    <rect x="96" y="153" width="14" height="14" rx="3" fill="#F5F5F5"/>
-    <rect x="98" y="155" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="104" y="155" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="98" y="161" width="4" height="4" rx=".5" fill="#DDD"/>
-  </svg>
-}
-
-function Split({ a }: { a: string }) {
-  return <svg viewBox="0 0 120 170" style={{ width:'100%',height:'100%',display:'block' }}>
-    <rect width="120" height="170" fill="#fff"/>
-    <rect x="0" y="0" width="54" height="170" fill={a}/>
-    <circle cx="27" cy="22" r="42" fill="rgba(255,255,255,.07)"/>
-    <rect x="10" y="14" width="22" height="22" rx="5" fill="rgba(255,255,255,.18)"/>
-    <rect x="14" y="19" width="8" height="2" rx="1" fill="rgba(255,255,255,.8)"/>
-    <rect x="14" y="23" width="12" height="1.5" rx=".75" fill="rgba(255,255,255,.5)"/>
-    <rect x="14" y="27" width="6" height="1.5" rx=".75" fill="rgba(255,255,255,.35)"/>
-    <rect x="10" y="80" width="38" height="3" rx="1.5" fill="rgba(255,255,255,.45)"/>
-    <rect x="10" y="88" width="34" height="9" rx="4.5" fill="rgba(255,255,255,.92)"/>
-    <rect x="10" y="101" width="26" height="7" rx="3.5" fill="rgba(255,255,255,.68)"/>
-    <rect x="10" y="116" width="18" height="1.5" rx=".75" fill="rgba(255,255,255,.28)"/>
-    <rect x="10" y="122" width="30" height="2.5" rx="1.25" fill="rgba(255,255,255,.52)"/>
-    <rect x="10" y="129" width="22" height="2.5" rx="1.25" fill="rgba(255,255,255,.32)"/>
-    <rect x="60" y="14" width="48" height="10" rx="5" fill={a} opacity=".08"/>
-    <rect x="64" y="18" width="24" height="2" rx="1" fill={a} opacity=".5"/>
-    {[0,1,2].map(i=><g key={i}>
-      <rect x="60" y={50+i*28} width="48" height="20" rx="4" fill="#F8F9FB"/>
-      <rect x="65" y={56+i*28} width="16" height="2" rx="1" fill="#CCC"/>
-      <rect x="65" y={62+i*28} width="28" height="2.5" rx="1.25" fill="#555"/>
-    </g>)}
-    <rect x="60" y="142" width="48" height=".75" fill="#F0F0F0"/>
-    <rect x="60" y="148" width="36" height="2.5" rx="1.25" fill="#CCC"/>
-    <rect x="60" y="155" width="24" height="2" rx="1" fill="#DDD"/>
-  </svg>
-}
-
-function Editorial({ a }: { a: string }) {
-  return <svg viewBox="0 0 120 170" style={{ width:'100%',height:'100%',display:'block' }}>
-    <rect width="120" height="170" fill="#0D1117"/>
-    <rect x="0" y="0" width="120" height="44" fill={a}/>
-    <polygon points="0,44 62,44 0,72" fill={a} opacity=".22"/>
-    <rect x="12" y="12" width="50" height="3" rx="1.5" fill="rgba(255,255,255,.9)"/>
-    <rect x="12" y="18" width="32" height="2.5" rx="1.25" fill="rgba(255,255,255,.5)"/>
-    <rect x="12" y="24" width="20" height="2" rx="1" fill="rgba(255,255,255,.32)"/>
-    <rect x="84" y="13" width="24" height="8" rx="4" fill="rgba(255,255,255,.12)"/>
-    <rect x="87" y="16" width="14" height="2" rx="1" fill="rgba(255,255,255,.5)"/>
-    <rect x="12" y="72" width="88" height="8" rx="4" fill="rgba(255,255,255,.88)"/>
-    <rect x="12" y="85" width="66" height="7" rx="3.5" fill="rgba(255,255,255,.72)"/>
-    <rect x="12" y="100" width="88" height=".75" fill="rgba(255,255,255,.08)"/>
-    {[0,1,2,3].map(i=><rect key={i} x="12" y={108+i*10} width={[88,66,74,52][i]} height="3" rx="1.5" fill="rgba(255,255,255,.1)"/>)}
-    <rect x="0" y="154" width="120" height="16" fill={a}/>
-    <rect x="12" y="160" width="40" height="2.5" rx="1.25" fill="rgba(255,255,255,.68)"/>
-    <rect x="102" y="159" width="7" height="4" rx="1" fill="rgba(255,255,255,.28)"/>
-  </svg>
-}
-
-function Corporate({ a }: { a: string }) {
-  return <svg viewBox="0 0 120 170" style={{ width:'100%',height:'100%',display:'block' }}>
-    <rect width="120" height="170" fill="#fff"/>
-    <rect x="0" y="0" width="120" height="6" fill={a}/>
-    <polygon points="0,6 46,6 0,46" fill={a} opacity=".05"/>
-    <rect x="12" y="16" width="44" height="3" rx="1.5" fill="#111" opacity=".78"/>
-    <rect x="88" y="16" width="20" height="3" rx="1.5" fill="#999" opacity=".55"/>
-    <rect x="12" y="22" width="26" height=".75" fill="#E8E8E8"/>
-    {[0,1,2].map(i=><g key={i}>
-      <rect x={12+i*37} y="32" width="31" height="22" rx="4" fill="#F5F7FA"/>
-      <rect x={12+i*37} y="32" width="31" height="3" rx="2" fill={a}/>
-      <rect x={16+i*37} y="41" width="16" height="4" rx="2" fill={a} opacity=".22"/>
-      <rect x={16+i*37} y="49" width="20" height="2.5" rx="1.25" fill="#AAA"/>
-    </g>)}
-    <rect x="12" y="62" width="22" height="2.5" rx="1.25" fill={a}/>
-    <rect x="36" y="63" width="72" height=".75" fill="#E8E8E8"/>
-    <rect x="12" y="72" width="92" height="9" rx="4.5" fill="#0D1117" opacity=".88"/>
-    <rect x="12" y="86" width="70" height="8" rx="4" fill="#0D1117" opacity=".8"/>
-    <rect x="12" y="100" width="46" height="6" rx="3" fill="#666" opacity=".36"/>
-    {[0,1,2].map(i=><rect key={i} x="12" y={115+i*9} width={i===1?72:88} height="3.5" rx="1.75" fill="#F0F0F0"/>)}
-    <rect x="12" y="150" width="96" height=".75" fill="#E8E8E8"/>
-    <rect x="12" y="157" width="48" height="2.5" rx="1.25" fill="#CCC"/>
-    <rect x="96" y="153" width="14" height="14" rx="3" fill="#F5F5F5"/>
-    <rect x="98" y="155" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="104" y="155" width="4" height="4" rx=".5" fill="#DDD"/>
-    <rect x="98" y="161" width="4" height="4" rx=".5" fill="#DDD"/>
-  </svg>
-}
-
-const DESIGNS = [
-  { a:'#1B4FD8', name:'Classic',   C: Classic },
-  { a:'#059669', name:'Bold',      C: Bold },
-  { a:'#374151', name:'Minimal',   C: Minimal },
-  { a:'#7C3AED', name:'Split',     C: Split },
-  { a:'#B45309', name:'Editorial', C: Editorial },
-  { a:'#0E7490', name:'Corporate', C: Corporate },
-]
-
-// ── Global styles ────────────────────────────────────────────────────────────
-const CSS = `
-  [data-sr].sr-in { opacity:1 !important; transform:none !important; }
-
-  @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-33.333%)} }
-  @keyframes glow-pulse { 0%,100%{opacity:0.4} 50%{opacity:0.7} }
-
-  .d-card {
-    border-radius: 18px; overflow: hidden;
-    border: 1.5px solid var(--border);
-    box-shadow: 0 6px 24px rgba(0,0,0,.08);
-    transition: transform .35s cubic-bezier(.23,1,.32,1), box-shadow .35s ease, border-color .25s;
-    cursor: pointer; position: relative;
-  }
-  .d-card:hover { 
-    transform: translateY(-12px) scale(1.03) !important; 
-    box-shadow: 0 24px 56px rgba(0,0,0,.15);
-  }
-
-  .tpl-card {
-    border-radius: 20px; border: 1px solid var(--border);
-    padding: 26px 22px; cursor: pointer;
-    background: var(--glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s, border-color .25s;
-  }
-  .tpl-card:hover {
-    border-color: var(--accent) !important;
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(0,0,0,.12);
-  }
-
-  .cta-btn {
-    transition: transform .3s cubic-bezier(.23,1,.32,1), box-shadow .3s;
-    position: relative;
-    overflow: hidden;
-  }
-  .cta-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transform: translateX(-100%);
-    transition: transform .5s;
-  }
-  .cta-btn:hover::before { transform: translateX(100%); }
-  .cta-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 50px var(--electricGlow) !important;
-  }
-
-  .ghost-btn {
-    transition: all .25s cubic-bezier(.23,1,.32,1);
-  }
-  .ghost-btn:hover {
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-    background: var(--accentS) !important;
-    transform: translateY(-2px);
-  }
-
-  /* Responsive grids */
-  @media (max-width: 1200px) {
-    .design-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 16px !important; }
-    .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 14px !important; }
-    .design-section, .tpl-section { padding: 100px 0 !important; }
-    .design-inner, .tpl-inner { padding: 0 40px !important; }
-    .design-header, .tpl-header { margin-bottom: 48px !important; }
-  }
-  @media (max-width: 1023px) {
-    .design-grid { grid-template-columns: repeat(3, 1fr) !important; }
-    .tpl-grid { grid-template-columns: repeat(3, 1fr) !important; }
-    .marquee-strip { padding: 12px 0 !important; }
-    .marquee-strip span { font-size: 11px !important; margin-right: 24px !important; }
-  }
-  @media (max-width: 767px) {
-    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
-    .tpl-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-    .design-section, .tpl-section { padding: 72px 0 !important; }
-    .design-inner, .tpl-inner { padding: 0 24px !important; }
-    .design-header-wrap { flex-direction: column !important; gap: 16px !important; align-items: flex-start !important; }
-    .design-header-wrap button { width: 100%; justify-content: center; }
-    .tpl-card { padding: 20px 18px !important; }
-    .tpl-card > div:first-child { width: 42px !important; height: 42px !important; border-radius: 12px !important; }
-    .tpl-card > div:nth-child(2) { font-size: 13px !important; }
-  }
-  @media (max-width: 479px) {
-    .design-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-    .tpl-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
-    .design-section, .tpl-section { padding: 56px 0 !important; }
-    .design-inner, .tpl-inner { padding: 0 16px !important; }
-    .design-section h2, .tpl-section h2 { font-size: clamp(22px, 5vw, 32px) !important; }
-    .tpl-card { padding: 16px 14px !important; gap: 10px !important; }
-    .tpl-card > div:first-child { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
-    .tpl-card > div:nth-child(2) { font-size: 12px !important; }
-    .tpl-card > div:nth-child(3) span { font-size: 8px !important; padding: 3px 8px !important; }
-    .marquee-strip span { font-size: 10px !important; margin-right: 20px !important; }
-  }
-`
-
-export default function LandingPage() {
-  const router = useRouter()
-  useScrollReveal()
-  useParallax()
+// ─── Designs Showcase ─────────────────────────────────────────────────────────
+function DesignsShowcase() {
+  const designs = [
+    { name: 'Classic', color: '#1B4FD8' },
+    { name: 'Bold', color: '#7C3AED' },
+    { name: 'Minimal', color: '#374151' },
+    { name: 'Split', color: '#059669' },
+    { name: 'Editorial', color: '#B45309' },
+  ]
 
   return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <ProgressBar />
-
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
-        <Navbar />
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-
-          <Hero />
-          <Features />
-
-          {/* ── Marquee strip ── */}
-          <SR style={{ width: '100%', overflow: 'hidden' }}>
-            <div className="marquee-strip" style={{ background: 'linear-gradient(135deg,var(--accent) 0%,var(--electric) 100%)', padding: '15px 0', overflow: 'hidden', position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg,rgba(255,255,255,0.05) 0%,transparent 20%,transparent 80%,rgba(255,255,255,0.05) 100%)', pointerEvents: 'none' }} />
-              <div style={{ display: 'flex', whiteSpace: 'nowrap', animation: 'marquee 22s linear infinite', alignItems: 'center' }}>
-                {Array.from({ length: 4 }).flatMap(() =>
-                  ['Business Plan','·','Rapport d\'Audit','·','Appel d\'Offres','·','Contrat OHADA','·','Note de Direction','·','Devis Pro','·','Export PDF','·','Export Word .docx','·','IA Redactionnelle','·']
-                ).map((t, i) => (
-                  <span key={i} style={{ fontSize: 12, fontWeight: t==='·'?400:700, color: t==='·'?'rgba(255,255,255,.35)':'rgba(255,255,255,.9)', letterSpacing: '.05em', marginRight: 32, textShadow: t!=='·' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none' }}>{t}</span>
-                ))}
-              </div>
+    <section id="designs" style={{ padding: '120px 24px', background: 'linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%)' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 64, flexWrap: 'wrap', gap: 24 }}>
+          <div>
+            <div className="sr-left" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.15)', borderRadius: 99, marginBottom: 20 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>9 designs A4</span>
             </div>
-          </SR>
+            <h2 className="sr-left" style={{ fontSize: 'clamp(28px, 3.5vw, 52px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 0.95, transitionDelay: '0.1s' }}>
+              Votre document,<br />
+              <span style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontStyle: 'italic', color: 'var(--text2)' }}>votre signature.</span>
+            </h2>
+          </div>
+          <button className="btn-ghost sr-left" style={{ transitionDelay: '0.2s' }}>
+            Voir tous <ArrowRight size={14} />
+          </button>
+        </div>
 
-          {/* ── Design showcase ── */}
-          <section className="design-section" style={{ width:'100%', padding:'120px 0', background:'var(--bg2)', borderTop:'1px solid var(--border)', borderBottom:'1px solid var(--border)', position:'relative', overflow:'hidden' }}>
-            <div data-p="0.1" style={{ position:'absolute', top:-120, right:-80, width:500, height:500, borderRadius:'50%', background:'radial-gradient(ellipse,var(--electricGlow),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite' }}/>
-            <div data-p="0.06" style={{ position:'absolute', bottom:-80, left:-60, width:400, height:400, borderRadius:'50%', background:'radial-gradient(ellipse,rgba(236,72,153,0.12),transparent 70%)', pointerEvents:'none', animation:'glow-pulse 6s ease-in-out infinite 3s' }}/>
-
-            <div className="design-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
-              <div className="design-header-wrap" style={{ display:'flex', alignItems:'flex-end', justifyContent:'space-between', marginBottom:64, flexWrap:'wrap', gap:20 }}>
-                <div>
-                  <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:18 }}><Sparkles size={12}/> 9 designs A4</div></SR>
-                  <SR d={70}><h2 style={{ fontSize:'clamp(28px,3.5vw,52px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, margin:0 }}>Votre document,{' '}<span style={{ fontFamily:'var(--font-playfair,Georgia,serif)', fontStyle:'italic', fontWeight:400, color:'var(--text3)' }}>votre signature.</span></h2></SR>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
+          {designs.map(({ name, color }, i) => (
+            <div key={name} className="sr-hidden" style={{ transitionDelay: `${i * 0.08}s`, cursor: 'pointer' }}
+              onMouseEnter={e => e.currentTarget.querySelector('.doc-preview').style.transform = 'scale(1.03) translateY(-8px)'}
+              onMouseLeave={e => e.currentTarget.querySelector('.doc-preview').style.transform = 'scale(1) translateY(0)'}>
+              <div className="doc-preview" style={{ background: '#fff', borderRadius: 8, aspectRatio: '0.707', overflow: 'hidden', boxShadow: '0 8px 40px rgba(0,0,0,0.4)', transition: 'transform 0.4s var(--ease)', border: '1px solid rgba(255,255,255,0.1)', position: 'relative' }}>
+                {/* Cover mini */}
+                <div style={{ background: color, height: '45%', position: 'relative', overflow: 'hidden' }}>
+                  <div style={{ position: 'absolute', right: '-20%', top: '-20%', width: '60%', height: '60%', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 10px' }}>
+                    <div style={{ fontSize: 6, color: 'rgba(255,255,255,0.6)', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 4 }}>EETRA DOC</div>
+                    <div style={{ fontSize: 10, fontWeight: 900, color: '#fff', lineHeight: 1.1 }}>BUSINESS<br />PLAN 2026</div>
+                  </div>
                 </div>
-                <SR d={140} from="left">
-                  <button className="ghost-btn" onClick={()=>router.push('/designs')} style={{ display:'flex', alignItems:'center', gap:8, padding:'13px 26px', borderRadius:14, background:'transparent', color:'var(--accent)', border:'1.5px solid var(--accent)', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-                    Voir tous les designs <ArrowRight size={14}/>
-                  </button>
-                </SR>
+                <div style={{ padding: '8px 10px' }}>
+                  {[85, 70, 90, 60].map((w, j) => <div key={j} style={{ height: 4, background: j === 0 ? `${color}30` : '#F0F0F0', borderRadius: 2, marginBottom: 5, width: `${w}%` }} />)}
+                </div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, justifyContent: 'center' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>{name}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
 
-              <div className="design-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:18, alignItems:'end' }}>
-                {DESIGNS.map(({ a, name, C }, i) => (
-                  <SR key={i} d={i*75} from="up">
-                    <div onClick={()=>router.push('/designs')} style={{ cursor:'pointer', display:'flex', flexDirection:'column', gap:10, marginTop:[0,22,8,30,4,18][i] }}>
-                      <div className="d-card" style={{ '--hc': a } as any}
-                        onMouseEnter={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow=`0 24px 56px rgba(0,0,0,.18),0 8px 16px ${a}28`;el.style.borderColor=a}}
-                        onMouseLeave={e=>{const el=e.currentTarget as HTMLElement;el.style.boxShadow='';el.style.borderColor='var(--border)'}}>
-                        <C a={a}/>
-                      </div>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                        <div style={{ width:7, height:7, borderRadius:'50%', background:a, flexShrink:0 }}/>
-                        <span style={{ fontSize:11, fontWeight:700, color:'var(--text3)' }}>{name}</span>
-                      </div>
-                    </div>
-                  </SR>
+// ─── Templates Grid ───────────────────────────────────────────────────────────
+function Templates() {
+  const templates = [
+    { icon: '📊', name: 'Business Plan', tags: ['Finances', 'Vision'], color: 'var(--accent)' },
+    { icon: '🔍', name: "Appel d'Offres", tags: ['Proposition', 'Planning'], color: 'var(--green)' },
+    { icon: '📋', name: "Rapport d'Audit", tags: ['Risques', 'KPIs'], color: 'var(--accent2)' },
+    { icon: '📝', name: 'Note de Direction', tags: ['Mémo', 'Décision'], color: 'var(--amber)' },
+    { icon: '⚖️', name: 'Contrat OHADA', tags: ['Clauses', 'Signature'], color: 'var(--pink)' },
+    { icon: '💰', name: 'Devis Pro', tags: ['Facturation', 'FCFA'], color: '#EF4444' },
+  ]
+
+  return (
+    <section id="templates" style={{ padding: '120px 24px', background: 'var(--bg)' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+          <div className="sr-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.15)', borderRadius: 99, marginBottom: 20 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Smart Templates</span>
+          </div>
+          <h2 className="sr-hidden" style={{ fontSize: 'clamp(32px, 4vw, 56px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 0.95, marginBottom: 16, transitionDelay: '0.1s' }}>
+            6 modèles prêts à l'emploi
+          </h2>
+          <p className="sr-hidden" style={{ fontSize: 15, color: 'var(--text3)', transitionDelay: '0.2s' }}>
+            Enrichis avec tableaux, clauses, KPIs et zones de signature.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 14 }}>
+          {templates.map(({ icon, name, tags, color }, i) => (
+            <div key={name} className="sr-hidden card-glow" style={{
+              padding: '20px 16px', cursor: 'pointer',
+              transitionDelay: `${i * 0.06}s`,
+              background: `linear-gradient(135deg, var(--bg3), var(--bg2))`,
+            }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: `${color}15`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, marginBottom: 12 }}>
+                {icon}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em', marginBottom: 8 }}>{name}</div>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {tags.map(t => (
+                  <span key={t} style={{ fontSize: 9, fontWeight: 700, padding: '3px 7px', background: `${color}12`, color, borderRadius: 99, border: `1px solid ${color}20`, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{t}</span>
                 ))}
               </div>
             </div>
-          </section>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
 
-          {/* ── Templates ── */}
-          <section id="templates" className="tpl-section" style={{ width:'100%', padding:'120px 0', background:'var(--bg)', position:'relative', overflow:'hidden' }}>
-            <div data-p="0.06" style={{ position:'absolute', top:'20%', left:'50%', transform:'translateX(-50%)', width:700, height:500, borderRadius:'50%', background:'radial-gradient(ellipse,var(--electricGlow),transparent 65%)', pointerEvents:'none', opacity:0.3 }}/>
+// ─── Pricing ──────────────────────────────────────────────────────────────────
+function Pricing() {
+  const [annual, setAnnual] = useState(false)
+  const plans = [
+    { name: 'Starter', price: 0, annualPrice: 0, color: '#6B7280', cta: 'Commencer', features: ['5 docs / mois', 'Export PDF', '2 pages max', '3 templates'] },
+    { name: 'Étudiant', price: 2000, annualPrice: 1700, color: '#10B981', cta: 'Choisir', features: ['20 docs / mois', 'Export PDF + Word', '2 pages max', 'Templates inclus'] },
+    { name: 'Pro', price: 14900, annualPrice: 11900, color: 'var(--accent)', cta: 'Passer au Pro', featured: true, features: ['Documents illimités', 'IA rédactionnelle', 'Pages illimitées', 'Export PDF + Word', 'Sans filigrane', 'Templates communauté'] },
+    { name: 'Business', price: 39900, annualPrice: 31900, color: 'var(--green)', cta: 'Choisir', features: ['Tout le Pro', '10 utilisateurs', 'Espace partagé', 'Analytics avancés', 'Support 24h'] },
+    { name: 'Enterprise', price: null, annualPrice: null, color: 'var(--amber)', cta: 'Nous contacter', features: ['Utilisateurs illimités', 'API REST dédiée', 'SSO / LDAP', 'SLA 99.9%', 'Support dédié'] },
+  ]
 
-            <div className="tpl-inner" style={{ maxWidth:1280, margin:'0 auto', padding:'0 56px', position:'relative' }}>
-              <div style={{ textAlign:'center', marginBottom:64 }}>
-                <SR d={0}><div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'6px 14px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)', fontSize:11, fontWeight:800, letterSpacing:'.16em', textTransform:'uppercase', marginBottom:20 }}><Sparkles size={12}/> Smart Templates</div></SR>
-                <SR d={70}><h2 style={{ fontSize:'clamp(30px,3.5vw,54px)', fontWeight:900, letterSpacing:'-.04em', color:'var(--text)', lineHeight:.92, marginBottom:16 }}>6 modeles prets a l&apos;emploi</h2></SR>
-                <SR d={140}><p style={{ fontSize:15, color:'var(--text3)' }}>Chacun enrichi avec tableaux, clauses, KPIs et zones de signature.</p></SR>
+  return (
+    <section id="pricing" style={{ padding: '120px 24px', background: 'linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%)' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <div className="sr-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.15)', borderRadius: 99, marginBottom: 20 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Tarification</span>
+          </div>
+          <h2 className="sr-hidden" style={{ fontSize: 'clamp(32px, 4vw, 56px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 0.95, marginBottom: 16, transitionDelay: '0.1s' }}>
+            Simple. Transparent.
+            <br /><span style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontStyle: 'italic', color: 'var(--text2)' }}>En FCFA.</span>
+          </h2>
+
+          {/* Toggle */}
+          <div className="sr-hidden" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 4, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 99, transitionDelay: '0.2s' }}>
+            {[{ v: false, l: 'Mensuel' }, { v: true, l: 'Annuel −20%' }].map(({ v, l }) => (
+              <button key={l} onClick={() => setAnnual(v)} style={{
+                padding: '8px 20px', borderRadius: 99, border: 'none', cursor: 'pointer',
+                background: annual === v ? 'var(--accent)' : 'transparent',
+                color: annual === v ? '#fff' : 'var(--text3)',
+                fontSize: 13, fontWeight: 600, fontFamily: 'var(--font)', transition: 'all 0.25s var(--ease)',
+                boxShadow: annual === v ? '0 4px 16px rgba(91,127,255,0.3)' : 'none',
+              }}>{l}</button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+          {plans.map(({ name, price, annualPrice, color, cta, features, featured }, i) => (
+            <div key={name} className="sr-hidden" style={{
+              borderRadius: 20, padding: featured ? '28px 20px' : '24px 18px',
+              border: featured ? `1px solid rgba(91,127,255,0.4)` : '1px solid var(--border)',
+              background: featured ? 'linear-gradient(135deg, rgba(91,127,255,0.1), rgba(124,111,255,0.05))' : 'var(--surface)',
+              position: 'relative', boxShadow: featured ? '0 0 60px rgba(91,127,255,0.15)' : 'none',
+              transitionDelay: `${i * 0.07}s`,
+            }}>
+              {featured && (
+                <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', padding: '4px 14px', background: 'var(--accent)', borderRadius: 99, fontSize: 10, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '0.06em' }}>
+                  ⚡ POPULAIRE
+                </div>
+              )}
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', color, textTransform: 'uppercase', marginBottom: 14 }}>{name}</div>
+              <div style={{ marginBottom: 8 }}>
+                {price === null ? (
+                  <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>Sur devis</div>
+                ) : price === 0 ? (
+                  <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)' }}>Gratuit</div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
+                    <span style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>{(annual ? annualPrice : price).toLocaleString('fr-FR')}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text3)' }}>FCFA/mois</span>
+                  </div>
+                )}
               </div>
+              <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
+              <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>
+                {features.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12 }}>
+                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                      <Check size={9} color={color} strokeWidth={3} />
+                    </div>
+                    <span style={{ color: 'var(--text2)' }}>{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <button className="btn-primary" style={{
+                width: '100%', justifyContent: 'center', padding: '10px',
+                fontSize: 12,
+                background: featured ? 'linear-gradient(135deg, var(--accent), var(--accent2))' : 'var(--surface2)',
+                boxShadow: featured ? '0 6px 20px rgba(91,127,255,0.3)' : 'none',
+                color: '#fff',
+              }}>{cta}</button>
+            </div>
+          ))}
+        </div>
 
-              <div className="tpl-grid" style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:18 }}>
-                {TEMPLATES.map((t, i) => {
-                  const Icon = Ico[t.id as keyof typeof Ico] || Ico.ao
-                  return (
-                    <SR key={t.id} d={i*60} from="up">
-                      <div className="tpl-card" onClick={()=>router.push('/login')} style={{ display:'flex', flexDirection:'column', gap:14, height:'100%' }}>
-                        <div style={{ width:48, height:48, borderRadius:14, background:'var(--accentS)', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--accent)' }}><Icon/></div>
-                        <div style={{ fontSize:14, fontWeight:800, color:'var(--text)', letterSpacing:'-.01em' }}>{t.name}</div>
-                        <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
-                          {t.tags.slice(0,2).map(tag=><span key={tag} style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em', padding:'4px 10px', borderRadius:99, background:'var(--accentS2)', color:'var(--accent)' }}>{tag}</span>)}
-                        </div>
-                      </div>
-                    </SR>
-                  )
-                })}
+        <div style={{ marginTop: 32, padding: '20px 28px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>Essai gratuit 14 jours. Aucune CB requise.</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {['Orange Money', 'MTN MoMo', 'Wave', 'Virement UEMOA'].map(p => (
+              <span key={p} style={{ fontSize: 11, padding: '4px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 99, color: 'var(--text3)' }}>{p}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── FAQ ─────────────────────────────────────────────────────────────────────
+function FAQ() {
+  const [open, setOpen] = useState(0)
+  const faqs = [
+    { q: 'Le PDF exporté ressemble-t-il à l\'aperçu ?', a: 'Oui. EETRA capture les éléments rendus dans le navigateur via html2canvas + jsPDF. Ce que vous voyez est ce que vous obtenez, à 2x de résolution pour l\'impression.' },
+    { q: 'Puis-je exporter en format Word ?', a: 'Absolument. L\'export .docx génère un fichier Microsoft Word structuré avec entêtes, tableaux, clauses, zones de signature, numérotation et pied de page corporate.' },
+    { q: 'Mes données sont-elles stockées sur vos serveurs ?', a: 'Vos documents sont stockés dans notre base de données sécurisée (PostgreSQL). Seules les requêtes IA incluent le titre et le nom de l\'entité. Vous gardez un contrôle total.' },
+    { q: 'Le cadre juridique OHADA est-il intégré ?', a: 'Oui. Les templates Contrat incluent des clauses OHADA (confidentialité, propriété intellectuelle, juridiction CCJA), le Devis référence la TVA locale (18%) et les conditions UEMOA.' },
+    { q: 'Comment fonctionnent les paiements en FCFA ?', a: 'Nous acceptons Orange Money (CI, SN, ML, BF, CM), MTN Mobile Money, Wave et virement bancaire UEMOA. Toutes les transactions sont traitées en Francs CFA.' },
+  ]
+
+  return (
+    <section id="faq" style={{ padding: '120px 24px', background: 'var(--bg)' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 80, alignItems: 'start' }}>
+        <div style={{ position: 'sticky', top: 120 }}>
+          <div className="sr-left" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(91,127,255,0.08)', border: '1px solid rgba(91,127,255,0.15)', borderRadius: 99, marginBottom: 20 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>FAQ</span>
+          </div>
+          <h2 className="sr-left" style={{ fontSize: 'clamp(28px, 3.5vw, 48px)', fontWeight: 800, letterSpacing: '-0.04em', color: 'var(--text)', lineHeight: 0.95, marginBottom: 18, transitionDelay: '0.1s' }}>
+            Questions<br />
+            <span style={{ fontFamily: 'var(--serif)', fontWeight: 400, fontStyle: 'italic', color: 'var(--text2)' }}>fréquentes.</span>
+          </h2>
+          <p className="sr-left" style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.7, transitionDelay: '0.2s' }}>
+            Une question ? <a href="mailto:contact@eetra.app" style={{ color: 'var(--accent)', textDecoration: 'none' }}>contact@eetra.app</a>
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {faqs.map((faq, i) => (
+            <div key={i} className="sr-hidden" style={{
+              borderRadius: 16, border: `1px solid ${open === i ? 'rgba(91,127,255,0.3)' : 'var(--border)'}`,
+              background: open === i ? 'rgba(91,127,255,0.05)' : 'var(--surface)',
+              overflow: 'hidden', transition: 'border-color 0.3s, background 0.3s',
+              transitionDelay: `${i * 0.06}s`,
+            }}>
+              <button onClick={() => setOpen(open === i ? -1 : i)} style={{
+                width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: '18px 22px', background: 'none', border: 'none', cursor: 'pointer',
+                textAlign: 'left', gap: 16,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: open === i ? 'var(--accent)' : 'var(--text3)', fontWeight: 500 }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{faq.q}</span>
+                </div>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: open === i ? 'var(--accent)' : 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.25s var(--ease)' }}>
+                  <ChevronDown size={14} color={open === i ? '#fff' : 'var(--text3)'} style={{ transform: open === i ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s' }} />
+                </div>
+              </button>
+              <div style={{ maxHeight: open === i ? 200 : 0, overflow: 'hidden', transition: 'max-height 0.35s var(--ease)' }}>
+                <div style={{ padding: '0 22px 18px 46px', fontSize: 13, color: 'var(--text3)', lineHeight: 1.75 }}>{faq.a}</div>
               </div>
             </div>
-          </section>
-
-          {/* ── Pricing ── */}
-          <div style={{ width:'100%' }} data-sr style={{ opacity:0, transform:'translateY(32px)', transition:'opacity .75s cubic-bezier(.23,1,.32,1), transform .75s cubic-bezier(.23,1,.32,1)' } as any}>
-            <Pricing/>
-          </div>
-
-          {/* ── FAQ ── */}
-          <div data-sr style={{ width:'100%', opacity:0, transform:'translateY(32px)', transition:'opacity .75s cubic-bezier(.23,1,.32,1), transform .75s cubic-bezier(.23,1,.32,1)' } as any}>
-            <FAQ/>
-          </div>
-
-          {/* ── Footer ── */}
-          <div data-sr style={{ width:'100%', opacity:0, transform:'translateY(24px)', transition:'opacity .75s cubic-bezier(.23,1,.32,1), transform .75s cubic-bezier(.23,1,.32,1)' } as any}>
-            <Footer/>
-          </div>
-
-        </main>
+          ))}
+        </div>
       </div>
-    </>
+    </section>
+  )
+}
+
+// ─── CTA Section ─────────────────────────────────────────────────────────────
+function CTASection() {
+  return (
+    <section style={{ padding: '120px 24px', background: 'var(--bg2)', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 50% 100%, rgba(91,127,255,0.12) 0%, transparent 60%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: '20%', left: '10%', width: 300, height: 300, background: 'radial-gradient(ellipse, rgba(45,212,191,0.08) 0%, transparent 70%)', pointerEvents: 'none', animation: 'pulse-glow 6s infinite' }} />
+      <div style={{ position: 'absolute', top: '20%', right: '10%', width: 300, height: 300, background: 'radial-gradient(ellipse, rgba(244,114,182,0.06) 0%, transparent 70%)', pointerEvents: 'none', animation: 'pulse-glow 8s infinite 3s' }} />
+
+      <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
+        <div className="sr-scale" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', background: 'rgba(91,127,255,0.1)', border: '1px solid rgba(91,127,255,0.2)', borderRadius: 99, marginBottom: 28 }}>
+          <Sparkles size={12} color="var(--accent)" />
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Commencez aujourd'hui</span>
+        </div>
+        <h2 className="sr-hidden" style={{ fontSize: 'clamp(36px, 5vw, 68px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 0.92, color: 'var(--text)', marginBottom: 20, transitionDelay: '0.1s' }}>
+          Prêt à créer des documents
+          <br /><span className="gradient-text">qui impressionnent ?</span>
+        </h2>
+        <p className="sr-hidden" style={{ fontSize: 15, color: 'var(--text3)', marginBottom: 40, transitionDelay: '0.2s' }}>
+          Rejoignez +500 entreprises, cabinets et consultants qui font confiance à EETRA.
+        </p>
+        <div className="sr-hidden" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', transitionDelay: '0.3s' }}>
+          <button className="btn-primary" style={{ fontSize: 15, padding: '16px 36px', boxShadow: '0 16px 48px rgba(91,127,255,0.35)' }}>
+            Démarrer gratuitement <ArrowRight size={16} />
+          </button>
+          <button className="btn-ghost" style={{ fontSize: 15, padding: '15px 28px' }}>Voir les designs</button>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+function Footer() {
+  return (
+    <footer style={{ background: '#030407', borderTop: '1px solid var(--border)', padding: '60px 24px 32px' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr 1fr 1fr', gap: 48, marginBottom: 48 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <div style={{ width: 32, height: 32, background: 'linear-gradient(135deg, var(--accent), var(--accent2))', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FileText size={16} color="#fff" strokeWidth={2.5} />
+              </div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--text)' }}>EETRA</div>
+                <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '0.15em', textTransform: 'uppercase' }}>Document Intelligence</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.7, marginBottom: 20 }}>Plateforme B2B de création de documents professionnels pour l'Afrique de l'Ouest.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[['📍', 'Douala, Cameroun'], ['✉️', 'contact@eetra.app'], ['🌐', 'eetra.buyticle.com']].map(([e, t]) => (
+                <span key={t} style={{ fontSize: 12, color: 'var(--text3)' }}>{e} {t}</span>
+              ))}
+            </div>
+          </div>
+          {[
+            { title: 'Produit', links: ['Fonctionnalités', 'Templates', 'Designs', 'Tarifs'] },
+            { title: 'Ressources', links: ['Bibliothèque OHADA', 'Guides business', 'Blog', 'Documentation'] },
+            { title: 'Entreprise', links: ['À propos', 'Mentions légales', 'Confidentialité', 'Contact'] },
+          ].map(({ title, links }) => (
+            <div key={title}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 16 }}>{title}</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {links.map(l => (
+                  <a key={l} href="#" style={{ fontSize: 13, color: 'var(--text3)', textDecoration: 'none', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.target.style.color = 'var(--text)'}
+                    onMouseLeave={e => e.target.style.color = 'var(--text3)'}>{l}</a>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'var(--text3)' }}>© 2026 EETRA · Tous droits réservés · Douala, Cameroun</span>
+          <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--mono)' }}>v2.2.0</span>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+// ─── Main App ─────────────────────────────────────────────────────────────────
+export default function EetraLanding() {
+  useScrollObserver()
+
+  return (
+    <div style={{ fontFamily: 'var(--font)' }}>
+      <GlobalStyle />
+      <div className="noise" />
+      <Navbar />
+      <Hero />
+      <StatsBar />
+      <Features />
+      <MarqueeBanner />
+      <DesignsShowcase />
+      <Templates />
+      <Pricing />
+      <FAQ />
+      <CTASection />
+      <Footer />
+    </div>
   )
 }

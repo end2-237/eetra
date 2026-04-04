@@ -2,8 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import {
   Bricolage_Grotesque, Playfair_Display, DM_Serif_Display, Syne,
   Space_Grotesk, Cormorant_Garamond, Libre_Caslon_Text, Source_Serif_4,
-  DM_Sans, Lato, DM_Mono,
-} from 'next/font/google'
+  DM_Sans, Lato, DM_Mono, Inter } from 'next/font/google'
 import './globals.css'
 import './mobile.css'
 
@@ -19,6 +18,9 @@ import { RealtimeProvider }       from '@/contexts/RealtimeContext'
 import { NextAuthProvider }       from '@/components/providers/NextAuthProvider'
 import { FloatingHelpChat }       from '@/components/ui/FloatingHelpChat'
 import { Toaster }                from '@/components/ui/Sonner'
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const bricolage    = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-bricolage',     display: 'swap' })
 const playfair     = Playfair_Display   ({ subsets: ['latin'], variable: '--font-playfair',      display: 'swap' })
@@ -52,7 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   ].join(' ')
 
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <body className={fontVars}>
         <NextAuthProvider>
           <ThemeProvider>

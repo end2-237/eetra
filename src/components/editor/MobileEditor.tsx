@@ -51,6 +51,16 @@ export function MobileEditor({ onExport }: Props) {
     "view" | "editor" | "templates" | "analytics" | "comments"
   >("view");
 
+  const [windowWidth, setWindowWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 390
+  );
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const handleTabChange = (tab: typeof activeTab) => {
     setActiveTab(tab);
     if (tab !== "view") {
@@ -64,19 +74,11 @@ export function MobileEditor({ onExport }: Props) {
     }
   };
 
-  useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 390
-  );
-
+  // Scale factor so pages fill the screen width exactly
   const scale = windowWidth / PAGE_W;
-  const scaledW = PAGE_W * scale;
-  const scaledH = PAGE_H * scale;
+  // Scaled dimensions for the wrapper container
+  const scaledW = windowWidth; // = PAGE_W * scale
+  const scaledH = Math.round(PAGE_H * scale);
 
   const showPanel = activeTab !== "view";
 
@@ -156,34 +158,43 @@ export function MobileEditor({ onExport }: Props) {
           style={{
             position: "absolute",
             inset: 0,
-            overflow: "auto",
+            overflowY: "auto",
+            overflowX: "hidden",
             background: "var(--bg3)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "0px 0 100px", 
-            gap: 10, 
-            justifyContent: "center",
+            paddingBottom: 100,
+            gap: 12,
             opacity: showPanel ? 0 : 1,
             pointerEvents: showPanel ? "none" : "auto",
             transition: "opacity .2s",
           }}
         >
-          {/* Cover page — editable */}
+          {/* Cover page — exact scaled wrapper */}
           <div
             style={{
-              width: scaledW, // Sera égal à window.innerWidth
-              height: scaledH + 150,
+              width: scaledW,
+              height: scaledH,
               flexShrink: 0,
-              top: 50,
-              borderRadius: 0, // Enlever l'arrondi pour coller aux bords de l'écran
               overflow: "hidden",
-              boxShadow: "none", // Enlever l'ombre pour un look plus "app"
               position: "relative",
-              borderBottom: "1px solid var(--border)", // Une simple ligne pour séparer les pages
             }}
           >
-            <EditableCoverPage zoom={scale} />
+            {/* Inner div at full A4 size, scaled down */}
+            <div
+              style={{
+                width: PAGE_W,
+                height: PAGE_H,
+                transform: `scale(${scale})`,
+                transformOrigin: "top left",
+                position: "absolute",
+                top: 0,
+                left: 0,
+              }}
+            >
+              <EditableCoverPage zoom={1} />
+            </div>
           </div>
 
           {/* Content pages */}
@@ -195,28 +206,25 @@ export function MobileEditor({ onExport }: Props) {
                 width: scaledW,
                 height: scaledH,
                 flexShrink: 0,
-                borderRadius: 6,
                 overflow: "hidden",
+                position: "relative",
                 boxShadow:
                   idx === currentPageIndex
-                    ? `0 0 0 2px ${
-                        profile.color || "#1B4FD8"
-                      }, 0 4px 20px rgba(0,0,0,.12)`
-                    : "0 4px 20px rgba(0,0,0,.10)",
+                    ? `0 0 0 2px ${profile.color || "#1B4FD8"}`
+                    : "0 2px 12px rgba(0,0,0,.10)",
                 cursor: "pointer",
               }}
             >
-              {/* Inner scaled container */}
+              {/* Inner div at full A4 size, scaled down */}
               <div
                 style={{
-                  width: scaledW, // Sera égal à window.innerWidth
-                  height: scaledH,
-                  flexShrink: 0,
-                  borderRadius: 0, // Enlever l'arrondi pour coller aux bords de l'écran
-                  overflow: "hidden",
-                  boxShadow: "none", // Enlever l'ombre pour un look plus "app"
-                  position: "relative",
-                  borderBottom: "1px solid var(--border)", // Une simple ligne pour séparer les pages
+                  width: PAGE_W,
+                  height: PAGE_H,
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top left",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
                 }}
               >
                 <ContentPage
@@ -245,18 +253,6 @@ export function MobileEditor({ onExport }: Props) {
               fontWeight: 700,
               transition: "all .15s",
               marginTop: 4,
-            }}
-            onTouchStart={(e) => {
-              const el = e.currentTarget;
-              el.style.borderColor = "var(--accent)";
-              el.style.color = "var(--accent)";
-              el.style.background = "var(--accentS)";
-            }}
-            onTouchEnd={(e) => {
-              const el = e.currentTarget;
-              el.style.borderColor = "var(--border2)";
-              el.style.color = "var(--text4)";
-              el.style.background = "transparent";
             }}
           >
             <Plus size={14} /> Ajouter une page

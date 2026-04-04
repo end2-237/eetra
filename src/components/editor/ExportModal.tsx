@@ -18,13 +18,16 @@ interface Props {
 type ExportStep = 'options' | 'loading' | 'done' | 'error'
 type ExportFormat = 'pdf' | 'word'
 
-// A4 en pixels à 96dpi
 const PAGE_W = 794
 const PAGE_H = 1123
-
-// A4 en millimètres
 const A4_W_MM = 210
 const A4_H_MM = 297
+
+// Detect mobile viewport
+function isMobileViewport(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.innerWidth < 1024
+}
 
 export function ExportModal({ onClose }: Props) {
   const { title, subtitle, pages, docId, markSaved, zoom: currentZoom, setZoom } = useDocument()
@@ -44,8 +47,10 @@ export function ExportModal({ onClose }: Props) {
   const blockCount = pages.reduce((acc, p) => acc + p.blocks.length, 0)
   const docName = (title || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
-  // ── PDF EXPORT ──────────────────────────────────────────────────────────────
-  const handlePdfExport = async () => {
+  // ── MOBILE PDF EXPORT ─────────────────────────────────────────────────────
+  // On mobile, MobileEditor renders pages in scaled containers.
+  // We capture the inner A4 divs (inside the scale wrappers) directly.
+  const handleMobilePdfExport = async () => {
     setStep('loading')
     setProgress(5)
     setProgressLabel('Chargement des modules…')
@@ -60,12 +65,156 @@ export function ExportModal({ onClose }: Props) {
 
       setProgress(15)
 
-      // ── FIX: Force zoom to 100% before capture ─────────────────────────────
-      // Save current zoom and set to 1 so all pages render at full A4 size
+      document.body.classList.add('pdf-exporting')
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+      await new Promise(r => setTimeout(r, 200))
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true,
+      })
+
+      const scale = quality === 'high' ? 2 : 1.5
+
+      // On mobile, the structure is:
+      // outer div (scaledW x scaledH, overflow:hidden)
+      //   inner div (PAGE_W x PAGE_H, transform:scale(mobileScale), position:absolute)
+      //     [EditableCoverPage or ContentPage]
+      //
+      // We need to capture the inner div at full A4 resolution.
+      // Strategy: temporarily remove the transform, capture, then restore.
+
+      // Find the mobile content scroll container
+      // Cover: first scaled inner div in the view container
+      const viewContainer = document.querySelector('[data-mobile-view]') as HTMLElement | null
+
+      // Fallback: find all absolute inner divs with PAGE_W width
+      // We'll look for divs styled with width: 794px inside overflow:hidden containers
+      const allScaledInners = Array.from(
+        document.querySelectorAll('[style*="transform: scale"]')
+      ) as HTMLElement[]
+
+      // Filter to only the ones that are PAGE_W wide (the A4 containers)
+      const a4Inners = allScaledInners.filter(el => {
+        const w = parseInt(el.style.width || '0')
+        return w === PAGE_W || el.offsetWidth === PAGE_W
+      })
+
+      if (a4Inners.length === 0) {
+        // Cannot find mobile elements, fall back to desktop method
+        throw new Error('MOBILE_ELEMENTS_NOT_FOUND')
+      }
+
+      for (let i = 0; i < a4Inners.length; i++) {
+        const pct = 20 + Math.round((i / a4Inners.length) * 65)
+        setProgress(pct)
+        setProgressLabel(`Page ${i + 1} / ${a4Inners.length}…`)
+
+        const el = a4Inners[i]
+
+        // Save current transform
+        const savedTransform = el.style.transform
+        const savedPosition = el.style.position
+        const savedTop = el.style.top
+        const savedLeft = el.style.left
+
+        // Temporarily make it full size and visible for capture
+        el.style.transform = 'none'
+        el.style.position = 'relative'
+        el.style.top = '0'
+        el.style.left = '0'
+
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+
+        const canvas = await html2canvas(el, {
+          scale,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: PAGE_W,
+          height: PAGE_H,
+          windowWidth: PAGE_W,
+          windowHeight: PAGE_H,
+          logging: false,
+          ignoreElements: (el) => el.classList?.contains('pdf-hidden'),
+        })
+
+        // Restore styles
+        el.style.transform = savedTransform
+        el.style.position = savedPosition
+        el.style.top = savedTop
+        el.style.left = savedLeft
+
+        if (i > 0) pdf.addPage()
+
+        pdf.addImage(
+          canvas.toDataURL('image/jpeg', quality === 'high' ? 0.97 : 0.85),
+          'JPEG',
+          0, 0,
+          A4_W_MM,
+          A4_H_MM,
+        )
+      }
+
+      document.body.classList.remove('pdf-exporting')
+      setProgress(95)
+      setProgressLabel('Finalisation…')
+
+      const filename = `EETRA_${docName}_${new Date().toISOString().slice(0, 10)}.pdf`
+      pdf.save(filename)
+      setProgress(100)
+
+      addEntry({
+        id: generateId(),
+        docId,
+        title: title || 'Sans titre',
+        entityName: profile.name || '',
+        type: 'pdf',
+        pageCount,
+        blockCount,
+        signature: `SIG-${generateId().toUpperCase()}`,
+        qrData: `https://eetra.app/verify/${docId}`,
+      })
+      addNotification({
+        type: 'export',
+        title: 'PDF téléchargé',
+        message: `"${title || 'Document'}" — ${pageCount} page${pageCount > 1 ? 's' : ''}.`,
+      })
+      markSaved()
+      setStep('done')
+    } catch (err: any) {
+      document.body.classList.remove('pdf-exporting')
+      if (err?.message === 'MOBILE_ELEMENTS_NOT_FOUND') {
+        setErrorMsg('Impossible de capturer les pages sur mobile. Essayez depuis un ordinateur pour un meilleur résultat.')
+      } else {
+        setErrorMsg(err?.message || 'Erreur lors de la génération PDF. Réessayez.')
+      }
+      setStep('error')
+    }
+  }
+
+  // ── DESKTOP PDF EXPORT ─────────────────────────────────────────────────────
+  const handleDesktopPdfExport = async () => {
+    setStep('loading')
+    setProgress(5)
+    setProgressLabel('Chargement des modules…')
+
+    try {
+      const [jsPDFModule, html2canvasModule] = await Promise.all([
+        import('jspdf'),
+        import('html2canvas'),
+      ])
+      const jsPDF = jsPDFModule.default
+      const html2canvas = html2canvasModule.default
+
+      setProgress(15)
+
+      // Force zoom to 100% before capture
       const savedZoom = currentZoom
       setZoom(1)
 
-      // Wait for React to re-render with zoom=1
       await new Promise(r => setTimeout(r, 300))
       await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
 
@@ -82,11 +231,6 @@ export function ExportModal({ onClose }: Props) {
 
       const scale = quality === 'high' ? 2 : 1.5
 
-      // ── Build page IDs list ────────────────────────────────────────────────
-      // Cover: #eetra-page-cover is the outer wrapper from DocumentViewer.
-      // Its first child div is the scaled canvas (width=PAGE_W, transform=scale(zoom)).
-      // Since we forced zoom=1, transform=scale(1) = no transform.
-      // Content pages: id="eetra-page-${idx}" — same structure.
       const pageIds = [
         'eetra-page-cover',
         ...Array.from({ length: pages.length }, (_, i) => `eetra-page-${i}`),
@@ -100,13 +244,6 @@ export function ExportModal({ onClose }: Props) {
         const outerEl = document.getElementById(pageIds[i])
         if (!outerEl) continue
 
-        // ── Find the A4 element to capture ────────────────────────────────
-        // For the cover page: EditableCoverPage renders a wrapper div (dW×dH)
-        // containing an inner div with id="eetra-page-cover" that has
-        // transform:scale(zoom). After forcing zoom=1, the inner div IS the
-        // 794×1123 element. We look for #eetra-cover-static inside it first
-        // (used by the static CoverPage component), then fall back to the
-        // first child element (used by EditableCoverPage's canvas div).
         let captureEl: HTMLElement
 
         const staticCover = outerEl.querySelector('#eetra-cover-static') as HTMLElement | null
@@ -114,14 +251,10 @@ export function ExportModal({ onClose }: Props) {
         if (staticCover) {
           captureEl = staticCover
         } else {
-          // EditableCoverPage: outerEl IS the wrapper with overflow:hidden.
-          // Its first child is the div with id="eetra-page-cover" (the scaled inner canvas).
-          // Since we set zoom=1, transform=scale(1), so dimensions are correct.
           const innerEl = outerEl.firstElementChild as HTMLElement
           captureEl = innerEl || outerEl
         }
 
-        // Temporarily neutralize any remaining transform for safety
         const savedTransform = captureEl.style.transform
         const savedMarginBottom = captureEl.style.marginBottom
         const savedWidth = captureEl.style.width
@@ -147,7 +280,6 @@ export function ExportModal({ onClose }: Props) {
           ignoreElements: (el) => el.classList?.contains('pdf-hidden'),
         })
 
-        // Restore styles
         captureEl.style.transform = savedTransform
         captureEl.style.marginBottom = savedMarginBottom
         captureEl.style.width = savedWidth
@@ -165,8 +297,6 @@ export function ExportModal({ onClose }: Props) {
       }
 
       document.body.classList.remove('pdf-exporting')
-
-      // ── FIX: Restore original zoom after capture ───────────────────────────
       setZoom(savedZoom)
 
       setProgress(95)
@@ -196,7 +326,6 @@ export function ExportModal({ onClose }: Props) {
       setStep('done')
     } catch (err: any) {
       document.body.classList.remove('pdf-exporting')
-      // Restore zoom even on error
       try { setZoom(currentZoom) } catch {}
       setErrorMsg(err?.message || 'Erreur lors de la génération PDF. Réessayez.')
       setStep('error')
@@ -225,7 +354,6 @@ export function ExportModal({ onClose }: Props) {
 
       const docChildren: any[] = []
 
-      // ── Cover block ─────────────────────────────────────────────────────────
       docChildren.push(
         new Paragraph({
           children: [new TextRun({ text: profile.name || 'EETRA', bold: true, size: 18, color: accentHex, font: FONT })],
@@ -263,7 +391,6 @@ export function ExportModal({ onClose }: Props) {
 
       setProgress(40)
 
-      // ── Content pages ────────────────────────────────────────────────────────
       for (const [pi, page] of pages.entries()) {
         for (const block of page.blocks) {
           switch (block.type) {
@@ -388,8 +515,16 @@ export function ExportModal({ onClose }: Props) {
   }
 
   const handleExport = () => {
-    if (format === 'pdf') handlePdfExport()
-    else handleWordExport()
+    if (format === 'word') {
+      handleWordExport()
+      return
+    }
+    // PDF: choose strategy based on viewport
+    if (isMobileViewport()) {
+      handleMobilePdfExport()
+    } else {
+      handleDesktopPdfExport()
+    }
   }
 
   return (
@@ -428,6 +563,16 @@ export function ExportModal({ onClose }: Props) {
                 </div>
               </div>
 
+              {/* Mobile warning */}
+              {isMobileViewport() && (
+                <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(217,119,6,.08)', border: '1px solid rgba(217,119,6,.25)', marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>📱</span>
+                  <div style={{ fontSize: 11, color: '#92400e', lineHeight: 1.4 }}>
+                    Sur mobile, la qualité PDF peut varier. Pour un résultat optimal, exportez depuis un ordinateur.
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 10 }}>Format d'export</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -463,16 +608,6 @@ export function ExportModal({ onClose }: Props) {
                   </div>
                 </div>
               )}
-
-              {/* Zoom notice */}
-              {/* {currentZoom !== 1 && (
-                <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(27,79,216,.06)', border: '1px solid rgba(27,79,216,.2)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14 }}>🔍</span>
-                  <div style={{ fontSize: 11, color: 'var(--accent)', lineHeight: 1.4 }}>
-                    Le zoom ({Math.round(currentZoom * 100)}%) sera automatiquement mis à 100% pendant l'export puis restauré.
-                  </div>
-                </div>
-              )} */}
 
               <Button variant="primary" fullWidth size="lg" onClick={handleExport}>
                 <Download size={14} />

@@ -173,7 +173,6 @@ function CoverContrat({ color }: { color: string }) {
   )
 }
 
-
 // ── CATALOGUE ─────────────────────────────────────────────────────────────────
 
 const CATALOGUE: TplDef[] = [
@@ -208,42 +207,85 @@ const FILIERES  = ['Toutes filières', 'Informatique', 'Droit', 'Sciences Éco',
 const MAIN_CATS = ['Tous', 'Business', 'Audit', 'Juridique', 'Comptabilité', 'PV & Réunions', 'Direction', 'Académique', 'Publication', 'Communauté', 'Mes templates']
 
 const CSS = `
+  /* ── Base ────────────────────────────────────────────────────────────────── */
   .tpl-page { min-height:100vh; background:var(--bg); color:var(--text); font-size:13px; font-family:var(--font-bricolage,sans-serif); }
-  .tpl-top { position:sticky; top:0; z-index:10; height:52px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 20px; }
-  .tpl-back { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text4); background:none; border:none; cursor:pointer; padding:0; }
+
+  /* ── Topbar ──────────────────────────────────────────────────────────────── */
+  .tpl-top {
+    position:sticky; top:0; z-index:10;
+    height:52px; border-bottom:1px solid var(--border); background:var(--surface);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 20px; gap:10px;
+  }
+  .tpl-top-left { display:flex; align-items:center; gap:8px; min-width:0; flex:1; overflow:hidden; }
+  .tpl-top-right { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .tpl-back { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text4); background:none; border:none; cursor:pointer; padding:0; white-space:nowrap; }
   .tpl-back:hover { color:var(--text); }
+  .tpl-breadcrumb-sep { color:var(--border2); font-size:14px; }
+  .tpl-breadcrumb-title { font-size:14px; font-weight:700; color:var(--text); white-space:nowrap; }
+
+  /* ── Body & layout ───────────────────────────────────────────────────────── */
   .tpl-body { max-width:1200px; margin:0 auto; padding:24px 20px 48px; }
-  .tpl-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .tpl-header { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; margin-bottom:20px; }
   .tpl-h1 { font-size:18px; font-weight:700; letter-spacing:-.02em; color:var(--text); margin:0 0 3px; }
   .tpl-sub { font-size:12px; color:var(--text4); margin:0; }
-  .tpl-controls { display:flex; gap:10px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
-  .tpl-search { display:flex; align-items:center; gap:7px; border:1px solid var(--border); border-radius:6px; padding:4px 10px; background:var(--surface); transition:border-color .15s; height:30px; flex:1; max-width:260px; }
+
+  /* ── Controls (search + filters) ────────────────────────────────────────── */
+  .tpl-controls { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .tpl-search {
+    display:flex; align-items:center; gap:7px;
+    border:1px solid var(--border); border-radius:6px;
+    padding:4px 10px; background:var(--surface);
+    transition:border-color .15s; height:30px;
+    flex:1; min-width:160px; max-width:280px;
+  }
   .tpl-search:focus-within { border-color:var(--accent); }
-  .tpl-search input { border:none; outline:none; background:transparent; font-size:12px; color:var(--text); width:100%; }
+  .tpl-search input { border:none; outline:none; background:transparent; font-size:12px; color:var(--text); width:100%; min-width:0; }
   .tpl-search input::placeholder { color:var(--text4); }
-  .tpl-filter-sel { height:30px; padding:0 8px; border-radius:6px; border:1px solid var(--border); background:var(--surface); font-size:11px; color:var(--text3); cursor:pointer; outline:none; }
-  .tpl-cats { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; }
-  .tpl-cat { padding:7px 13px; font-size:12px; font-weight:500; color:var(--text4); border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .12s,border-color .12s; white-space:nowrap; }
+  .tpl-filter-sel {
+    height:30px; padding:0 8px; border-radius:6px;
+    border:1px solid var(--border); background:var(--surface);
+    font-size:11px; color:var(--text3); cursor:pointer; outline:none;
+    flex-shrink:0;
+  }
+
+  /* ── Category tabs ───────────────────────────────────────────────────────── */
+  .tpl-cats { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:20px; overflow-x:auto; scrollbar-width:none; }
+  .tpl-cats::-webkit-scrollbar { display:none; }
+  .tpl-cat { padding:7px 13px; font-size:12px; font-weight:500; color:var(--text4); border:none; background:transparent; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .12s,border-color .12s; white-space:nowrap; flex-shrink:0; }
   .tpl-cat:hover { color:var(--text); }
   .tpl-cat.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+
+  /* ── Section label ───────────────────────────────────────────────────────── */
   .tpl-section-label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--text4); margin-bottom:12px; padding-bottom:6px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
-  .tpl-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
+
+  /* ── Template grid (built-in & community) ────────────────────────────────── */
+  .tpl-grid  { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
+  .comm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
+
+  /* ── Template card ───────────────────────────────────────────────────────── */
   .tpl-card { border:1px solid var(--border); border-radius:8px; background:var(--surface); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s,box-shadow .15s; }
   .tpl-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.09); }
+  .comm-card { border:1px solid var(--border); border-radius:8px; background:var(--surface); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s,box-shadow .15s; }
+  .comm-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.09); }
   .tpl-card-cover { height:136px; background:var(--bg2); display:flex; align-items:center; justify-content:center; padding:12px; position:relative; overflow:hidden; }
   .tpl-card-cover-inner { width:80px; aspect-ratio:.707; border-radius:5px; overflow:hidden; box-shadow:0 6px 20px rgba(0,0,0,.18); }
   .tpl-card-body { padding:10px 12px 12px; }
   .tpl-card-name { font-size:12px; font-weight:700; color:var(--text); margin-bottom:2px; line-height:1.3; }
   .tpl-card-desc { font-size:10px; color:var(--text4); line-height:1.4; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .tpl-card-footer { display:flex; align-items:center; justify-content:space-between; }
-  .tpl-use-btn { height:24px; padding:0 10px; border-radius:4px; background:var(--accent); color:#fff; border:none; font-size:10px; font-weight:600; cursor:pointer; transition:opacity .12s; }
+  .tpl-use-btn { height:24px; padding:0 10px; border-radius:4px; background:var(--accent); color:#fff; border:none; font-size:10px; font-weight:600; cursor:pointer; transition:opacity .12s; display:inline-flex; align-items:center; gap:4px; }
   .tpl-use-btn:hover { opacity:.88; }
   .tpl-use-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* ── Badges ──────────────────────────────────────────────────────────────── */
   .bdg { display:inline-flex; align-items:center; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; }
   .bdg-cat    { background:var(--bg3); color:var(--text4); }
   .bdg-custom { background:var(--accentS); color:var(--accent); }
   .bdg-niveau { background:rgba(124,58,237,.1); color:#7C3AED; font-size:9px; }
   .bdg-pub    { background:rgba(5,150,105,.1); color:#059669; font-size:9px; }
+
+  /* ── Custom templates table ──────────────────────────────────────────────── */
   .tpl-table { border:1px solid var(--border); border-radius:7px; background:var(--surface); overflow:hidden; margin-bottom:24px; }
   .tpl-th { display:grid; gap:10px; padding:7px 14px; background:var(--bg2); border-bottom:1px solid var(--border); }
   .tpl-th span { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text4); }
@@ -251,28 +293,136 @@ const CSS = `
   .tpl-row:last-child { border-bottom:none; }
   .tpl-row:hover { background:var(--bg2); }
   .tpl-icon-box { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-  .tpl-act-btn { width:24px; height:24px; border-radius:5px; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s; color:var(--text4); }
+
+  /* ── Action buttons ──────────────────────────────────────────────────────── */
+  .tpl-act-btn { width:24px; height:24px; border-radius:5px; border:1px solid var(--border); background:var(--bg2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all .12s; color:var(--text4); flex-shrink:0; }
   .tpl-act-btn:hover { border-color:var(--border2); color:var(--text); }
   .tpl-act-btn.danger:hover { background:#FEE2E2; border-color:#FCA5A5; color:#DC2626; }
   .tpl-act-btn.publish { border-color:rgba(5,150,105,.3); color:#059669; background:rgba(5,150,105,.06); }
   .tpl-act-btn.publish:hover { background:rgba(5,150,105,.12); }
   .tpl-act-btn.unpublish { border-color:rgba(107,114,128,.2); color:var(--text4); }
   .tpl-act-btn:disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
+
+  /* ── Empty state ─────────────────────────────────────────────────────────── */
   .tpl-empty { border:1px solid var(--border); border-radius:7px; background:var(--surface); padding:48px 24px; text-align:center; }
+
+  /* ── Preview modal ───────────────────────────────────────────────────────── */
   .tpl-overlay { position:fixed; inset:0; z-index:9000; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; padding:24px; }
   .tpl-modal { background:var(--surface); border-radius:8px; width:100%; max-width:520px; border:1px solid var(--border); display:flex; overflow:hidden; max-height:88vh; box-shadow:0 20px 60px rgba(0,0,0,.25); }
   .tpl-modal-left { width:190px; flex-shrink:0; background:var(--bg2); padding:18px; display:flex; flex-direction:column; align-items:center; gap:12px; }
-  .tpl-modal-right { flex:1; padding:20px; overflow-y:auto; }
-  .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; }
+  .tpl-modal-right { flex:1; padding:20px; overflow-y:auto; min-width:0; }
+
+  /* ── Buttons ─────────────────────────────────────────────────────────────── */
+  .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
   .btn-primary:hover { opacity:.88; }
-  .btn-ghost { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:6px; background:transparent; color:var(--text2); border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; transition:all .12s; }
+  .btn-ghost { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:6px; background:transparent; color:var(--text2); border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; transition:all .12s; white-space:nowrap; }
   .btn-ghost:hover { border-color:var(--border2); background:var(--bg3); }
   .btn-sm { padding:4px 10px; font-size:11px; }
-  .comm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:14px; margin-bottom:28px; }
-  .comm-card { border:1px solid var(--border); border-radius:8px; background:var(--surface); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s,box-shadow .15s; }
-  .comm-card:hover { border-color:var(--border2); transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.09); }
   @keyframes spin { to { transform:rotate(360deg) } }
   .spin { animation:spin .7s linear infinite; }
+
+  /* ════════════════════════════════════════════════════════════════════════════
+     RESPONSIVE
+  ════════════════════════════════════════════════════════════════════════════ */
+
+  /* ── Tablet 768-1023px ───────────────────────────────────────────────────── */
+  @media(max-width:1023px){
+    .tpl-grid  { grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:12px; }
+    .comm-grid { grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:12px; }
+  }
+
+  /* ── Mobile ≤767px ───────────────────────────────────────────────────────── */
+  @media(max-width:767px){
+    /* Topbar */
+    .tpl-top { padding:0 12px; gap:8px; height:50px; }
+    .tpl-back span { display:none; }  /* hide "Tableau de bord" text, keep arrow */
+    .tpl-breadcrumb-sep { display:none; }
+
+    /* Body */
+    .tpl-body { padding:14px 12px 48px; }
+
+    /* Header : stack title + hide desktop "New template" btn (there's one in topbar) */
+    .tpl-header { flex-direction:column; gap:10px; align-items:flex-start; margin-bottom:14px; }
+    .tpl-header-btn-desktop { display:none; }
+    .tpl-h1 { font-size:16px; }
+
+    /* Controls */
+    .tpl-controls { gap:6px; margin-bottom:10px; }
+    .tpl-search { max-width:none; flex:1; min-width:0; }
+    .tpl-filter-sel { flex:1; min-width:0; font-size:11px; }
+
+    /* Category tabs */
+    .tpl-cat { padding:6px 10px; font-size:11px; }
+
+    /* Grids */
+    .tpl-grid  { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+    .comm-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+    .tpl-card-cover { height:110px; padding:8px; }
+    .tpl-card-cover-inner { width:64px; }
+    .tpl-card-body { padding:8px 10px 10px; }
+
+    /* Custom templates table → card list on mobile */
+    .tpl-th { display:none !important; }
+    .tpl-row {
+      grid-template-columns: 1fr auto !important;
+      gap: 10px !important;
+      padding: 10px 12px !important;
+      align-items: center !important;
+    }
+    /* Hide metadata columns (category, blocs, usages, date) */
+    .tpl-row > span { display:none !important; }
+    /* Show only name block + actions */
+    .tpl-row > div:first-child { min-width:0; }
+    .tpl-row > div:last-child { gap:6px !important; }
+
+    /* Modal → full screen */
+    .tpl-overlay { padding:0; align-items:flex-end; }
+    .tpl-modal {
+      flex-direction:column;
+      max-width:100% !important;
+      border-radius:14px 14px 0 0;
+      max-height:90dvh;
+      height:auto;
+      width:100%;
+    }
+    .tpl-modal-left {
+      width:100% !important;
+      flex-direction:row;
+      padding:14px 16px;
+      gap:14px;
+      align-items:center;
+      flex-shrink:0;
+      border-bottom:1px solid var(--border);
+    }
+    .tpl-modal-left > div:first-child {
+      width:56px !important;
+      height:80px !important;
+      aspect-ratio:unset !important;
+      flex-shrink:0;
+    }
+    .tpl-modal-left > div:nth-child(2) { text-align:left; }
+    .tpl-modal-right { flex:1; padding:16px; overflow-y:auto; }
+  }
+
+  /* ── XS phones ≤479px ────────────────────────────────────────────────────── */
+  @media(max-width:479px){
+    .tpl-grid  { grid-template-columns:1fr 1fr; gap:8px; }
+    .comm-grid { grid-template-columns:1fr 1fr; gap:8px; }
+    .tpl-card-cover { height:96px; padding:6px; }
+    .tpl-card-cover-inner { width:54px; }
+    .tpl-card-name { font-size:11px; }
+    .tpl-card-desc { font-size:9px; -webkit-line-clamp:1; }
+
+    /* Filters: keep only search on very small screens */
+    .tpl-filter-sel { display:none; }
+    .tpl-search { max-width:none; }
+
+    /* Cat tabs even smaller */
+    .tpl-cat { padding:5px 8px; font-size:10px; }
+
+    /* Modal */
+    .tpl-modal { border-radius:0; max-height:100dvh; height:100dvh; }
+  }
 `
 
 export default function TemplatesPage() {
@@ -297,8 +447,6 @@ export default function TemplatesPage() {
   const [cat,     setCat]     = useState('Tous')
   const [niveau,  setNiveau]  = useState('Tous niveaux')
   const [preview, setPreview] = useState<TplDef | null>(null)
-
-  // Boutons en cours de traitement
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   const setBusy = (id: string, val: boolean) => setBusyIds(prev => {
     const next = new Set(prev); val ? next.add(id) : next.delete(id); return next
@@ -392,15 +540,18 @@ export default function TemplatesPage() {
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }}/>
       <div className="tpl-page">
+
+        {/* ── Topbar ──────────────────────────────────────────────────────── */}
         <header className="tpl-top">
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div className="tpl-top-left">
             <button className="tpl-back" onClick={() => router.push('/dashboard')}>
-              <ArrowLeft size={13}/> Tableau de bord
+              <ArrowLeft size={13}/>
+              <span>Tableau de bord</span>
             </button>
-            <span style={{ color:'var(--border2)', fontSize:14 }}>/</span>
-            <span style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>Templates</span>
+            <span className="tpl-breadcrumb-sep">/</span>
+            <span className="tpl-breadcrumb-title">Templates</span>
           </div>
-          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <div className="tpl-top-right">
             <ThemeToggle/>
             <button className="btn-primary btn-sm" onClick={() => router.push('/templates/create')}>
               <Plus size={12}/> Créer
@@ -409,14 +560,15 @@ export default function TemplatesPage() {
         </header>
 
         <div className="tpl-body">
-          {/* Limit banner */}
+
+          {/* ── Limit banner ────────────────────────────────────────────── */}
           {limitReached && (
-            <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.2)', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Lock size={14} color="#DC2626" />
-              <div style={{ flex: 1 }}>
+            <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, background: 'rgba(220,38,38,.06)', border: '1px solid rgba(220,38,38,.2)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <Lock size={14} color="#DC2626" style={{ flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 180 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#DC2626' }}>Limite de documents atteinte</div>
                 <div style={{ fontSize: 11, color: 'var(--text4)' }}>
-                  Vous avez utilisé vos {plan.maxDocsPerMonth === Infinity ? '∞' : plan.maxDocsPerMonth} documents/mois inclus dans le plan {plan.label}. Les templates sont temporairement indisponibles.
+                  Vous avez utilisé vos {plan.maxDocsPerMonth === Infinity ? '∞' : plan.maxDocsPerMonth} documents/mois. Les templates sont temporairement indisponibles.
                 </div>
               </div>
               <button
@@ -427,6 +579,7 @@ export default function TemplatesPage() {
             </div>
           )}
 
+          {/* ── Header ──────────────────────────────────────────────────── */}
           <div className="tpl-header">
             <div>
               <h1 className="tpl-h1">Templates</h1>
@@ -434,19 +587,21 @@ export default function TemplatesPage() {
                 {CATALOGUE.length} templates · {custom.length} personnalisés · {communityTemplates.length} communauté
                 {plan.maxDocsPerMonth !== Infinity && (
                   <span style={{ marginLeft: 10, color: limitReached ? '#DC2626' : 'var(--text4)' }}>
-                    · {getRemainingDocs()}/{plan.maxDocsPerMonth} documents restants
+                    · {getRemainingDocs()}/{plan.maxDocsPerMonth} restants
                   </span>
                 )}
               </p>
             </div>
-            <button className="btn-primary" onClick={() => router.push('/templates/create')}>
+            {/* Desktop only — hidden on mobile via CSS */}
+            <button className="btn-primary tpl-header-btn-desktop" onClick={() => router.push('/templates/create')}>
               <Plus size={13}/> Nouveau template
             </button>
           </div>
 
+          {/* ── Search + filters ────────────────────────────────────────── */}
           <div className="tpl-controls">
             <div className="tpl-search">
-              <Search size={12} color="var(--text4)"/>
+              <Search size={12} color="var(--text4)" style={{ flexShrink: 0 }}/>
               <input placeholder="Rechercher…" value={search} onChange={e => setSearch(e.target.value)}/>
             </div>
             {showAcadFilters && (
@@ -461,6 +616,7 @@ export default function TemplatesPage() {
             )}
           </div>
 
+          {/* ── Category tabs ───────────────────────────────────────────── */}
           <div className="tpl-cats">
             {MAIN_CATS.map(c => (
               <button key={c} className={`tpl-cat${cat === c ? ' active' : ''}`} onClick={() => setCat(c)}>
@@ -479,12 +635,12 @@ export default function TemplatesPage() {
             ))}
           </div>
 
-          {/* ── Communauté ── */}
+          {/* ── Communauté ──────────────────────────────────────────────── */}
           {showCommunity && (
             <div style={{ marginBottom:28 }}>
-  {communityLoading ? (
-    <div style={{ textAlign:'center', padding:'48px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
-      <LoadingSpinner size={22} className="text-[var(--text4)]" />
+              {communityLoading ? (
+                <div style={{ textAlign:'center', padding:'48px 0', display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+                  <LoadingSpinner size={22} className="text-[var(--text4)]" />
                   <span style={{ fontSize:12, color:'var(--text4)' }}>Chargement des templates communautaires…</span>
                 </div>
               ) : filterCommunity.length === 0 ? (
@@ -492,7 +648,7 @@ export default function TemplatesPage() {
                   <Globe size={26} color="var(--text4)" style={{ margin:'0 auto 10px' }}/>
                   <div style={{ fontSize:13, fontWeight:600, color:'var(--text2)', marginBottom:4 }}>Galerie communautaire</div>
                   <p style={{ fontSize:12, color:'var(--text4)', margin:'0 0 14px' }}>
-                    Publiez vos propres templates depuis "Mes templates" pour les partager avec la communauté.
+                    Publiez vos propres templates depuis "Mes templates" pour les partager.
                   </p>
                   <button className="btn-primary btn-sm" onClick={() => setCat('Mes templates')}>Voir mes templates</button>
                 </div>
@@ -525,7 +681,9 @@ export default function TemplatesPage() {
                               <span style={{ fontSize:9, color:'var(--text4)', fontWeight:500 }}>{tpl.author || 'Communauté'}</span>
                               <span style={{ fontSize:9, color:'var(--text4)' }}>{tpl.blocks.length} blocs{tpl.likes ? ` · ${tpl.likes} ♥` : ''}</span>
                             </div>
-                            <button className="tpl-use-btn" disabled={limitReached} onClick={e => { e.stopPropagation(); useCustom(tpl) }}>{limitReached ? <Lock size={10}/> : 'Utiliser →'}</button>
+                            <button className="tpl-use-btn" disabled={limitReached} onClick={e => { e.stopPropagation(); useCustom(tpl) }}>
+                              {limitReached ? <Lock size={10}/> : 'Utiliser →'}
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -536,12 +694,12 @@ export default function TemplatesPage() {
             </div>
           )}
 
-          {/* ── Mes templates ── */}
+          {/* ── Mes templates ───────────────────────────────────────────── */}
           {showCustom && (
             <div style={{ marginBottom:28 }}>
-  {loading ? (
-    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'24px 0' }}>
-      <LoadingSpinner size={16} className="text-[var(--text4)]" />
+              {loading ? (
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'24px 0' }}>
+                  <LoadingSpinner size={16} className="text-[var(--text4)]" />
                   <span style={{ fontSize:12, color:'var(--text4)' }}>Chargement de vos templates…</span>
                 </div>
               ) : custom.length === 0 && cat === 'Mes templates' ? (
@@ -561,77 +719,73 @@ export default function TemplatesPage() {
                     {loading && <LoadingSpinner size={11} className="text-[var(--text4)]" />}
                   </div>
                   <div className="tpl-table">
-                    <div className="tpl-th" style={{ gridTemplateColumns:colsCustom }}>
-                      <span>Nom</span><span>Catégorie</span><span>Blocs</span><span>Utilisations</span><span>Créé le</span><span></span>
+                    {/* Desktop header */}
+                    <div className="tpl-th" style={{ gridTemplateColumns: colsCustom }}>
+                      <span>Nom</span>
+                      <span>Catégorie</span>
+                      <span>Blocs</span>
+                      <span>Utilisations</span>
+                      <span>Créé le</span>
+                      <span></span>
                     </div>
+
                     {filterCustom.map(tpl => (
-                      <div key={tpl.id} className="tpl-row" style={{ gridTemplateColumns:colsCustom }}>
+                      <div key={tpl.id} className="tpl-row" style={{ gridTemplateColumns: colsCustom }}>
+
+                        {/* Col 1 : name */}
                         <div style={{ display:'flex', alignItems:'center', gap:9, minWidth:0 }}>
                           <div className="tpl-icon-box" style={{ background:'var(--accentS)' }}>
                             <LayoutGrid size={13} color="var(--accent)"/>
                           </div>
                           <div style={{ minWidth:0 }}>
-                            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:1 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:1, flexWrap:'wrap' }}>
                               <div style={{ fontSize:12, fontWeight:600, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                                 {tpl.name}
                               </div>
                               {tpl.isPublic && <span className="bdg bdg-pub">publié</span>}
                             </div>
-                            <div style={{ fontSize:10, color:'var(--text4)' }}>{tpl.description}</div>
+                            <div style={{ fontSize:10, color:'var(--text4)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tpl.description}</div>
                           </div>
                         </div>
-                        <span><span className="bdg bdg-custom">{tpl.category||'—'}</span></span>
-                        <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.blocks.length}</span>
-                        <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.usageCount||0}</span>
-                        <span style={{ fontSize:12, color:'var(--text4)' }}>
-                          {tpl.createdAt ? new Date(tpl.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}) : '—'}
-                        </span>
-                        <div style={{ display:'flex', gap:4 }} onClick={e => e.stopPropagation()}>
-                          <button className="tpl-use-btn" disabled={limitReached} onClick={() => useCustom(tpl)}>{limitReached ? <Lock size={10}/> : 'Utiliser'}</button>
 
-                          {/* Bouton publish/unpublish */}
+                        {/* Col 2 : category (hidden on mobile via CSS) */}
+                        <span><span className="bdg bdg-custom">{tpl.category || '—'}</span></span>
+
+                        {/* Col 3 : blocs (hidden on mobile) */}
+                        <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.blocks.length}</span>
+
+                        {/* Col 4 : usage (hidden on mobile) */}
+                        <span style={{ fontSize:12, color:'var(--text4)' }}>{tpl.usageCount || 0}</span>
+
+                        {/* Col 5 : date (hidden on mobile) */}
+                        <span style={{ fontSize:12, color:'var(--text4)' }}>
+                          {tpl.createdAt ? new Date(tpl.createdAt).toLocaleDateString('fr-FR', { day:'2-digit', month:'short' }) : '—'}
+                        </span>
+
+                        {/* Col 6 : actions */}
+                        <div style={{ display:'flex', gap:4, flexWrap:'nowrap', justifyContent:'flex-end' }} onClick={e => e.stopPropagation()}>
+                          <button className="tpl-use-btn" disabled={limitReached} onClick={() => useCustom(tpl)}>
+                            {limitReached ? <Lock size={10}/> : 'Utiliser'}
+                          </button>
                           <button
                             className={`tpl-act-btn ${tpl.isPublic ? 'unpublish' : 'publish'}`}
                             title={tpl.isPublic ? 'Retirer de la communauté' : 'Publier dans la communauté'}
                             disabled={busyIds.has(tpl.id)}
                             onClick={() => handlePublishToggle(tpl)}
                           >
-    {busyIds.has(tpl.id)
-      ? <LoadingSpinner size={10} className="text-current" />
-      : tpl.isPublic ? <Lock size={10}/> : <Globe size={10}/>
-    }
+                            {busyIds.has(tpl.id)
+                              ? <LoadingSpinner size={10} className="text-current" />
+                              : tpl.isPublic ? <Lock size={10}/> : <Globe size={10}/>
+                            }
                           </button>
-
-                          {/* Éditer */}
-                          <button
-                            className="tpl-act-btn"
-                            onClick={() => router.push(`/templates/create?edit=${tpl.id}`)}
-                          >
+                          <button className="tpl-act-btn" onClick={() => router.push(`/templates/create?edit=${tpl.id}`)}>
                             <Edit3 size={10}/>
                           </button>
-
-                          {/* Dupliquer */}
-                          <button
-                            className="tpl-act-btn"
-                            disabled={busyIds.has(tpl.id + '_dup')}
-                            onClick={() => handleDuplicate(tpl.id)}
-                          >
-      {busyIds.has(tpl.id + '_dup')
-        ? <LoadingSpinner size={10} className="text-current" />
-        : <Copy size={10}/>
-      }
+                          <button className="tpl-act-btn" disabled={busyIds.has(tpl.id + '_dup')} onClick={() => handleDuplicate(tpl.id)}>
+                            {busyIds.has(tpl.id + '_dup') ? <LoadingSpinner size={10} className="text-current" /> : <Copy size={10}/>}
                           </button>
-
-                          {/* Supprimer */}
-                          <button
-                            className="tpl-act-btn danger"
-                            disabled={busyIds.has(tpl.id)}
-                            onClick={() => handleDelete(tpl.id)}
-                          >
-      {busyIds.has(tpl.id)
-        ? <LoadingSpinner size={10} className="text-current" />
-        : <Trash2 size={10}/>
-      }
+                          <button className="tpl-act-btn danger" disabled={busyIds.has(tpl.id)} onClick={() => handleDelete(tpl.id)}>
+                            {busyIds.has(tpl.id) ? <LoadingSpinner size={10} className="text-current" /> : <Trash2 size={10}/>}
                           </button>
                         </div>
                       </div>
@@ -642,7 +796,7 @@ export default function TemplatesPage() {
             </div>
           )}
 
-          {/* ── Templates intégrés ── */}
+          {/* ── Built-in templates ──────────────────────────────────────── */}
           {showBuiltin && (filtered.length === 0
             ? (
               <div className="tpl-empty">
@@ -667,7 +821,9 @@ export default function TemplatesPage() {
                         <div className="tpl-card-desc">{tpl.desc}</div>
                         <div className="tpl-card-footer">
                           <span style={{ fontSize:10, color:'var(--text4)' }}>{tpl.blocs} blocs</span>
-                          <button className="tpl-use-btn" disabled={limitReached} onClick={e => { e.stopPropagation(); useTpl(tpl.id) }}>{limitReached ? <Lock size={10}/> : 'Utiliser →'}</button>
+                          <button className="tpl-use-btn" disabled={limitReached} onClick={e => { e.stopPropagation(); useTpl(tpl.id) }}>
+                            {limitReached ? <Lock size={10}/> : 'Utiliser →'}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -679,10 +835,12 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      {/* Modal aperçu template intégré */}
+      {/* ── Preview modal ────────────────────────────────────────────────── */}
       {preview && (
         <div className="tpl-overlay" onClick={() => setPreview(null)}>
           <div className="tpl-modal" onClick={e => e.stopPropagation()}>
+
+            {/* Left / top panel */}
             <div className="tpl-modal-left">
               <div style={{ width:'100%', aspectRatio:'.707', borderRadius:7, overflow:'hidden', boxShadow:'0 8px 28px rgba(0,0,0,.2)' }}>
                 <preview.Cover color={preview.color}/>
@@ -693,32 +851,42 @@ export default function TemplatesPage() {
               </div>
               {preview.subcat && <span className="bdg bdg-niveau">{preview.subcat}</span>}
             </div>
+
+            {/* Right / bottom panel */}
             <div className="tpl-modal-right">
               <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:10 }}>
-                <div>
+                <div style={{ minWidth:0 }}>
                   <span className="bdg bdg-cat" style={{ marginBottom:8, display:'inline-block' }}>{preview.cat}</span>
                   <div style={{ fontSize:15, fontWeight:700, color:'var(--text)', margin:'0 0 4px' }}>{preview.name}</div>
                   <div style={{ fontSize:12, color:'var(--text4)', margin:'0 0 14px' }}>{preview.desc}</div>
                 </div>
-                <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text4)', padding:0 }} onClick={() => setPreview(null)}>
+                <button style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text4)', padding:0, flexShrink:0, marginLeft:8 }} onClick={() => setPreview(null)}>
                   <X size={14}/>
                 </button>
               </div>
+
               <div style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text4)', marginBottom:7 }}>Tags</div>
               <div style={{ display:'flex', gap:5, flexWrap:'wrap', marginBottom:14 }}>
                 {preview.tags.map(t => <span key={t} className="bdg bdg-cat" style={{ fontSize:10 }}>{t}</span>)}
               </div>
+
               <div style={{ fontSize:10, fontWeight:600, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text4)', marginBottom:7 }}>Adapté pour</div>
               <div style={{ fontSize:12, color:'var(--text3)', lineHeight:1.6, marginBottom:18 }}>
-                {preview.cat === 'Académique' ? `Universités camerounaises · Niveau ${preview.subcat||'Licence/Master'} · Conforme UY1, UDla, UBa`
+                {preview.cat === 'Académique' ? `Universités camerounaises · Niveau ${preview.subcat || 'Licence/Master'} · Conforme UY1, UDla, UBa`
                 : preview.cat === 'PV & Réunions' ? 'Entreprises OHADA · SA, SARL · Gouvernance · Cameroun'
                 : preview.cat === 'Comptabilité' ? 'PME camerounaises · TVA 19.25% · SYSCOHADA · FCFA'
                 : preview.cat === 'Publication'  ? 'Chercheurs · Universités · Revues africaines · Think tanks'
                 : "PME, cabinets et entreprises en Afrique Centrale et de l'Ouest"}
               </div>
+
               <div style={{ display:'flex', gap:8 }}>
                 <button className="btn-ghost" style={{ flex:1, justifyContent:'center' }} onClick={() => setPreview(null)}>Fermer</button>
-                <button className="btn-primary" style={{ flex:2, justifyContent:'center', opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }} disabled={limitReached} onClick={() => { setPreview(null); useTpl(preview.id) }}>
+                <button
+                  className="btn-primary"
+                  style={{ flex:2, justifyContent:'center', opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }}
+                  disabled={limitReached}
+                  onClick={() => { setPreview(null); useTpl(preview.id) }}
+                >
                   {limitReached ? <><Lock size={12}/> Limite atteinte</> : <><Check size={12}/> Utiliser ce template</>}
                 </button>
               </div>

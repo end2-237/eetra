@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Layers,
@@ -11,20 +11,26 @@ import {
   Download,
   X,
   Plus,
+  Layout,
+  BookMarked,
+  ChevronLeft,
 } from "lucide-react";
 import { useDocument } from "@/contexts/DocumentContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { EditableCoverPage } from "./document/EditableCoverPage";
+import { EditableCoverPageMobile } from "./document/EditableCoverPageMobile";
 import { ContentPage } from "./document/ContentPage";
 import { EditorPanel } from "./panels/EditorPanel";
 import { TabName } from "@/types";
 
+// All tabs — rendered in a horizontally-scrollable pill bar
 const TABS = [
-  { id: "view", Icon: FileText, label: "Doc" },
-  { id: "editor", Icon: Layers, label: "Blocs" },
-  { id: "templates", Icon: LayoutGrid, label: "Templates" },
-  { id: "analytics", Icon: BarChart2, label: "Stats" },
-  { id: "comments", Icon: MessageSquare, label: "Notes" },
+  { id: "view",        Icon: FileText,      label: "Doc"          },
+  { id: "editor",      Icon: Layers,        label: "Blocs"        },
+  { id: "templates",   Icon: LayoutGrid,    label: "Templates"    },
+  { id: "layout",      Icon: Layout,        label: "Mise en page" },
+  { id: "analytics",   Icon: BarChart2,     label: "Stats"        },
+  { id: "comments",    Icon: MessageSquare, label: "Notes"        },
+  { id: "orientation", Icon: BookMarked,    label: "TdM"          },
 ];
 
 interface Props {
@@ -32,7 +38,7 @@ interface Props {
 }
 
 const PAGE_W = 794;
-const PAGE_H = 1123;
+const PAGE_H = 1173;
 
 export function MobileEditor({ onExport }: Props) {
   const router = useRouter();
@@ -42,42 +48,43 @@ export function MobileEditor({ onExport }: Props) {
     currentPageIndex,
     setCurrentPageIndex,
     title,
-    coverStyle,
-    activeTab: contextActiveTab,
     setActiveTab: setContextActiveTab,
   } = useDocument();
   const { profile } = useProfile();
-  const [activeTab, setActiveTab] = useState<
-    "view" | "editor" | "templates" | "analytics" | "comments"
-  >("view");
 
+  const [activeTab, setActiveTab] = useState<string>("view");
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 390
   );
+  const tabBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize, { passive: true });
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleTabChange = (tab: typeof activeTab) => {
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     if (tab !== "view") {
-      const contextTabMap: Record<string, string> = {
-        editor: "editor",
-        templates: "templates",
-        analytics: "analytics",
-        comments: "comments",
-      };
-      setContextActiveTab(contextTabMap[tab] as TabName);
+      setContextActiveTab(tab as TabName);
     }
   };
 
-  // Scale factor so pages fill the screen width exactly
+  // Scroll the active tab pill into view
+  useEffect(() => {
+    if (!tabBarRef.current) return;
+    const btn = tabBarRef.current.querySelector(
+      `[data-tab="${activeTab}"]`
+    ) as HTMLElement | null;
+    if (btn) {
+      btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+  }, [activeTab]);
+
+  // Visual scale so each page fills the full screen width
   const scale = windowWidth / PAGE_W;
-  // Scaled dimensions for the wrapper container
-  const scaledW = windowWidth; // = PAGE_W * scale
+  // Exact height of a scaled A4 page
   const scaledH = Math.round(PAGE_H * scale);
 
   const showPanel = activeTab !== "view";
@@ -92,7 +99,7 @@ export function MobileEditor({ onExport }: Props) {
         overflow: "hidden",
       }}
     >
-      {/* ── Top bar ── */}
+      {/* ─── Top bar ─────────────────────────────────────────────────────── */}
       <div
         style={{
           height: 48,
@@ -103,6 +110,7 @@ export function MobileEditor({ onExport }: Props) {
           alignItems: "center",
           justifyContent: "space-between",
           padding: "0 12px",
+          gap: 8,
         }}
       >
         <button
@@ -112,25 +120,30 @@ export function MobileEditor({ onExport }: Props) {
             border: "none",
             cursor: "pointer",
             color: "var(--text4)",
-            padding: 0,
-            fontSize: 13,
+            padding: 4,
+            display: "flex",
+            alignItems: "center",
+            flexShrink: 0,
           }}
         >
-          ← Dashboard
+          <ChevronLeft size={18} />
         </button>
+
         <span
           style={{
             fontSize: 13,
             fontWeight: 700,
             color: "var(--text)",
-            maxWidth: 160,
+            flex: 1,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            textAlign: "center",
           }}
         >
           {title || "Document"}
         </span>
+
         <button
           onClick={onExport}
           style={{
@@ -145,57 +158,37 @@ export function MobileEditor({ onExport }: Props) {
             cursor: "pointer",
             fontSize: 12,
             fontWeight: 700,
+            flexShrink: 0,
           }}
         >
-          <Download size={13} /> PDF
+          <Download size={13} />
+          PDF
         </button>
       </div>
 
-      {/* ── Content area ── */}
+      {/* ─── Main content ────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-        {/* Document view (always rendered, hidden behind panel) */}
+
+        {/* Document scroll view */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             overflowY: "auto",
-            overflowX: "hidden",
+            overflowX: "auto",
             background: "var(--bg3)",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            paddingBottom: 100,
+            paddingBottom: 32,
             gap: 12,
             opacity: showPanel ? 0 : 1,
             pointerEvents: showPanel ? "none" : "auto",
-            transition: "opacity .2s",
+            transition: "opacity .15s",
           }}
         >
-          {/* Cover page — exact scaled wrapper */}
-          <div
-            style={{
-              width: scaledW,
-              height: scaledH,
-              flexShrink: 0,
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            {/* Inner div at full A4 size, scaled down */}
-            <div
-              style={{
-                width: PAGE_W,
-                height: PAGE_H,
-                transform: `scale(${scale})`,
-                transformOrigin: "top left",
-                position: "absolute",
-                top: 0,
-                left: 0,
-              }}
-            >
-              <EditableCoverPage zoom={1} />
-            </div>
-          </div>
+          {/* Cover page via dedicated mobile wrapper */}
+          <EditableCoverPageMobile scale={scale} windowWidth={windowWidth} />
 
           {/* Content pages */}
           {pages.map((page, idx) => (
@@ -203,19 +196,21 @@ export function MobileEditor({ onExport }: Props) {
               key={page.id}
               onClick={() => setCurrentPageIndex(idx)}
               style={{
-                width: scaledW,
+                // Outer container: exact scaled dimensions, clips overflow
+                width: windowWidth,
                 height: scaledH,
                 flexShrink: 0,
                 overflow: "hidden",
                 position: "relative",
                 boxShadow:
                   idx === currentPageIndex
-                    ? `0 0 0 2px ${profile.color || "#1B4FD8"}`
-                    : "0 2px 12px rgba(0,0,0,.10)",
+                    ? `0 0 0 2px ${profile.color || "#1B4FD8"}, 0 4px 16px rgba(0,0,0,.14)`
+                    : "0 2px 12px rgba(0,0,0,.08)",
                 cursor: "pointer",
+                transition: "box-shadow .15s",
               }}
             >
-              {/* Inner div at full A4 size, scaled down */}
+              {/* Inner A4 div at full resolution, scaled down */}
               <div
                 style={{
                   width: PAGE_W,
@@ -236,14 +231,14 @@ export function MobileEditor({ onExport }: Props) {
             </div>
           ))}
 
-          {/* ── Add page button ── */}
+          {/* Add page CTA */}
           <button
             onClick={addPage}
             style={{
               display: "flex",
               alignItems: "center",
               gap: 8,
-              padding: "10px 24px",
+              padding: "10px 28px",
               borderRadius: 12,
               border: "2px dashed var(--border2)",
               background: "transparent",
@@ -251,7 +246,6 @@ export function MobileEditor({ onExport }: Props) {
               color: "var(--text4)",
               fontSize: 12,
               fontWeight: 700,
-              transition: "all .15s",
               marginTop: 4,
             }}
           >
@@ -259,7 +253,7 @@ export function MobileEditor({ onExport }: Props) {
           </button>
         </div>
 
-        {/* Slide-up panel */}
+        {/* Editor panel (blocs / templates / layout / etc.) */}
         {showPanel && (
           <div
             style={{
@@ -269,10 +263,9 @@ export function MobileEditor({ onExport }: Props) {
               display: "flex",
               flexDirection: "column",
               overflow: "hidden",
-              animation: "slideUpPanel .25s cubic-bezier(.23,1,.32,1)",
+              animation: "slideUpPanel .2s cubic-bezier(.23,1,.32,1)",
             }}
           >
-            {/* Panel header */}
             <div
               style={{
                 height: 44,
@@ -285,9 +278,7 @@ export function MobileEditor({ onExport }: Props) {
                 padding: "0 14px",
               }}
             >
-              <span
-                style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}
-              >
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--text)" }}>
                 {TABS.find((t) => t.id === activeTab)?.label}
               </span>
               <button
@@ -298,6 +289,7 @@ export function MobileEditor({ onExport }: Props) {
                   cursor: "pointer",
                   color: "var(--text4)",
                   display: "flex",
+                  padding: 4,
                 }}
               >
                 <X size={16} />
@@ -310,55 +302,82 @@ export function MobileEditor({ onExport }: Props) {
         )}
       </div>
 
-      {/* ── Bottom tab bar ── */}
+      {/* ─── Bottom tab bar — horizontally scrollable ────────────────────── */}
       <div
         style={{
-          height: 56,
           flexShrink: 0,
           background: "var(--surface)",
           borderTop: "1px solid var(--border)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-around",
-          padding: "0 4px",
           paddingBottom: "env(safe-area-inset-bottom, 0)",
         }}
       >
-        {TABS.map(({ id, Icon, label }) => {
-          const isActive = activeTab === id;
-          return (
-            <button
-              key={id}
-              onClick={() => handleTabChange(id as typeof activeTab)}
-              style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 3,
-                padding: "6px 4px",
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                color: isActive ? "var(--accent)" : "var(--text4)",
-              }}
-            >
-              <Icon size={20} />
-              <span
-                style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".06em" }}
+        <div
+          ref={tabBarRef}
+          style={{
+            display: "flex",
+            overflowX: "auto",
+            overflowY: "auto",
+            // Hide scrollbar cross-browser
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+            padding: "5px 6px",
+            gap: 4,
+            height: 58,
+            alignItems: "center",
+          } as React.CSSProperties}
+        >
+          {TABS.map(({ id, Icon, label }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                data-tab={id}
+                onClick={() => handleTabChange(id)}
+                style={{
+                  flexShrink: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 3,
+                  padding: "4px 10px",
+                  height: 46,
+                  background: isActive ? "var(--accentS)" : "transparent",
+                  border: isActive
+                    ? "1px solid rgba(27,79,216,.25)"
+                    : "1px solid transparent",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  color: isActive ? "var(--accent)" : "var(--text4)",
+                  minWidth: 52,
+                  transition: "all .12s",
+                }}
               >
-                {label}
-              </span>
-            </button>
-          );
-        })}
+                <Icon size={17} />
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    letterSpacing: ".03em",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <style>{`
         @keyframes slideUpPanel {
-          from { opacity: 0; transform: translateY(24px); }
+          from { opacity: 0; transform: translateY(18px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        /* Hide scrollbar in webkit (iOS Safari, Chrome mobile) */
+        div::-webkit-scrollbar { display: none; }
       `}</style>
     </div>
   );

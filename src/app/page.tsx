@@ -78,8 +78,8 @@ function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3">
             <Image src={logo} alt="EETRA" width={36} height={36} className="rounded-lg" />
-            <span className="text-lg font-extrabold tracking-tight text-[var(--text)]">EETRA</span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 bg-[var(--accentS)] text-[var(--accent)] rounded-full border border-[var(--accent)]/25 tracking-widest">2026</span>
+            <span className="text-lg font-extrabold tracking-tight text-[var(--text)] hidden sm:inline">EETRA</span>
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 bg-[var(--accentS)] text-[var(--accent)] rounded-full border border-[var(--accent)]/25 tracking-widest whitespace-nowrap sm:px-2">2026</span>
           </Link>
 
           {/* Desktop nav */}
@@ -842,8 +842,8 @@ function Footer() {
             </div>
             <p className="text-sm text-[var(--text3)] leading-relaxed mb-5">Plateforme B2B de creation de documents professionnels pour l&apos;Afrique de l&apos;Ouest.</p>
             <div className="flex flex-col gap-2">
-              {[['Douala, Cameroun'], ['contact@eetra.app'], ['eetra.buyticle.com']].map(([t]) => (
-                <span key={t} className="text-xs text-[var(--text3)]">{t}</span>
+              {[['Douala, Cameroun'], ['+237 696 995 879'], ['contact@eetra.buyticle.com']].map(([t]) => (
+                <a key={t} href={t.includes('@') ? `mailto:${t}` : t.includes('+') ? `tel:${t}` : '#'} className="text-xs text-[var(--text3)] hover:text-[var(--accent)] transition-colors">{t}</a>
               ))}
             </div>
           </div>

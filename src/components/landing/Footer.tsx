@@ -155,11 +155,11 @@ export function Footer() {
           <div className="footer-grid">
             {/* Brand */}
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-                <Image src={logo} alt="EETRA" width={36} height={36} style={{ borderRadius: 9 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
+                <Image src={logo} alt="EETRA" width={40} height={40} style={{ borderRadius: 10, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: 19, fontWeight: 900, color: '#fff', letterSpacing: '-.03em' }}>EETRA</div>
-                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.3)', letterSpacing: '.18em', textTransform: 'uppercase' }}>Document Intelligence</div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', letterSpacing: '-.03em' }}>EETRA</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,.35)', letterSpacing: '.18em', textTransform: 'uppercase' }}>Document Intelligence</div>
                 </div>
               </div>
               <p style={{ fontSize: 13, color: 'rgba(255,255,255,.4)', lineHeight: 1.7, marginBottom: 24 }}>
@@ -168,13 +168,15 @@ export function Footer() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
                   { icon: <MapPin size={12} />, text: 'Douala, Cameroun' },
-                  { icon: <Mail size={12} />, text: 'contact@eetra.buyticle.com' },
-                  { icon: <Globe size={12} />, text: 'eetra.buyticle.com' },
-                ].map(({ icon, text }) => (
-                  <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,.35)', fontWeight: 500 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
-                    {text}
-                  </div>
+                  { icon: <Globe size={12} />, text: '+237 696 995 879' },
+                  { icon: <Mail size={12} />, text: 'contact@eetra.buyticle.com', href: 'mailto:contact@eetra.buyticle.com' },
+                ].map(({ icon, text, href }) => (
+                  <a key={text} href={href} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'rgba(255,255,255,.35)', fontWeight: 500, textDecoration: 'none', transition: 'color .2s', cursor: href ? 'pointer' : 'default' }}
+                    onMouseEnter={(e) => { if (href) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,.65)' }}
+                    onMouseLeave={(e) => { if (href) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,.35)' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 8, background: 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+                    <span style={{ wordBreak: 'break-word' }}>{text}</span>
+                  </a>
                 ))}
               </div>
             </div>

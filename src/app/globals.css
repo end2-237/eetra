@@ -146,6 +146,88 @@ body.pdf-exporting .block-drag-handle { display: none !important; }
   box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
 
+/* Sonner toast customizations */
+[data-sonner-toaster] {
+  font-family: var(--font-bricolage, 'Bricolage Grotesque', sans-serif) !important;
+}
+
+[data-sonner-toast] {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.dark [data-sonner-toast] {
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border-left: 3px solid var(--success) !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border-left: 3px solid var(--danger) !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border-left: 3px solid var(--warn) !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border-left: 3px solid var(--accent) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  color: var(--text) !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 12px !important;
+  color: var(--text3) !important;
+  margin-top: 2px !important;
+}
+
+[data-sonner-toast] [data-button] {
+  background: var(--accent) !important;
+  color: white !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+  padding: 6px 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-sonner-toast] [data-button]:hover {
+  background: var(--accentH) !important;
+  transform: translateY(-1px) !important;
+}
+
+[data-sonner-toast] [data-cancel] {
+  background: transparent !important;
+  color: var(--text3) !important;
+  border: 1px solid var(--border) !important;
+}
+
+[data-sonner-toast] [data-cancel]:hover {
+  background: var(--bg2) !important;
+  color: var(--text) !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  background: var(--bg2) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text3) !important;
+  border-radius: 6px !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  background: var(--bg3) !important;
+  color: var(--text) !important;
+}
+
 /* Remplace l'intégralité du bloc @media print existant */
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }

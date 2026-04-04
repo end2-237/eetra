@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useRef, useLayoutEffect } from 'react'
 import { DocBlock, TableData, ChartBlockData, ImageBlockData } from '@/types'
-import { Plus, Trash2, GripVertical, Sparkles, Loader2, Check, X, Lock } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Sparkles, Check, X, Lock } from 'lucide-react'
 import { usePlan } from '@/contexts/PlanContext'
 import { SafeBlock } from '@/components/ErrorBoundary'
 import { sanitizeContent } from '@/lib/sanitize'
+import { LoadingSpinner } from '@/components/ui/Loading'
 import { ImageBlock } from './ImageBlock'
 import { ChartBlock } from './ChartBlock'
 
@@ -155,7 +156,7 @@ function TextBlock({ block, onUpdateContent, fontFamily }: { block: DocBlock; on
             }}
           >
             {isLoading ? (
-              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+              <LoadingSpinner size={12} className="text-current" />
             ) : canUseAI ? (
               <Sparkles size={12} />
             ) : (

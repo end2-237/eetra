@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import { MessageCircleQuestion, X, Send, Loader2, Bot, User, Sparkles } from 'lucide-react'
+import { MessageCircleQuestion, X, Send, Bot, User, Sparkles } from 'lucide-react'
+import { LoadingSpinner } from '@/components/ui/Loading'
 
 const SUGGESTED_QUESTIONS = [
   'Comment creer un Business Plan ?',
@@ -309,7 +310,7 @@ export function FloatingHelpChat() {
                         gap: 6,
                       }}
                     >
-                      <Loader2 size={14} color="var(--text3)" style={{ animation: 'spin 1s linear infinite' }} />
+                      <LoadingSpinner size={14} className="text-[var(--text3)]" />
                       <span style={{ fontSize: 12, color: 'var(--text3)' }}>Reflexion...</span>
                     </div>
                   </div>

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { X, CreditCard, Check, Loader2, ExternalLink } from 'lucide-react'
+import { X, CreditCard, Check, ExternalLink } from 'lucide-react'
+import { Loading, LoadingSpinner } from '@/components/ui/Loading'
 
 const MOBILE_OPERATORS = [
   { id: 'orange', label: 'Orange Money',  emoji: '🟠', countries: ['CM', 'CI', 'SN', 'ML', 'BF'] },
@@ -173,9 +174,8 @@ export function MonetbilModal({ planId, billing, onClose, onSuccess }: Props) {
           {/* LOADING */}
           {step === 'loading' && (
             <div style={{ textAlign: 'center', padding: '24px 0' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', border: '3px solid var(--accentS)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite', margin: '0 auto 16px' }} />
+              <LoadingSpinner size={32} className="text-[var(--accent)] mx-auto mb-4" />
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Initiation du paiement…</div>
-              <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
             </div>
           )}
 

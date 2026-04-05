@@ -39,6 +39,24 @@ export interface ImageBlockData {
   size: 'sm' | 'md' | 'lg' | 'full'
 }
 
+// ─── Block styles (applied via context menu or sidebar panel) ─────────────────
+export interface BlockStyleProperties {
+  align?: 'left' | 'center' | 'right' | 'justify'
+  color?: string
+  fontSize?: number
+  fontFamily?: string
+  textStyles?: {
+    bold?: boolean
+    italic?: boolean
+    underline?: boolean
+  }
+  listStyle?: 'disc' | 'circle' | 'square'
+  numberFormat?: 'numeric' | 'roman-upper' | 'roman-lower' | 'alpha-upper' | 'alpha-lower'
+  shape?: 'circle' | 'rectangle' | 'line'
+  shapeSize?: 'sm' | 'md' | 'lg'
+  shapeColor?: string
+}
+
 export interface DocBlock {
   id: string
   type: BlockType
@@ -46,6 +64,8 @@ export interface DocBlock {
   tableData?: TableData
   chartData?: ChartBlockData
   imageData?: ImageBlockData
+  /** Visual overrides applied by the user (alignment, color, bold, etc.) */
+  styles?: BlockStyleProperties
 }
 
 export interface DocPage {

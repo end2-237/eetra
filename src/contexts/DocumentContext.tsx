@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
-import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS, ChartBlockData, ImageBlockData, OrientationZoneConfig, DEFAULT_ORIENTATION_ZONE } from '@/types'
+import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE_PRESETS, ChartBlockData, ImageBlockData, OrientationZoneConfig, DEFAULT_ORIENTATION_ZONE, BlockStyleProperties } from '@/types'
 import { generateId, generateDocId } from '@/lib/utils'
 import { sanitizeContent } from '@/lib/sanitize'
 import type { CoverStyle } from '@/contexts/CustomTemplateContext'
@@ -35,6 +35,7 @@ interface DocumentContextType {
   updateBlockTable: (pageId: string, blockId: string, tableData: NonNullable<DocBlock['tableData']>) => void
   updateBlockChart: (pageId: string, blockId: string, chartData: ChartBlockData) => void
   updateBlockImage: (pageId: string, blockId: string, imageData: ImageBlockData) => void
+  updateBlockStyle: (pageId: string, blockId: string, styles: Partial<BlockStyleProperties>) => void
   setPageBlocks: (pageId: string, blocks: DocBlock[]) => void; clearCurrentPage: () => void
   overflowBlock: (fromPageId: string, blockId: string) => void; undo: () => void; redo: () => void; clearDraft: () => void
   addComment: (text: string, author: string) => void; removeComment: (id: string) => void
@@ -194,6 +195,33 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     setPages(prev => prev.map(p => p.id === pageId ? { ...p, blocks: p.blocks.map(b => b.id === blockId ? { ...b, imageData } : b) } : p)); setModified(true)
   }, [])
 
+  // ── NEW: update block visual styles (alignment, color, bold, etc.) ─────────
+  const updateBlockStyle = useCallback((pageId: string, blockId: string, styles: Partial<BlockStyleProperties>) => {
+    setPages(prev => prev.map(p =>
+      p.id === pageId
+        ? {
+            ...p,
+            blocks: p.blocks.map(b =>
+              b.id === blockId
+                ? {
+                    ...b,
+                    styles: {
+                      ...b.styles,
+                      ...styles,
+                      // Merge nested textStyles object
+                      textStyles: styles.textStyles
+                        ? { ...(b.styles?.textStyles || {}), ...styles.textStyles }
+                        : b.styles?.textStyles,
+                    },
+                  }
+                : b
+            ),
+          }
+        : p
+    ))
+    setModified(true)
+  }, [])
+
   const setPageBlocks = useCallback((pageId: string, blocks: DocBlock[]) => {
     setPages(prev => { pushHistory(prev); return prev.map(p => p.id === pageId ? { ...p, blocks } : p) }); setModified(true)
   }, [])
@@ -242,7 +270,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       setActiveTab, setZoom, setSelectedTemplate, setDocStyle, setCoverStyle, setShowStyleModal,
       setOrientationZone,
       addPage, removePage, addBlock, removeBlock, updateBlock, updateBlockTable, updateBlockChart,
-      updateBlockImage, setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
+      updateBlockImage, updateBlockStyle, setPageBlocks, clearCurrentPage, overflowBlock, undo, redo, clearDraft,
       addComment, removeComment, resolveComment, addReply, markSaved, resetDocument,
     }}>
       {children}

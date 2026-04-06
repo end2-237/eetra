@@ -468,8 +468,8 @@ export function CoverPage({ coverStyle, zoom = 1 }: Props) {
   const cv = { ...DEFAULT_COVER, ...coverStyle }
   const accent = cv.accentColor || profile.color || docStyle.accentColor || '#1B4FD8'
   const titleSize = TITLE_SIZES[cv.titleSize as string] ?? 56
-  const fontTitle = docStyle.fontTitle || 'Bricolage Grotesque'
-  const fontBody = docStyle.fontBody || 'Bricolage Grotesque'
+  const fontTitle = docStyle?.fontTitle || 'Bricolage Grotesque'
+const fontBody = docStyle?.fontBody || 'Bricolage Grotesque'
   const showWatermark = profile.watermark || planId === 'starter'
   const blocks = cv.coverBlocks || []
   const date = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })

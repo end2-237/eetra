@@ -15,8 +15,33 @@ import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Toast }       from '@/components/ui/Toast'
 import { useToast }    from '@/hooks/useToast'
 import { CoverMini } from '@/components/ui/CoverMini'
+import { TemplateCoverModal } from '@/components/templates/TemplateCoverModal'
+import { CoverPage } from '@/components/editor/document/CoverPage'
+
+import { showToast } from '@/lib/utils'
+ 
 
 const STORAGE_DRAFT = 'eetra-document-draft'
+
+const updateTemplate = async (templateId: string, data: any) => {
+  try {
+    const response = await fetch(`/api/templates/${templateId}`, {
+      method: 'PATCH', // Ou 'PUT' selon ta route API
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) throw new Error('Erreur lors de la mise à jour')
+    return await response.json()
+  } catch (error) {
+    console.error("Erreur API:", error)
+    throw error
+  }
+}
+const handleSavePreview = async (templateId: string, imageDataUrl: string) => {
+  await updateTemplate(templateId, { previewImageUrl: imageDataUrl } as any)
+  showToast('Aperçu mis à jour', 'ok')
+}
 
 interface TplDef {
   id: string; name: string; desc: string; cat: string; subcat?: string;
@@ -460,6 +485,9 @@ export default function TemplatesPage() {
   const { toast, showToast } = useToast()
   const { canCreateDocument, checkDocumentLimit, plan, getRemainingDocs } = usePlan()
   const limitReached = !canCreateDocument()
+  
+const [coverModalTpl, setCoverModalTpl] = useState<CustomTemplate | null>(null)
+
 
   const [search,  setSearch]  = useState('')
   const [cat,     setCat]     = useState('Tous')
@@ -806,6 +834,15 @@ export default function TemplatesPage() {
                             {busyIds.has(tpl.id) ? <LoadingSpinner size={10} className="text-current" /> : <Trash2 size={10}/>}
                           </button>
                         </div>
+
+                        <button
+                          className="tpl-act-btn"
+                          title="Gérer l'aperçu de couverture"
+                          onClick={() => setCoverModalTpl(tpl)}
+                          style={{ fontSize: 11 }}
+                        >
+                          🖼
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -912,6 +949,33 @@ export default function TemplatesPage() {
           </div>
         </div>
       )}
+
+{coverModalTpl && (
+  <TemplateCoverModal
+    templateId={coverModalTpl.id}
+    templateName={coverModalTpl.name}
+    coverStyle={
+      typeof coverModalTpl.coverStyle === 'string'
+        ? JSON.parse(coverModalTpl.coverStyle)
+        : coverModalTpl.coverStyle
+    }
+    currentPreviewUrl={(coverModalTpl as any).previewImageUrl}
+    onSave={handleSavePreview}
+    onClose={() => setCoverModalTpl(null)}
+    CoverPageElement={
+      // On utilise le DocumentProvider minimal pour rendre la CoverPage
+      // Le contexte profile est déjà disponible via ProfileContext
+      <CoverPage
+        coverStyle={
+          typeof coverModalTpl.coverStyle === 'string'
+            ? JSON.parse(coverModalTpl.coverStyle)
+            : coverModalTpl.coverStyle
+        }
+        zoom={1}
+      />
+    }
+  />
+)}
 
       <Toast {...toast}/>
     </>

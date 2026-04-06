@@ -52,6 +52,8 @@ interface PageConfig {
   bgPattern: PatternType; bgPatternColor: string; bgPatternOpacity: number
   borderStyle: PageBorderStyle; borderColor: string; borderWidth: number
   showQr: boolean
+  showConfiBadge: boolean   // ← NOUVEAU
+  confiColor: string 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -421,6 +423,7 @@ const DEFAULT_PAGE_CONFIG: PageConfig={
   bgType:'solid',bgColor:'#ffffff',bgColor2:'#f0f4ff',bgGradAngle:135,
   bgPattern:'dots',bgPatternColor:'#000000',bgPatternOpacity:0.05,
   borderStyle:'none',borderColor:'#1B4FD8',borderWidth:8,showQr:true,
+  showConfiBadge:false, confiColor:'#1B4FD8'
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1207,6 +1210,92 @@ export function EditableCoverPage({zoom, mobileLayout=false}:Props){
           <Toggle value={pageConf.showQr} onChange={v=>saveConf({showQr:v})} accent={accent}/>
         </div>
         {pageConf.showQr&&qrDataUrl&&<div style={{display:'flex',alignItems:'center',gap:8,padding:'8px',borderRadius:8,border:'1px solid var(--border)',background:'var(--bg2)'}}><img src={qrDataUrl} style={{width:38,height:38}} alt="QR"/><div style={{fontSize:10,color:'var(--text4)',lineHeight:1.4}}>QR code auto avec le titre du document.</div></div>}
+
+        {/* ── Confidentialité ─────────────────────────── */}
+<Divider/>
+<label style={LBL}>Badge de confidentialité</label>
+
+{/* Toggle visibilité */}
+<div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+  <div>
+    <div style={{ fontSize:12, fontWeight:600, color:'var(--text2)' }}>Afficher le badge</div>
+    <div style={{ fontSize:10, color:'var(--text4)', marginTop:1 }}>Visible sur la page de garde</div>
+  </div>
+  <Toggle
+    value={pageConf.showConfiBadge !== false}
+    onChange={v => saveConf({ showConfiBadge: v })}
+    accent={accent}
+  />
+</div>
+
+{pageConf.showConfiBadge !== false && (
+  <>
+    {/* Presets confidentialité */}
+    <label style={{ ...LBL, marginTop:6 }}>Niveau</label>
+    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:4, marginBottom:10 }}>
+      {[
+        { label:'CONFIDENTIEL', color:'#1B4FD8' },
+        { label:'SECRET',       color:'#DC2626' },
+        { label:'INTERNE',      color:'#D97706' },
+        { label:'PUBLIC',       color:'#059669' },
+        { label:'RESTREINT',    color:'#7C3AED' },
+        { label:'Personnalisé', color:'' },
+      ].map(({ label, color }) => {
+        const isActive = confidentiality === label || (label === 'Personnalisé' && !['CONFIDENTIEL','SECRET','INTERNE','PUBLIC','RESTREINT'].includes(confidentiality))
+        return (
+          <button key={label}
+            onClick={() => {
+              if (label !== 'Personnalisé') {
+                setConfidentiality(label)
+                if (color) saveConf({ confiColor: color })
+              }
+            }}
+            style={{
+              padding:'6px 8px', borderRadius:7, border:'1.5px solid', cursor:'pointer',
+              fontSize:9, fontWeight:800, letterSpacing:'.08em', textAlign:'center',
+              borderColor: isActive ? (color || accent) : 'var(--border)',
+              background: isActive ? `${color || accent}14` : 'var(--surface)',
+              color: isActive ? (color || accent) : 'var(--text4)',
+            }}>
+            {label}
+          </button>
+        )
+      })}
+    </div>
+
+    {/* Texte personnalisé */}
+    <label style={LBL}>Texte du badge</label>
+    <input
+      className="oz-input"
+      value={confidentiality}
+      onChange={e => setConfidentiality(e.target.value.toUpperCase().slice(0, 30))}
+      placeholder="CONFIDENTIEL"
+      style={{ ...INP, fontFamily:'monospace', letterSpacing:'.12em', fontWeight:700, marginBottom:8, textTransform:'uppercase' }}
+    />
+
+    {/* Couleur du badge */}
+    <label style={LBL}>Couleur</label>
+    <ColorRow
+      value={pageConf.confiColor || accent}
+      onChange={v => saveConf({ confiColor: v })}
+    />
+
+    {/* Aperçu du badge */}
+    <div style={{ marginTop:8, display:'flex', justifyContent:'center', padding:'10px', borderRadius:8, border:'1px solid var(--border)', background:'var(--bg2)' }}>
+      <div style={{
+        display:'inline-flex', alignItems:'center', gap:7,
+        padding:'6px 14px 6px 10px', borderRadius:4,
+        border:`1.5px solid ${pageConf.confiColor || accent}`,
+        background:`${pageConf.confiColor || accent}14`,
+      }}>
+        <div style={{ width:7, height:7, borderRadius:'50%', background: pageConf.confiColor || accent }} />
+        <span style={{ fontSize:8.5, fontWeight:800, letterSpacing:'.26em', textTransform:'uppercase', color: pageConf.confiColor || accent }}>
+          {confidentiality || 'CONFIDENTIEL'}
+        </span>
+      </div>
+    </div>
+  </>
+)}
       </div>
     )
 
@@ -1317,12 +1406,19 @@ export function EditableCoverPage({zoom, mobileLayout=false}:Props){
                   </div>
                 </div>
               ):null}
-              {confidentiality&&(
-                <div style={{display:'inline-flex',alignItems:'center',gap:7,padding:'6px 14px 6px 10px',borderRadius:4,border:`1.5px solid ${accent}`,background:`${accent}14`}}>
-                  <div style={{width:7,height:7,borderRadius:'50%',background:accent}}/>
-                  <span style={{fontSize:8.5,fontWeight:800,letterSpacing:'.26em',textTransform:'uppercase',color:accent}}>{confidentiality}</span>
-                </div>
-              )}
+              {confidentiality && pageConf.showConfiBadge !== false && (
+  <div style={{
+    display:'inline-flex', alignItems:'center', gap:7,
+    padding:'6px 14px 6px 10px', borderRadius:4,
+    border:`1.5px solid ${pageConf.confiColor || accent}`,
+    background:`${pageConf.confiColor || accent}14`,
+  }}>
+    <div style={{ width:7, height:7, borderRadius:'50%', background: pageConf.confiColor || accent }} />
+    <span style={{ fontSize:8.5, fontWeight:800, letterSpacing:'.26em', textTransform:'uppercase', color: pageConf.confiColor || accent }}>
+      {confidentiality}
+    </span>
+  </div>
+)}
             </div>
             <div style={{flex:1,padding:'0 56px 0 68px',display:'flex',flexDirection:'column',justifyContent:'center'}}>
               <div style={{maxWidth:580}}>

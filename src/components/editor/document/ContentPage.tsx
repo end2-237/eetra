@@ -10,6 +10,7 @@ import { PageHeader } from './PageHeader'
 import { PageFooter } from './PageFooter'
 import { WatermarkOverlay } from './WatermarkOverlay'
 import { BlockContextMenu } from './BlockContextMenu'
+import { PageShapeLayer } from './PageShapeLayer'
 import { Trash2, X } from 'lucide-react'
 
 interface Props {
@@ -61,6 +62,7 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
   const {
     removeBlock, updateBlock, updateBlockTable, updateBlockChart, updateBlockImage,
     updateBlockStyle, setPageBlocks, removePage, overflowBlock, coverStyle,
+    addShapeToPage, updatePageShape, removePageShape,
   } = useDocument()
   const { profile } = useProfile()
   const { layout } = usePageLayout()
@@ -164,6 +166,14 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
 
       <PageHeader pageNumber={absolutePage} totalPages={absoluteTotal} accentColor={accentColor} currentSection={currentSection} />
 
+      <PageShapeLayer
+      pageId={page.id}
+      shapes={page.shapes || []}
+      onAdd={(shape) => addShapeToPage(page.id, shape)}
+      onUpdate={(shapeId, patch) => updatePageShape(page.id, shapeId, patch)}
+      onRemove={(shapeId) => removePageShape(page.id, shapeId)}
+      accentColor={accentColor}
+    />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${PAD_V / 2}px 40px 0`, flexShrink: 0, zIndex: 2 }}>
         <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: '#ccc', display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ color: accentColor }}>//</span>
@@ -180,6 +190,18 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
           </button>
         )}
       </div>
+      {/* Formes visibles dans le PDF */}
+<div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:8 }}>
+  <PageShapeLayer
+    pageId={page.id}
+    shapes={page.shapes || []}
+    onAdd={() => {}}
+    onUpdate={() => {}}
+    onRemove={() => {}}
+    accentColor={accentColor}
+    readonly
+  />
+</div>
 
       <div ref={contentRef} style={{ flex: 1, maxHeight: CONTENT_MAX_H, overflowY: 'hidden', overflowX: 'hidden', padding: `${PAD_V / 2}px 40px`, zIndex: 2 }}>
         {page.blocks.length === 0 ? (

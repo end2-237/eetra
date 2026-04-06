@@ -67,10 +67,38 @@ export interface DocBlock {
   /** Visual overrides applied by the user (alignment, color, bold, etc.) */
   styles?: BlockStyleProperties
 }
+export interface PageShape {
+  id: string
+  type: 'text' | 'rect' | 'image'
+  shape?: string
+  x: number; y: number; w: number; h: number; z: number
+  opacity?: number
+  rotation?: number
+  locked?: boolean
+  // Text
+  text?: string; fontSize?: number
+  fontWeight?: 'normal' | 'bold' | 'black'
+  fontStyle?: 'normal' | 'italic'
+  color?: string
+  align?: 'left' | 'center' | 'right'
+  letterSpacing?: number; lineHeight?: number; fontFamily?: string
+  // Shape fill
+  fill?: string; fillOpacity?: number
+  stroke?: string; strokeWidth?: number; radius?: number
+  useGradient?: boolean
+  gradient?: { type: 'linear' | 'radial'; color1: string; color2: string; angle?: number }
+  // Image
+  src?: string; objectFit?: 'contain' | 'cover' | 'fill'
+  // Inner text for shapes
+  innerText?: string; innerFontSize?: number; innerColor?: string
+  innerFontFamily?: string; innerAlign?: 'left' | 'center' | 'right'
+  innerBold?: boolean; innerItalic?: boolean
+}
 
 export interface DocPage {
   id: string
   blocks: DocBlock[]
+  shapes?: PageShape[]
 }
 
 export interface Comment {

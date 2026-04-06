@@ -4,6 +4,7 @@ import { DocBlock, DocPage, Comment, CommentReply, TabName, DocumentStyle, STYLE
 import { generateId, generateDocId } from '@/lib/utils'
 import { sanitizeContent } from '@/lib/sanitize'
 import type { CoverStyle } from '@/contexts/CustomTemplateContext'
+import { PageShape } from '@/lib/shapes'
 
 export const STORAGE_DRAFT = 'eetra-document-draft'
 
@@ -24,6 +25,9 @@ interface DocumentContextType {
   coverStyle: CoverStyle; showStyleModal: boolean
   orientationZone: OrientationZoneConfig
   canUndo: boolean; canRedo: boolean
+  addShapeToPage: (pageId: string, shape: PageShape) => void
+updatePageShape: (pageId: string, shapeId: string, patch: Partial<PageShape>) => void
+removePageShape: (pageId: string, shapeId: string) => void
   setTitle: (v: string) => void; setSubtitle: (v: string) => void; setRef: (v: string) => void
   setDestination: (v: string) => void; setConfidentiality: (v: string) => void
   setCurrentPageIndex: (i: number) => void; setActiveTab: (t: TabName) => void; setZoom: (z: number) => void
@@ -258,7 +262,32 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
     const reply: CommentReply = { id: generateId(), text: sanitizeContent(text).slice(0, 2000), author: sanitizeContent(author).slice(0, 100), createdAt: new Date() }
     setComments(prev => prev.map(c => c.id === commentId ? { ...c, replies: [...c.replies, reply] } : c))
   }, [])
-
+  const addShapeToPage = useCallback((pageId: string, shape: PageShape) => {
+    setPages(prev => prev.map(p =>
+      p.id === pageId
+        ? { ...p, shapes: [...(p.shapes || []), shape] }
+        : p
+    ))
+    setModified(true)
+  }, [])
+  
+  const updatePageShape = useCallback((pageId: string, shapeId: string, patch: Partial<PageShape>) => {
+    setPages(prev => prev.map(p =>
+      p.id === pageId
+        ? { ...p, shapes: (p.shapes || []).map(s => s.id === shapeId ? { ...s, ...patch } : s) }
+        : p
+    ))
+    setModified(true)
+  }, [])
+  
+  const removePageShape = useCallback((pageId: string, shapeId: string) => {
+    setPages(prev => prev.map(p =>
+      p.id === pageId
+        ? { ...p, shapes: (p.shapes || []).filter(s => s.id !== shapeId) }
+        : p
+    ))
+    setModified(true)
+  }, [])
   const resetDocument = useCallback(() => { clearDraft(); setCurrentPageIndex(0); setConfidentialityState('CONFIDENTIEL') }, [clearDraft])
 
   return (
@@ -266,6 +295,7 @@ export function DocumentProvider({ children }: { children: React.ReactNode }) {
       docId, title, subtitle, ref, destination, confidentiality, pages, currentPageIndex, comments,
       activeTab, zoom, modified, selectedTemplate, docStyle, coverStyle, showStyleModal, orientationZone,
       canUndo, canRedo,
+      addShapeToPage, updatePageShape, removePageShape,
       setTitle, setSubtitle, setRef, setDestination, setConfidentiality, setCurrentPageIndex,
       setActiveTab, setZoom, setSelectedTemplate, setDocStyle, setCoverStyle, setShowStyleModal,
       setOrientationZone,

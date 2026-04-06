@@ -10,12 +10,7 @@ import {
   RotateCcw, RotateCw, Download, BookOpen,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import {
-  OrientationZonePage,
-  extractTOCEntries,
-  extractTableList,
-  extractIllustrationList,
-} from '@/components/editor/document/OrientationZonePage'
+import { OrientationZonePage, extractTOCEntries, extractTableList, extractIllustrationList, computeOZPageCount } from '@/components/editor/document/OrientationZonePage'
 
 interface Props {
   onExport: () => void
@@ -26,43 +21,43 @@ const PAGE_H = 1123
 
 // ── Compute how many OZ pages we need ────────────────────────────────────────
 
-function computeOZPageCount(config: any, pages: any[]): number {
-  if (!config?.enabled) return 0
-  const ITEMS_PER_PAGE = 28
+// function computeOZPageCount(config: any, pages: any[]): number {
+//   if (!config?.enabled) return 0
+//   const ITEMS_PER_PAGE = 28
 
-  let tocCount = 0
-  pages.forEach(p => {
-    ;(p.blocks || []).forEach((b: any) => {
-      const lvl = b.type === 'h1' ? 1 : b.type === 'h2' ? 2 : b.type === 'h3' ? 3 : b.type === 'h4' ? 4 : b.type === 'section' ? 1 : 0
-      if (lvl > 0 && config.tocLevels?.includes(lvl)) tocCount++
-    })
-  })
-  let tableCount = 0, illustCount = 0
-  pages.forEach(p => {
-    ;(p.blocks || []).forEach((b: any) => {
-      if (b.type === 'table') tableCount++
-      if (b.type === 'image' && (b.imageData?.caption || b.content)) illustCount++
-    })
-  })
+//   let tocCount = 0
+//   pages.forEach(p => {
+//     ;(p.blocks || []).forEach((b: any) => {
+//       const lvl = b.type === 'h1' ? 1 : b.type === 'h2' ? 2 : b.type === 'h3' ? 3 : b.type === 'h4' ? 4 : b.type === 'section' ? 1 : 0
+//       if (lvl > 0 && config.tocLevels?.includes(lvl)) tocCount++
+//     })
+//   })
+//   let tableCount = 0, illustCount = 0
+//   pages.forEach(p => {
+//     ;(p.blocks || []).forEach((b: any) => {
+//       if (b.type === 'table') tableCount++
+//       if (b.type === 'image' && (b.imageData?.caption || b.content)) illustCount++
+//     })
+//   })
 
-  let pageCount = 0
-  if (config.showTOC) {
-    pageCount += Math.max(1, Math.ceil(tocCount / ITEMS_PER_PAGE))
-    const firstTOCItems = Math.min(tocCount, ITEMS_PER_PAGE)
-    const spaceOnFirstPage = ITEMS_PER_PAGE - firstTOCItems
-    if (config.showTableList && tableCount > 0 && tableCount > spaceOnFirstPage - 4) pageCount++
-    if (config.showIllustrationList && illustCount > 0) {
-      const alreadyAdded = config.showTableList && tableCount > 0 && tableCount > spaceOnFirstPage - 4
-      if (alreadyAdded || tableCount > 0) pageCount++
-      // else they fit
-    }
-  } else {
-    if (config.showTableList && tableCount > 0) pageCount++
-    if (config.showIllustrationList && illustCount > 0) pageCount++
-  }
+//   let pageCount = 0
+//   if (config.showTOC) {
+//     pageCount += Math.max(1, Math.ceil(tocCount / ITEMS_PER_PAGE))
+//     const firstTOCItems = Math.min(tocCount, ITEMS_PER_PAGE)
+//     const spaceOnFirstPage = ITEMS_PER_PAGE - firstTOCItems
+//     if (config.showTableList && tableCount > 0 && tableCount > spaceOnFirstPage - 4) pageCount++
+//     if (config.showIllustrationList && illustCount > 0) {
+//       const alreadyAdded = config.showTableList && tableCount > 0 && tableCount > spaceOnFirstPage - 4
+//       if (alreadyAdded || tableCount > 0) pageCount++
+//       // else they fit
+//     }
+//   } else {
+//     if (config.showTableList && tableCount > 0) pageCount++
+//     if (config.showIllustrationList && illustCount > 0) pageCount++
+//   }
 
-  return Math.max(1, Math.min(4, pageCount))
-}
+//   return Math.max(1, Math.min(4, pageCount))
+// }
 
 // ── OZ Badge ─────────────────────────────────────────────────────────────────
 

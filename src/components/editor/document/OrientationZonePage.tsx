@@ -298,113 +298,130 @@ export function OrientationZonePage({
   const { profile } = useProfile()
   const accent = profile.color || '#1B4FD8'
 
-  // Distribute content across pages (simple: page 0 = TOC, page 1 = tables, page 2 = illustrations)
-  // More sophisticated: chunk by estimated height
-  const ITEMS_PER_PAGE = 28
+  // ── Allocation stricte: une section = une page (ou plusieurs pour TdM longue) ──
+  // Index mapping:
+  // 0..n-1  = pages TdM (si showTOC)
+  // n       = page tableaux (si showTableList && tableList.length > 0)
+  // n+1     = page illustrations (si showIllustrationList && illustrationList.length > 0)
 
-  // Build page content slots
-  const allSections: { type: 'toc'|'tables'|'illustrations'; items: any[] }[] = []
+  const ITEMS_PER_PAGE = 26
 
-  if (config.showTOC && tocEntries.length > 0) {
-    // Chunk TOC entries across pages
-    for (let i = 0; i < tocEntries.length; i += ITEMS_PER_PAGE) {
-      allSections.push({ type: 'toc', items: tocEntries.slice(i, i + ITEMS_PER_PAGE) })
-    }
-    // If empty (no entries yet), show placeholder on first page
-    if (tocEntries.length === 0) allSections.push({ type: 'toc', items: [] })
-  }
-  if (config.showTableList && tableList.length > 0) {
-    allSections.push({ type: 'tables', items: tableList })
-  }
-  if (config.showIllustrationList && illustrationList.length > 0) {
-    allSections.push({ type: 'illustrations', items: illustrationList })
-  }
-  if (allSections.length === 0) {
-    // Nothing active — show placeholder
-    allSections.push({ type: 'toc', items: [] })
+  const tocPageCount = config.showTOC
+    ? Math.max(1, Math.ceil(tocEntries.length / ITEMS_PER_PAGE))
+    : 0
+
+  // Determine what this page renders
+  let sectionType: 'toc' | 'tables' | 'illustrations' | 'empty' = 'empty'
+  let tocChunkIndex = 0
+
+  if (pageIndex < tocPageCount) {
+    sectionType = 'toc'
+    tocChunkIndex = pageIndex
+  } else if (config.showTableList && tableList.length > 0 && pageIndex === tocPageCount) {
+    sectionType = 'tables'
+  } else if (
+    config.showIllustrationList && illustrationList.length > 0 &&
+    pageIndex === tocPageCount + (config.showTableList && tableList.length > 0 ? 1 : 0)
+  ) {
+    sectionType = 'illustrations'
+  } else if (!config.showTOC && config.showTableList && tableList.length > 0 && pageIndex === 0) {
+    sectionType = 'tables'
+  } else if (!config.showTOC && config.showIllustrationList && illustrationList.length > 0) {
+    const tablesPage = config.showTableList && tableList.length > 0 ? 1 : 0
+    if (pageIndex === tablesPage) sectionType = 'illustrations'
   }
 
-  const section = allSections[pageIndex] || allSections[0]
+  const tocChunk = tocEntries.slice(tocChunkIndex * ITEMS_PER_PAGE, (tocChunkIndex + 1) * ITEMS_PER_PAGE)
 
   const renderContent = () => {
-    if (!section) return null
-
-    if (section.type === 'toc') {
+    if (sectionType === 'toc') {
       return (
         <>
-          {/* Big title only on first TOC page */}
-          {pageIndex === 0 && (
+          {tocChunkIndex === 0 && (
             <div style={{ marginBottom: 18 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                 <div style={{ width: 6, height: 24, background: accent, borderRadius: 2 }} />
-                <h2 style={{
-                  fontFamily: 'Times New Roman, serif', fontSize: 22,
-                  fontWeight: 900, letterSpacing: '-.03em', color: '#0D1117', margin: 0,
-                }}>
+                <h2 style={{ fontFamily: 'Times New Roman, serif', fontSize: 22, fontWeight: 900, letterSpacing: '-.03em', color: '#0D1117', margin: 0 }}>
                   {config.tocTitle || 'Table des Matières'}
                 </h2>
               </div>
               <div style={{ height: 2, background: accent, marginTop: 6, marginLeft: 16, opacity: .18 }} />
             </div>
           )}
-
-          {section.items.length === 0 ? (
-            <div style={{ padding: '32px 20px', textAlign: 'center', border: '1.5px dashed #e0e0e0', borderRadius: 8, color: '#bbb' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Aucun titre détecté</div>
-              <div style={{ fontSize: 11 }}>Ajoutez des blocs H1, H2, H3, H4 ou Section dans vos pages de contenu.</div>
+          {tocChunkIndex > 0 && (
+            <div style={{ marginBottom: 12, fontSize: 10, color: 'var(--text4)', fontWeight: 600 }}>
+              {config.tocTitle || 'Table des Matières'} — suite
+            </div>
+          )}
+          {tocChunk.length === 0 ? (
+            <div style={{ padding:'32px 20px', textAlign:'center', border:'1.5px dashed #e0e0e0', borderRadius:8, color:'#bbb' }}>
+              <div style={{ fontSize:13, fontWeight:700, marginBottom:4 }}>Aucun titre détecté</div>
+              <div style={{ fontSize:11 }}>Ajoutez des blocs H1, H2, H3, Section dans vos pages.</div>
             </div>
           ) : (
-            section.items.map((entry: TOCEntry, i: number) => (
+            tocChunk.map((entry: TOCEntry, i: number) => (
               <TOCLine key={i} entry={entry} accent={accent} showPageNum={config.showPageNumbers} />
             ))
           )}
-
-          {/* Show tables on same page if TOC is short and both enabled */}
-          {pageIndex === 0 && config.showTableList && tableList.length > 0 && section.items.length < 18 && (
-            <>
-              <SectionHeading label={config.tableListTitle || 'Liste des Tableaux'} accent={accent} />
-              {tableList.map((t, i) => (
-                <ListRow key={i} index={t.index} caption={t.caption} page={t.page} accent={accent} showPageNum={config.showPageNumbers} />
-              ))}
-            </>
-          )}
-
-          {/* Show illustrations on same page if both above fit */}
-          {pageIndex === 0 && config.showIllustrationList && illustrationList.length > 0 && section.items.length < 14 && tableList.length < 6 && (
-            <>
-              <SectionHeading label={config.illustrationListTitle || 'Liste des Illustrations'} accent={accent} />
-              {illustrationList.map((t, i) => (
-                <ListRow key={i} index={t.index} caption={t.caption} page={t.page} accent={accent} showPageNum={config.showPageNumbers} />
-              ))}
-            </>
-          )}
         </>
       )
     }
 
-    if (section.type === 'tables') {
+    if (sectionType === 'tables') {
       return (
         <>
-          <SectionHeading label={config.tableListTitle || 'Liste des Tableaux'} accent={accent} />
-          {section.items.map((t: any, i: number) => (
-            <ListRow key={i} index={t.index} caption={t.caption} page={t.page} accent={accent} showPageNum={config.showPageNumbers} />
-          ))}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 6, height: 24, background: accent, borderRadius: 2 }} />
+              <h2 style={{ fontFamily: 'Times New Roman, serif', fontSize: 22, fontWeight: 900, letterSpacing: '-.03em', color: '#0D1117', margin: 0 }}>
+                {config.tableListTitle || 'Liste des Tableaux'}
+              </h2>
+            </div>
+            <div style={{ height: 2, background: accent, marginTop: 6, marginLeft: 16, opacity: .18 }} />
+          </div>
+          {tableList.length === 0 ? (
+            <div style={{ padding:'24px', textAlign:'center', border:'1.5px dashed #e0e0e0', borderRadius:8, color:'#bbb', fontSize:11 }}>
+              Aucun tableau trouvé dans le document.
+            </div>
+          ) : (
+            tableList.map((t: any, i: number) => (
+              <ListRow key={i} index={t.index} caption={t.caption} page={t.page} accent={accent} showPageNum={config.showPageNumbers} />
+            ))
+          )}
         </>
       )
     }
 
-    if (section.type === 'illustrations') {
+    if (sectionType === 'illustrations') {
       return (
         <>
-          <SectionHeading label={config.illustrationListTitle || 'Liste des Illustrations'} accent={accent} />
-          {section.items.map((t: any, i: number) => (
-            <ListRow key={i} index={t.index} caption={t.caption} page={t.page} accent={accent} showPageNum={config.showPageNumbers} />
-          ))}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 6, height: 24, background: accent, borderRadius: 2 }} />
+              <h2 style={{ fontFamily: 'Times New Roman, serif', fontSize: 22, fontWeight: 900, letterSpacing: '-.03em', color: '#0D1117', margin: 0 }}>
+                {config.illustrationListTitle || 'Liste des Illustrations'}
+              </h2>
+            </div>
+            <div style={{ height: 2, background: accent, marginTop: 6, marginLeft: 16, opacity: .18 }} />
+          </div>
+          {illustrationList.length === 0 ? (
+            <div style={{ padding:'24px', textAlign:'center', border:'1.5px dashed #e0e0e0', borderRadius:8, color:'#bbb', fontSize:11 }}>
+              Aucune illustration avec légende trouvée.
+            </div>
+          ) : (
+            illustrationList.map((t: any, i: number) => (
+              <ListRow key={i} index={t.index} caption={t.caption} page={t.page} accent={accent} showPageNum={config.showPageNumbers} />
+            ))
+          )}
         </>
       )
     }
 
-    return null
+    return (
+      <div style={{ padding:'32px', textAlign:'center', color:'#bbb', fontSize:11 }}>
+        Activez au moins un élément dans les paramètres de la Zone d'Orientation.
+      </div>
+    )
   }
 
   return (
@@ -418,18 +435,16 @@ export function OrientationZonePage({
 
 export function computeOZPageCount(config: OrientationZoneConfig, pages: any[]): number {
   if (!config.enabled) return 0
-  const ITEMS_PER_PAGE = 28
 
-  // Count TOC entries
+  const ITEMS_PER_PAGE = 26
+
   let tocCount = 0
   pages.forEach(page => {
     ;(page.blocks || []).forEach((block: any) => {
-      if (['h1','h2','h3','h4','section'].includes(block.type)) {
-        if (config.tocLevels.includes(
-          block.type === 'h1' ? 1 : block.type === 'h2' ? 2 :
-          block.type === 'h3' ? 3 : block.type === 'h4' ? 4 : 1
-        )) tocCount++
-      }
+      const lvl = block.type === 'h1' || block.type === 'section' ? 1
+                : block.type === 'h2' ? 2 : block.type === 'h3' ? 3
+                : block.type === 'h4' ? 4 : 0
+      if (lvl > 0 && config.tocLevels.includes(lvl)) tocCount++
     })
   })
 
@@ -443,25 +458,28 @@ export function computeOZPageCount(config: OrientationZoneConfig, pages: any[]):
 
   let total = 0
 
+  // TdM: 1 page minimum, plus si beaucoup d'entrées
   if (config.showTOC) {
     total += Math.max(1, Math.ceil(tocCount / ITEMS_PER_PAGE))
-    // If tables/illustrations fit on first page, no extra page
-    const firstPageTOCItems = Math.min(tocCount, ITEMS_PER_PAGE)
-    const spaceLeft = ITEMS_PER_PAGE - firstPageTOCItems
-    if (config.showTableList && tableList.length > 0) {
-      if (tableCount <= spaceLeft - 4) { /* fits on toc page */ }
-      else total++
-    }
-    if (config.showIllustrationList && illustCount > 0) {
-      total++
-    }
-  } else {
-    if (config.showTableList && tableCount > 0) total++
-    if (config.showIllustrationList && illustCount > 0) total++
   }
 
-  // Clamp to 1-4
-  return Math.max(config.enabled ? 1 : 0, Math.min(4, total))
+  // Liste tableaux: toujours une page séparée
+  if (config.showTableList && tableCount > 0) {
+    total += 1
+  } else if (config.showTableList && tableCount === 0) {
+    total += 1 // page vide mais présente si activée
+  }
+
+  // Liste illustrations: toujours une page séparée
+  if (config.showIllustrationList && illustCount > 0) {
+    total += 1
+  } else if (config.showIllustrationList && illustCount === 0) {
+    total += 1
+  }
+
+  if (total === 0 && config.enabled) total = 1
+
+  return Math.min(total, 8)
 }
 
 // Placeholder needed for scope

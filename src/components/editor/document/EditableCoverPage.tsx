@@ -652,7 +652,7 @@ export const CalquesPanel = (
  
 
 export function EditableCoverPage({zoom, mobileLayout=false}:Props){
-  const {title,subtitle,ref:docRef,destination,confidentiality,docStyle,coverStyle,setCoverStyle}=useDocument()
+  const {title,subtitle,ref:docRef,destination,confidentiality,setConfidentiality,docStyle,coverStyle,setCoverStyle}=useDocument()
   const {profile}=useProfile()
   const {planId}=usePlan()
 

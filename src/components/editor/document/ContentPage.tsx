@@ -166,14 +166,16 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
 
       <PageHeader pageNumber={absolutePage} totalPages={absoluteTotal} accentColor={accentColor} currentSection={currentSection} />
 
+      {/* FIX: Single PageShapeLayer - interactive only (no duplicate readonly layer) */}
       <PageShapeLayer
-      pageId={page.id}
-      shapes={page.shapes || []}
-      onAdd={(shape) => addShapeToPage(page.id, shape)}
-      onUpdate={(shapeId, patch) => updatePageShape(page.id, shapeId, patch)}
-      onRemove={(shapeId) => removePageShape(page.id, shapeId)}
-      accentColor={accentColor}
-    />
+        pageId={page.id}
+        shapes={page.shapes || []}
+        onAdd={(shape) => addShapeToPage(page.id, shape)}
+        onUpdate={(shapeId, patch) => updatePageShape(page.id, shapeId, patch)}
+        onRemove={(shapeId) => removePageShape(page.id, shapeId)}
+        accentColor={accentColor}
+      />
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${PAD_V / 2}px 40px 0`, flexShrink: 0, zIndex: 2 }}>
         <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: '#ccc', display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ color: accentColor }}>//</span>
@@ -190,20 +192,19 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
           </button>
         )}
       </div>
-      {/* Formes visibles dans le PDF */}
-<div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:8 }}>
-  <PageShapeLayer
-    pageId={page.id}
-    shapes={page.shapes || []}
-    onAdd={() => {}}
-    onUpdate={() => {}}
-    onRemove={() => {}}
-    accentColor={accentColor}
-    readonly
-  />
-</div>
 
-      <div ref={contentRef} style={{ flex: 1, maxHeight: CONTENT_MAX_H, overflowY: 'hidden', overflowX: 'hidden', padding: `${PAD_V / 2}px 40px`, zIndex: 2 }}>
+      {/* FIX: overflow:visible on content so block controls don't get clipped */}
+      <div
+        ref={contentRef}
+        style={{
+          flex: 1,
+          maxHeight: CONTENT_MAX_H,
+          overflowY: 'hidden',
+          overflowX: 'visible', // ← was 'hidden', now visible so controls show
+          padding: `${PAD_V / 2}px 40px`,
+          zIndex: 2,
+        }}
+      >
         {page.blocks.length === 0 ? (
           <div className="pdf-hidden" style={{ textAlign: 'center', padding: '40px 0', border: '1.5px dashed #e8e8e8', borderRadius: 12, color: '#ccc' }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Page vide</div>
@@ -230,21 +231,33 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                   }}
                   className="block-wrapper"
                   style={{
-                    position: 'relative', borderRadius: 8, padding: '2px 0',
+                    position: 'relative',
+                    borderRadius: 8,
+                    padding: '2px 0',
                     outline: dragOverId === block.id && draggingId !== block.id ? `2px solid ${accentColor}` : 'none',
                     opacity: draggingId === block.id ? 0.45 : 1,
                     transition: 'opacity .15s, outline .1s',
+                    // FIX: overflow visible so the controls panel (right side) is not clipped
+                    overflow: 'visible',
                   }}
                 >
-                  {/* Hover block controls — positioned inside the block */}
+                  {/* Hover block controls — positioned to the right */}
                   <div className="pdf-hidden block-controls" style={{
-                    position: 'absolute', right: 0, top: 0,
-                    display: 'flex', flexDirection: 'column', gap: 2,
-                    opacity: 0, transition: 'opacity .15s',
-                    padding: 4, background: 'rgba(255,255,255,.95)',
-                    border: '1px solid #e8e8e8', borderRadius: 6,
-                    transform: 'translateX(calc(100% + 4px))',
+                    position: 'absolute',
+                    right: -56, // outside the block to the right
+                    top: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    opacity: 0,
+                    transition: 'opacity .15s',
+                    padding: 4,
+                    background: 'rgba(255,255,255,.97)',
+                    border: '1px solid #e8e8e8',
+                    borderRadius: 6,
                     zIndex: 50,
+                    boxShadow: '0 2px 8px rgba(0,0,0,.08)',
+                    pointerEvents: 'all',
                   }}>
                     {/* Quick alignment buttons for text blocks */}
                     {['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote'].includes(block.type) && (

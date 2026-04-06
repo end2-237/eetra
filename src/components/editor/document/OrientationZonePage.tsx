@@ -25,13 +25,51 @@ function formatTOCNumber(n: number, style: 'numeric'|'roman'|'alpha'): string {
   return n + '.'
 }
 
+// ── Border overlay (same as ContentPage) ─────────────────────────────────────
+
+function CoverBorderOverlay({ config }: { config: any }) {
+  const { borderStyle, borderColor = '#1B4FD8', borderWidth = 8 } = config
+  if (!borderStyle || borderStyle === 'none') return null
+  const base: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 200, boxSizing: 'border-box' }
+  if (borderStyle === 'simple') return <div style={{ ...base, border: `${borderWidth}px solid ${borderColor}` }} />
+  if (borderStyle === 'double') return <div style={{ ...base, border: `${borderWidth}px double ${borderColor}` }} />
+  if (borderStyle === 'thick')  return <div style={{ ...base, border: `${borderWidth * 2}px solid ${borderColor}` }} />
+  if (borderStyle === 'dashed') return <div style={{ ...base, border: `${borderWidth}px dashed ${borderColor}` }} />
+  if (borderStyle === 'dotted') return <div style={{ ...base, border: `${borderWidth}px dotted ${borderColor}` }} />
+  if (borderStyle === 'shadow') return <div style={{ ...base, boxShadow: `inset 0 0 0 ${borderWidth}px ${borderColor}, inset 0 0 ${borderWidth * 3}px ${borderColor}40` }} />
+  if (borderStyle === 'inset') return (
+    <div style={{ ...base }}>
+      <div style={{ position: 'absolute', inset: borderWidth, border: `${Math.max(1, borderWidth / 2)}px solid ${borderColor}`, boxSizing: 'border-box' }} />
+      <div style={{ position: 'absolute', inset: 0, border: `${borderWidth}px solid ${borderColor}`, boxSizing: 'border-box' }} />
+    </div>
+  )
+  if (borderStyle === 'ornate') return (
+    <div style={{ ...base }}>
+      <div style={{ position: 'absolute', inset: 0, border: `${borderWidth}px solid ${borderColor}`, boxSizing: 'border-box' }} />
+      <div style={{ position: 'absolute', inset: borderWidth + 4, border: `${Math.max(1, borderWidth / 3)}px solid ${borderColor}`, boxSizing: 'border-box', opacity: 0.5 }} />
+    </div>
+  )
+  if (borderStyle === 'ribbon') return (
+    <div style={{ ...base }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: borderWidth, background: borderColor }} />
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: borderWidth, background: borderColor }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: borderWidth, background: borderColor }} />
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: borderWidth, background: borderColor }} />
+    </div>
+  )
+  if (borderStyle === 'neon') return (
+    <div style={{ ...base, border: `${Math.max(1, borderWidth * 0.4)}px solid ${borderColor}`, boxShadow: [`inset 0 0 ${borderWidth}px ${borderColor}`, `inset 0 0 ${borderWidth * 3}px ${borderColor}88`, `0 0 ${borderWidth}px ${borderColor}`, `0 0 ${borderWidth * 3}px ${borderColor}88`].join(',') }} />
+  )
+  return null
+}
+
 // ── Extract TOC entries from pages ────────────────────────────────────────────
 
 export function extractTOCEntries(
   pages: any[],
   levels: number[],
   numberStyle: 'numeric'|'roman'|'alpha',
-  absolutePageOffset: number // cover = 1, first content = 2
+  absolutePageOffset: number
 ): TOCEntry[] {
   const entries: TOCEntry[] = []
   const counters = { h1: 0, h2: 0, h3: 0, h4: 0, section: 0 }
@@ -91,8 +129,6 @@ export function extractTOCEntries(
   return entries
 }
 
-// ── Extract table list ─────────────────────────────────────────────────────────
-
 export function extractTableList(pages: any[], absolutePageOffset: number) {
   const list: { index: number; caption: string; page: number }[] = []
   let idx = 0
@@ -100,18 +136,12 @@ export function extractTableList(pages: any[], absolutePageOffset: number) {
     ;(page.blocks || []).forEach((block: any) => {
       if (block.type === 'table') {
         idx++
-        list.push({
-          index: idx,
-          caption: block.caption || `Tableau ${idx}`,
-          page: absolutePageOffset + pi,
-        })
+        list.push({ index: idx, caption: block.caption || `Tableau ${idx}`, page: absolutePageOffset + pi })
       }
     })
   })
   return list
 }
-
-// ── Extract illustration list ──────────────────────────────────────────────────
 
 export function extractIllustrationList(pages: any[], absolutePageOffset: number) {
   const list: { index: number; caption: string; page: number }[] = []
@@ -145,7 +175,6 @@ function TOCLine({ entry, accent, showPageNum }: { entry: TOCEntry; accent: stri
       marginBottom: entry.level === 1 ? 6 : 3,
       marginTop: isTop ? 8 : 0,
     }}>
-      {/* Number */}
       <span style={{
         fontFamily: 'DM Mono, monospace',
         fontSize: entry.level <= 2 ? '10px' : '9px',
@@ -157,8 +186,6 @@ function TOCLine({ entry, accent, showPageNum }: { entry: TOCEntry; accent: stri
       }}>
         {entry.number}
       </span>
-
-      {/* Label */}
       <span style={{
         fontSize: sizes[entry.level] || '11px',
         fontWeight: weights[entry.level] || '500',
@@ -170,8 +197,6 @@ function TOCLine({ entry, accent, showPageNum }: { entry: TOCEntry; accent: stri
       }}>
         {entry.label}
       </span>
-
-      {/* Leader dots */}
       <span style={{
         flex: '0 1 auto',
         minWidth: 24,
@@ -181,8 +206,6 @@ function TOCLine({ entry, accent, showPageNum }: { entry: TOCEntry; accent: stri
         marginLeft: 4,
         marginRight: 4,
       }} />
-
-      {/* Page number */}
       {showPageNum && (
         <span style={{
           fontFamily: 'DM Mono, monospace',
@@ -198,8 +221,6 @@ function TOCLine({ entry, accent, showPageNum }: { entry: TOCEntry; accent: stri
     </div>
   )
 }
-
-// ── List row (tables / illustrations) ────────────────────────────────────────
 
 function ListRow({ index, caption, page, accent, showPageNum }: {
   index: number; caption: string; page: number; accent: string; showPageNum: boolean
@@ -220,26 +241,7 @@ function ListRow({ index, caption, page, accent, showPageNum }: {
   )
 }
 
-// ── Section heading ───────────────────────────────────────────────────────────
-
-function SectionHeading({ label, accent }: { label: string; accent: string }) {
-  return (
-    <div style={{ marginBottom: 10, marginTop: 20 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 4, height: 14, background: accent, borderRadius: 2 }} />
-        <span style={{
-          fontSize: '9px', fontWeight: 800, letterSpacing: '.22em',
-          textTransform: 'uppercase', color: accent,
-        }}>
-          {label}
-        </span>
-      </div>
-      <div style={{ height: 1, background: `${accent}22`, marginTop: 6 }} />
-    </div>
-  )
-}
-
-// ── A4 Page Wrapper ───────────────────────────────────────────────────────────
+// ── A4 Page Wrapper — FIX: now includes CoverBorderOverlay ───────────────────
 
 const A4_H = 1123
 const PAD_V = 28
@@ -253,10 +255,14 @@ interface OZPageProps {
 
 function OZPageWrapper({ config, pageNumber, totalPages, children }: OZPageProps) {
   const { profile } = useProfile()
+  const { coverStyle } = useDocument()
   const { layout } = usePageLayout()
   const accentColor = profile.color || '#1B4FD8'
   const headerH = layout.header.show ? layout.header.height : 0
   const footerH = layout.footer.show ? layout.footer.height : 0
+
+  // FIX: get page border config from coverStyle (same source as ContentPage)
+  const pageConfig = (coverStyle as any)?.pageConfig || {}
 
   return (
     <div style={{
@@ -265,6 +271,10 @@ function OZPageWrapper({ config, pageNumber, totalPages, children }: OZPageProps
       position: 'relative', overflow: 'hidden', boxSizing: 'border-box',
     }}>
       <WatermarkOverlay />
+
+      {/* FIX: Apply the same border overlay as content pages */}
+      <CoverBorderOverlay config={pageConfig} />
+
       <div style={{ position: 'absolute', left: 0, top: 0, width: 3, height: '100%', background: accentColor, opacity: .18, zIndex: 1 }} />
       <PageHeader pageNumber={pageNumber} totalPages={totalPages} accentColor={accentColor} />
       <div style={{
@@ -283,8 +293,8 @@ function OZPageWrapper({ config, pageNumber, totalPages, children }: OZPageProps
 
 interface OrientationZonePageProps {
   config: OrientationZoneConfig
-  pageIndex: number        // 0-based index of this OZ page
-  absolutePageNum: number  // for header/footer
+  pageIndex: number
+  absolutePageNum: number
   totalAbsolutePages: number
   tocEntries: TOCEntry[]
   tableList: { index: number; caption: string; page: number }[]
@@ -298,19 +308,12 @@ export function OrientationZonePage({
   const { profile } = useProfile()
   const accent = profile.color || '#1B4FD8'
 
-  // ── Allocation stricte: une section = une page (ou plusieurs pour TdM longue) ──
-  // Index mapping:
-  // 0..n-1  = pages TdM (si showTOC)
-  // n       = page tableaux (si showTableList && tableList.length > 0)
-  // n+1     = page illustrations (si showIllustrationList && illustrationList.length > 0)
-
   const ITEMS_PER_PAGE = 26
 
   const tocPageCount = config.showTOC
     ? Math.max(1, Math.ceil(tocEntries.length / ITEMS_PER_PAGE))
     : 0
 
-  // Determine what this page renders
   let sectionType: 'toc' | 'tables' | 'illustrations' | 'empty' = 'empty'
   let tocChunkIndex = 0
 
@@ -431,8 +434,6 @@ export function OrientationZonePage({
   )
 }
 
-// ── Compute how many OZ pages are needed ─────────────────────────────────────
-
 export function computeOZPageCount(config: OrientationZoneConfig, pages: any[]): number {
   if (!config.enabled) return 0
 
@@ -458,22 +459,15 @@ export function computeOZPageCount(config: OrientationZoneConfig, pages: any[]):
 
   let total = 0
 
-  // TdM: 1 page minimum, plus si beaucoup d'entrées
   if (config.showTOC) {
     total += Math.max(1, Math.ceil(tocCount / ITEMS_PER_PAGE))
   }
 
-  // Liste tableaux: toujours une page séparée
-  if (config.showTableList && tableCount > 0) {
+  if (config.showTableList) {
     total += 1
-  } else if (config.showTableList && tableCount === 0) {
-    total += 1 // page vide mais présente si activée
   }
 
-  // Liste illustrations: toujours une page séparée
-  if (config.showIllustrationList && illustCount > 0) {
-    total += 1
-  } else if (config.showIllustrationList && illustCount === 0) {
+  if (config.showIllustrationList) {
     total += 1
   }
 

@@ -35,6 +35,7 @@ export interface CustomTemplate {
   coverStyle: CoverStyle
   createdAt: string
   updatedAt: string
+  previewImageUrl?: string
   isPublic: boolean
   usageCount: number
   publishedAt?: string

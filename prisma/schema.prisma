@@ -142,6 +142,7 @@ model CustomTemplate {
   blocks      Json     @default("[]")
   docStyle    Json     @default("{}")
   coverStyle  Json     @default("{}")
+  previewImageUrl String? @default("")
   isPublic    Boolean  @default(false)
   usageCount  Int      @default(0)
   createdAt   DateTime @default(now())

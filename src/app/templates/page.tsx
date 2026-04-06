@@ -9,7 +9,7 @@ import {
   Trash2, Copy, Edit3, Check, X, Globe, Lock,
 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/ui/Loading'
-import { useCustomTemplates, type CustomTemplate } from '@/contexts/CustomTemplateContext'
+import { CoverStyle, useCustomTemplates, type CustomTemplate } from '@/contexts/CustomTemplateContext'
 import { usePlan } from '@/contexts/PlanContext'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { Toast }       from '@/components/ui/Toast'
@@ -19,7 +19,46 @@ import { TemplateCoverModal } from '@/components/templates/TemplateCoverModal'
 import { CoverPage } from '@/components/editor/document/CoverPage'
 
 import { showToast } from '@/lib/utils'
- 
+
+import { useLayoutEffect } from 'react'
+import { DocumentProvider, useDocument } from '@/contexts/DocumentContext'
+
+
+function TemplateCoverCapture({
+  name,
+  coverStyle,
+}: {
+  name: string
+  coverStyle: CoverStyle
+}) {
+  return (
+    <DocumentProvider>
+      <_CoverCaptureInner name={name} coverStyle={coverStyle} />
+    </DocumentProvider>
+  )
+}
+
+function _CoverCaptureInner({
+  name,
+  coverStyle,
+}: {
+  name: string
+  coverStyle: CoverStyle
+}) {
+  const { setTitle, setCoverStyle } = useDocument()
+
+  useLayoutEffect(() => {
+    // Délai court pour laisser DocumentProvider finir son chargement localStorage
+    // avant d'écraser avec le vrai nom du template
+    const t = setTimeout(() => {
+      setTitle(name)
+      setCoverStyle(coverStyle)
+    }, 30)
+    return () => clearTimeout(t)
+  }, [name]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <CoverPage coverStyle={coverStyle} zoom={1} />
+}
 
 const STORAGE_DRAFT = 'eetra-document-draft'
 
@@ -468,6 +507,21 @@ const CSS = `
   }
 `
 
+// ── Helper component to show real preview or fallback to CoverMini ────────────
+function TemplateCoverPreview({ tpl }: { tpl: CustomTemplate }) {
+  const previewUrl = (tpl as any).previewImageUrl
+  if (previewUrl) {
+    return (
+      <img
+        src={previewUrl}
+        alt={tpl.name}
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+      />
+    )
+  }
+  return <CoverMini coverStyle={tpl.coverStyle} name={tpl.name} />
+}
+
 export default function TemplatesPage() {
   const router = useRouter()
   const {
@@ -712,7 +766,7 @@ const [coverModalTpl, setCoverModalTpl] = useState<CustomTemplate | null>(null)
                       <div key={tpl.id} className="comm-card" style={{ opacity: limitReached ? .5 : 1, cursor: limitReached ? 'not-allowed' : 'pointer' }} onClick={() => !limitReached && useCustom(tpl)}>
                         <div className="tpl-card-cover">
                           <div style={{ position:'absolute', inset:0, backgroundImage:'radial-gradient(circle,rgba(0,0,0,.03) 1px,transparent 1px)', backgroundSize:'14px 14px' }}/>
-                          <div className="tpl-card-cover-inner"><CoverMini coverStyle={tpl.coverStyle} name={tpl.name} /></div>
+                          <div className="tpl-card-cover-inner"><TemplateCoverPreview tpl={tpl} /></div>
                           {tpl.usageCount > 0 && (
                             <span style={{ position:'absolute', top:8, right:8, fontSize:9, fontWeight:700, padding:'2px 6px', borderRadius:4, background:'rgba(0,0,0,.45)', color:'#fff' }}>
                               ×{tpl.usageCount}

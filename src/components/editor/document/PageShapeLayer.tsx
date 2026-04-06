@@ -211,20 +211,43 @@ export function PageShapeLayer({ pageId, shapes, onAdd, onUpdate, onRemove, acce
 
   return (
     <>
-      {/* Shape layer */}
+      {/* 1. OVERLAY DE DÉSÉLECTION - S'active uniquement si une forme est sélectionnée */}
+      {selId && !readonly && (
+        <div
+          className="pdf-hidden"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 9, // Juste en dessous des formes
+            pointerEvents: 'auto', // Capte le clic pour désélectionner
+            background: 'transparent'
+          }}
+          onMouseDown={() => {
+            setSelId(null);
+            setEditId(null);
+            setShowPicker(false);
+          }}
+        />
+      )}
+
+      {/* 2. CALQUE DES FORMES - 'none' pour laisser passer les clics vers le PDF en dessous */}
       <div
         ref={layerRef}
         className="pdf-hidden"
-        style={{ position: 'absolute', inset: 0, zIndex: 10 }}
-        onClick={() => { setSelId(null); setEditId(null); setShowPicker(false) }}
+        style={{ 
+          position: 'absolute', 
+          inset: 0, 
+          zIndex: 10, 
+          pointerEvents: 'none' 
+        }}
       >
-        {[...shapes].sort((a,b) => (a.z||0)-(b.z||0)).map(b => {
-          const bx = b.x * PAGE_W, by = b.y * PAGE_H
-          const bw = b.w * PAGE_W, bh = b.h * PAGE_H
-          const isSel = selId === b.id
-          const isEdit = editId === b.id
+        {[...shapes].sort((a, b) => (a.z || 0) - (b.z || 0)).map(b => {
+          const bx = b.x * PAGE_W, by = b.y * PAGE_H;
+          const bw = b.w * PAGE_W, bh = b.h * PAGE_H;
+          const isSel = selId === b.id;
+          const isEdit = editId === b.id;
 
-          let content: React.ReactNode
+          let content: React.ReactNode;
           if (b.type === 'text') {
             content = (
               <div
@@ -232,12 +255,21 @@ export function PageShapeLayer({ pageId, shapes, onAdd, onUpdate, onRemove, acce
                 suppressContentEditableWarning
                 onInput={e => onUpdate(b.id, { text: (e.currentTarget as HTMLElement).innerText })}
                 onBlur={() => setEditId(null)}
-                style={{ width:'100%',height:'100%',fontSize:b.fontSize||16,fontWeight:b.fontWeight==='black'?900:b.fontWeight==='bold'?700:400,fontStyle:b.fontStyle||'normal',color:b.color||'#0D1117',textAlign:b.align||'left',letterSpacing:b.letterSpacing?`${b.letterSpacing}em`:'normal',lineHeight:b.lineHeight||1.35,fontFamily:b.fontFamily||'inherit',whiteSpace:'pre-wrap',wordBreak:'break-word',overflow:'hidden',outline:'none',cursor:isEdit?'text':'inherit' }}
+                style={{ 
+                  width:'100%', height:'100%', 
+                  fontSize:b.fontSize||16, 
+                  fontWeight:b.fontWeight==='black'?900:b.fontWeight==='bold'?700:400, 
+                  fontStyle:b.fontStyle||'normal', color:b.color||'#0D1117', 
+                  textAlign:b.align||'left', letterSpacing:b.letterSpacing?`${b.letterSpacing}em`:'normal', 
+                  lineHeight:b.lineHeight||1.35, fontFamily:b.fontFamily||'inherit', 
+                  whiteSpace:'pre-wrap', wordBreak:'break-word', overflow:'hidden', 
+                  outline:'none', cursor:isEdit?'text':'inherit' 
+                }}
                 dangerouslySetInnerHTML={isEdit ? undefined : { __html: (b.text||'').replace(/\n/g,'<br/>') }}
               />
-            )
+            );
           } else if (b.type === 'image' && b.src) {
-            content = <img src={b.src} alt="" style={{width:'100%',height:'100%',objectFit:b.objectFit||'contain',display:'block'}}/>
+            content = <img src={b.src} alt="" style={{width:'100%',height:'100%',objectFit:b.objectFit||'contain',display:'block'}}/>;
           } else {
             content = (
               <div style={{position:'relative',width:'100%',height:'100%'}}>
@@ -248,21 +280,44 @@ export function PageShapeLayer({ pageId, shapes, onAdd, onUpdate, onRemove, acce
                     suppressContentEditableWarning
                     onInput={e => onUpdate(b.id, { innerText: (e.currentTarget as HTMLElement).innerText })}
                     onBlur={() => setEditId(null)}
-                    style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:b.innerFontSize||14,fontWeight:b.innerBold?700:400,fontStyle:b.innerItalic?'italic':'normal',color:b.innerColor||'#fff',fontFamily:b.innerFontFamily||'inherit',textAlign:b.innerAlign||'center',pointerEvents:isEdit?'text':'none' as any,outline:'none',padding:6,wordBreak:'break-word',lineHeight:1.3}}
+                    style={{
+                      position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', 
+                      fontSize:b.innerFontSize||14, fontWeight:b.innerBold?700:400, 
+                      fontStyle:b.innerItalic?'italic':'normal', color:b.innerColor||'#fff', 
+                      fontFamily:b.innerFontFamily||'inherit', textAlign:b.innerAlign||'center', 
+                      pointerEvents:isEdit?'auto':'none', outline:'none', padding:6, 
+                      wordBreak:'break-word', lineHeight:1.3
+                    }}
                     dangerouslySetInnerHTML={isEdit?undefined:{__html:(b.innerText||'').replace(/\n/g,'<br/>')}}
                   />
                 )}
               </div>
-            )
+            );
           }
 
           return (
             <div
               key={b.id}
-              style={{ position:'absolute', left:bx, top:by, width:bw, height:bh, opacity:b.opacity??1, transform:b.rotation?`rotate(${b.rotation}deg)`:undefined, zIndex:(b.z||1)+5, cursor:b.locked?'default':isEdit?'text':'move', userSelect:isEdit?'text':'none', boxSizing:'border-box' }}
-              onMouseDown={e => onBlockDown(e, b.id)}
-              onDoubleClick={e => { e.stopPropagation(); setEditId(b.id); setSelId(b.id) }}
-              onClick={e => { e.stopPropagation(); setSelId(b.id) }}
+              style={{ 
+                position:'absolute', left:bx, top:by, width:bw, height:bh, 
+                opacity:b.opacity??1, transform:b.rotation?`rotate(${b.rotation}deg)`:undefined, 
+                zIndex:(b.z||1)+5, cursor:b.locked?'default':isEdit?'text':'move', 
+                userSelect:isEdit?'text':'none', boxSizing:'border-box',
+                pointerEvents: 'auto' // Réactive l'interaction sur la forme
+              }}
+              onMouseDown={e => {
+                e.stopPropagation(); // Empêche l'overlay de désélectionner
+                onBlockDown(e, b.id);
+              }}
+              onDoubleClick={e => { 
+                e.stopPropagation(); 
+                setEditId(b.id); 
+                setSelId(b.id); 
+              }}
+              onClick={e => { 
+                e.stopPropagation(); 
+                setSelId(b.id); 
+              }}
             >
               {content}
               {isSel && !isEdit && <div style={{position:'absolute',inset:-2,border:`2px solid ${accentColor}`,borderRadius:3,pointerEvents:'none',zIndex:99}}/>}
@@ -270,37 +325,39 @@ export function PageShapeLayer({ pageId, shapes, onAdd, onUpdate, onRemove, acce
                 <div key={h} onMouseDown={e => onHandleDown(e, b.id, h)} style={{position:'absolute',width:H_SZ,height:H_SZ,background:'#fff',border:`2px solid ${accentColor}`,borderRadius:2,zIndex:100,...HANDLE_POS[h]}}/>
               ))}
             </div>
-          )
+          );
         })}
       </div>
 
-      {/* Floating add button */}
-      <div className="pdf-hidden" style={{ position:'absolute', bottom:8, right:8, zIndex:20, display:'flex', gap:4 }}>
+      {/* 3. BOUTONS D'ACTION - 'auto' pour qu'ils répondent toujours */}
+      <div className="pdf-hidden" style={{ position:'absolute', bottom:8, right:8, zIndex:20, display:'flex', gap:4, pointerEvents: 'auto' }}>
         <button onClick={e => { e.stopPropagation(); addTextShape() }}
-          title="Ajouter du texte"
-          style={{ width:28, height:28, borderRadius:7, background:'rgba(27,79,216,.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', backdropFilter:'blur(4px)' }}>
+          style={{ width:28, height:28, borderRadius:7, background:'rgba(27,79,216,.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}>
           <Type size={12}/>
         </button>
         <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }}
-          title="Ajouter une forme"
-          style={{ width:28, height:28, borderRadius:7, background: showPicker ? 'var(--accent)' : 'rgba(27,79,216,.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', backdropFilter:'blur(4px)' }}>
+          style={{ width:28, height:28, borderRadius:7, background: showPicker ? accentColor : 'rgba(27,79,216,.9)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}>
           <Plus size={12}/>
         </button>
         {selId && (
           <button onClick={e => { e.stopPropagation(); onRemove(selId); setSelId(null) }}
-            title="Supprimer"
             style={{ width:28, height:28, borderRadius:7, background:'rgba(220,38,38,.85)', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff' }}>
             <X size={12}/>
           </button>
         )}
       </div>
 
-      {/* Shape picker popover */}
+      {/* 4. PICKER POPUP */}
       {showPicker && (
         <div
           className="pdf-hidden"
           onClick={e => e.stopPropagation()}
-          style={{ position:'absolute', bottom:44, right:8, zIndex:500, width:260, maxHeight:340, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.2)', overflow:'hidden', display:'flex', flexDirection:'column' }}
+          style={{ 
+            position:'absolute', bottom:44, right:8, zIndex:500, width:260, maxHeight:340, 
+            background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, 
+            boxShadow:'0 8px 32px rgba(0,0,0,.2)', overflow:'hidden', display:'flex', 
+            flexDirection:'column', pointerEvents: 'auto' 
+          }}
         >
           <div style={{ padding:'8px 10px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
             <input
@@ -320,8 +377,7 @@ export function PageShapeLayer({ pageId, shapes, onAdd, onUpdate, onRemove, acce
                   {group.shapes.map(({s,i,l}) => (
                     <button key={s} onClick={() => addShape(s)} title={l}
                       style={{ padding:'5px 2px', borderRadius:5, border:'1px solid var(--border)', background:'var(--bg)', cursor:'pointer', fontSize:12, display:'flex', flexDirection:'column', alignItems:'center', gap:1 }}
-                      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = accentColor; el.style.background = `${accentColor}12` }}
-                      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.borderColor = 'var(--border)'; el.style.background = 'var(--bg)' }}>
+                    >
                       <span>{i}</span>
                       <span style={{ fontSize:6, color:'var(--text4)', whiteSpace:'nowrap', overflow:'hidden', maxWidth:'100%' }}>{l}</span>
                     </button>
@@ -333,5 +389,5 @@ export function PageShapeLayer({ pageId, shapes, onAdd, onUpdate, onRemove, acce
         </div>
       )}
     </>
-  )
+  );
 }

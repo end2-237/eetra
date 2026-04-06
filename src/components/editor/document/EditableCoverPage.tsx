@@ -21,6 +21,7 @@ type PageBgType = 'solid' | 'gradient' | 'pattern'
 type PatternType = 'dots' | 'lines' | 'grid' | 'diagonal' | 'cross' | 'wave' | 'chevron'
 
 type ExtBlock = CoverBlock & {
+  name?: string
   shape?: string
   gradient?: { type: GradType; color1: string; color2: string; color3?: string; angle?: number }
   useGradient?: boolean
@@ -553,6 +554,99 @@ interface Props {
   /** When true, renders the properties panel below the canvas (mobile layout) */
   mobileLayout?: boolean
 }
+
+export const CalquesPanel = (
+  blocks: any[],
+  selIds: Set<string>,
+  upd: (id: string, patch: any) => void,
+  del: (ids?: string[]) => void,
+  saveBlocks: (blocks: any[]) => void,
+  setSelIds: (fn: any) => void,
+  setPanelTab: (tab: any) => void,
+  accentColor: string,
+) => (
+  <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+      <label style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 0 }}>
+        {blocks.length} élément{blocks.length > 1 ? 's' : ''}
+      </label>
+      {blocks.length > 0 && (
+        <button onClick={() => { if (window.confirm('Tout effacer?')) { saveBlocks([]); setSelIds(new Set()) } }}
+          style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5, border: '1px solid rgba(220,38,38,.3)', background: '#FEF2F2', color: '#DC2626', cursor: 'pointer' }}>
+          Tout effacer
+        </button>
+      )}
+    </div>
+ 
+    {[...blocks].sort((a, b) => (b.z || 0) - (a.z || 0)).map((b, i) => {
+      const isSel = selIds.has(b.id)
+      const si = b.shape ? b.shape : b.type
+ 
+      const defaultName = b.type === 'text'
+        ? (b.text || 'Texte').slice(0, 20)
+        : b.innerText
+        ? (b.innerText).slice(0, 16)
+        : (b.shape || b.type) + ` #${blocks.length - i}`
+ 
+      return (
+        <div key={b.id}
+          onClick={e => {
+            if ((e.target as HTMLElement).tagName === 'INPUT') return
+            if (e.shiftKey) {
+              setSelIds((prev: Set<string>) => { const n = new Set(prev); n.has(b.id) ? n.delete(b.id) : n.add(b.id); return n })
+            } else {
+              setSelIds(new Set([b.id]))
+              setPanelTab('elements')
+            }
+          }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, padding: '5px 7px', borderRadius: 7,
+            border: '1.5px solid',
+            borderColor: isSel ? accentColor : 'var(--border)',
+            background: isSel ? `${accentColor}10` : 'var(--bg)',
+            cursor: 'pointer', userSelect: 'none',
+          }}
+        >
+          <span style={{ fontSize: 10 }}>
+            {b.type === 'text' ? 'T' : b.type === 'image' || b.type === 'logo' ? '🖼' : '▬'}
+          </span>
+ 
+          {/* Editable layer name */}
+          <input
+            value={b.name !== undefined ? b.name : defaultName}
+            onChange={e => upd(b.id, { name: e.target.value })}
+            onClick={e => e.stopPropagation()}
+            onFocus={e => { e.stopPropagation(); setSelIds(new Set([b.id])) }}
+            placeholder="Nom du calque…"
+            style={{
+              fontSize: 9, fontWeight: 600, color: isSel ? accentColor : 'var(--text2)',
+              flex: 1, minWidth: 0, border: 'none', background: 'transparent',
+              outline: 'none', padding: 0, cursor: 'text',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}
+          />
+ 
+          {b.locked && <span style={{ fontSize: 8 }}>🔒</span>}
+          {b.groupId && <span style={{ fontSize: 7, padding: '1px 3px', borderRadius: 3, background: 'var(--accentS)', color: 'var(--accent)', fontWeight: 700 }}>G</span>}
+ 
+          <div style={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+            <button onClick={e => { e.stopPropagation(); upd(b.id, { z: (b.z || 1) + 1 }) }}
+              style={{ padding: '1px 4px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg2)', cursor: 'pointer', fontSize: 9, color: 'var(--text4)' }}>↑</button>
+            <button onClick={e => { e.stopPropagation(); upd(b.id, { z: Math.max(1, (b.z || 1) - 1) }) }}
+              style={{ padding: '1px 4px', borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg2)', cursor: 'pointer', fontSize: 9, color: 'var(--text4)' }}>↓</button>
+            <button onClick={e => { e.stopPropagation(); del([b.id]) }}
+              style={{ padding: '1px 4px', borderRadius: 4, border: '1px solid rgba(220,38,38,.3)', background: '#FEF2F2', cursor: 'pointer', fontSize: 9, color: '#DC2626' }}>×</button>
+          </div>
+        </div>
+      )
+    })}
+ 
+    {blocks.length === 0 && (
+      <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text4)', padding: '16px 0' }}>Aucun élément</div>
+    )}
+  </div>
+)
+ 
 
 export function EditableCoverPage({zoom, mobileLayout=false}:Props){
   const {title,subtitle,ref:docRef,destination,confidentiality,docStyle,coverStyle,setCoverStyle}=useDocument()
@@ -1116,31 +1210,64 @@ export function EditableCoverPage({zoom, mobileLayout=false}:Props){
       </div>
     )
 
-    if(panelTab==='calques') return(
-      <div style={{padding:'10px 12px',display:'flex',flexDirection:'column',gap:3}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-          <label style={{...LBL,marginBottom:0}}>{blocks.length} élément{blocks.length>1?'s':''}</label>
-          {blocks.length>0&&<button onClick={()=>{if(confirm('Tout effacer?')){saveBlocks([]);setSelIds(new Set())}}} style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:5,border:'1px solid rgba(220,38,38,.3)',background:'#FEF2F2',color:'#DC2626',cursor:'pointer'}}>Tout effacer</button>}
+    if (panelTab === 'calques') return (
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <label style={{ ...LBL, marginBottom: 0 }}>{blocks.length} élément{blocks.length > 1 ? 's' : ''}</label>
+          {blocks.length > 0 && (
+            <button onClick={() => { if (confirm('Tout effacer?')) { saveBlocks([]); setSelIds(new Set()) } }} 
+              style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 5, border: '1px solid rgba(220,38,38,.3)', background: '#FEF2F2', color: '#DC2626', cursor: 'pointer' }}>
+              Tout effacer
+            </button>
+          )}
         </div>
-        {[...blocks].sort((a,b)=>(b.z||0)-(a.z||0)).map((b,i)=>{
-          const isSel=selIds.has(b.id)
-          const si=ALL_SHAPES.find(s=>s.s===(b as any).shape)
-          return(
-            <div key={b.id} onClick={e=>{if(e.shiftKey){setSelIds(prev=>{const n=new Set(prev);n.has(b.id)?n.delete(b.id):n.add(b.id);return n})}else setSelIds(new Set([b.id]));setPanelTab('elements')}}
-              style={{display:'flex',alignItems:'center',gap:5,padding:'5px 7px',borderRadius:7,border:'1.5px solid',borderColor:isSel?accent:'var(--border)',background:isSel?`${accent}10`:'var(--bg)',cursor:'pointer',userSelect:'none'}}>
-              <span style={{fontSize:10}}>{b.type==='text'?'T':b.type==='image'||b.type==='logo'?'🖼':(si?.i||'▬')}</span>
-              <span style={{fontSize:9,fontWeight:600,color:'var(--text2)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.type==='text'?(b.text||'Texte').slice(0,14):b.innerText?(b.innerText).slice(0,12):((b as any).shape||b.type)+` #${i+1}`}</span>
-              {b.locked&&<span style={{fontSize:8}}>🔒</span>}
-              {b.groupId&&<span style={{fontSize:7,padding:'1px 3px',borderRadius:3,background:'var(--accentS)',color:'var(--accent)',fontWeight:700}}>G</span>}
-              <div style={{display:'flex',gap:1,flexShrink:0}}>
-                <button onClick={e=>{e.stopPropagation();upd(b.id,{z:(b.z||1)+1})}} style={{...ICOBTN,padding:'1px 4px'}}>↑</button>
-                <button onClick={e=>{e.stopPropagation();upd(b.id,{z:Math.max(1,(b.z||1)-1)})}} style={{...ICOBTN,padding:'1px 4px'}}>↓</button>
-                <button onClick={e=>{e.stopPropagation();del([b.id])}} style={{...ICOBTN,padding:'1px 4px',color:'#DC2626',borderColor:'rgba(220,38,38,.3)'}}>×</button>
+    
+        {[...blocks].sort((a, b) => (b.z || 0) - (a.z || 0)).map((b, i) => {
+          const isSel = selIds.has(b.id);
+          const si = ALL_SHAPES.find(s => s.s === (b as any).shape);
+    
+          // Logique du nom par défaut (définie à l'intérieur du map pour chaque bloc)
+          const defaultName = b.type === 'text'
+            ? (b.text || 'Texte').slice(0, 20)
+            : b.innerText
+              ? (b.innerText).slice(0, 16)
+              : (((b as any).shape || b.type) + ` #${i + 1}`);
+    
+          return (
+            <div key={b.id} onClick={e => { if (e.shiftKey) { setSelIds(prev => { const n = new Set(prev); n.has(b.id) ? n.delete(b.id) : n.add(b.id); return n }) } else setSelIds(new Set([b.id])); setPanelTab('elements') }}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 7px', borderRadius: 7, border: '1.5px solid', borderColor: isSel ? accent : 'var(--border)', background: isSel ? `${accent}10` : 'var(--bg)', cursor: 'pointer', userSelect: 'none' }}>
+              
+              <span style={{ fontSize: 10 }}>{b.type === 'text' ? 'T' : b.type === 'image' || b.type === 'logo' ? '🖼' : (si?.i || '▬')}</span>
+    
+              {/* --- REMPLACEMENT DU SPAN PAR L'INPUT EDITABLE --- */}
+              <input
+                value={b.name !== undefined ? b.name : defaultName}
+                onChange={e => { upd(b.id, { name: e.target.value }) }}
+                onClick={e => e.stopPropagation()}
+                onFocus={e => e.stopPropagation()}
+                placeholder="Nom du calque…"
+                style={{
+                  fontSize: 9, fontWeight: 600, color: 'var(--text2)',
+                  flex: 1, minWidth: 0, border: 'none', background: 'transparent',
+                  outline: 'none', padding: 0, cursor: 'text',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}
+              />
+              {/* ------------------------------------------------ */}
+    
+              {b.locked && <span style={{ fontSize: 8 }}>🔒</span>}
+              {b.groupId && <span style={{ fontSize: 7, padding: '1px 3px', borderRadius: 3, background: 'var(--accentS)', color: 'var(--accent)', fontWeight: 700 }}>G</span>}
+              
+              <div style={{ display: 'flex', gap: 1, flexShrink: 0 }}>
+                <button onClick={e => { e.stopPropagation(); upd(b.id, { z: (b.z || 1) + 1 }) }} style={{ ...ICOBTN, padding: '1px 4px' }}>↑</button>
+                <button onClick={e => { e.stopPropagation(); upd(b.id, { z: Math.max(1, (b.z || 1) - 1) }) }} style={{ ...ICOBTN, padding: '1px 4px' }}>↓</button>
+                <button onClick={e => { e.stopPropagation(); del([b.id]) }} style={{ ...ICOBTN, padding: '1px 4px', color: '#DC2626', borderColor: 'rgba(220,38,38,.3)' }}>×</button>
               </div>
             </div>
           )
         })}
-        {blocks.length===0&&<div style={{textAlign:'center',fontSize:11,color:'var(--text4)',padding:'16px 0'}}>Aucun élément</div>}
+    
+        {blocks.length === 0 && <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text4)', padding: '16px 0' }}>Aucun élément</div>}
       </div>
     )
     return null

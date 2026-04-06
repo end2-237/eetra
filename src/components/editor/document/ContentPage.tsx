@@ -21,23 +21,17 @@ interface Props {
 const A4_H  = 1123
 const PAD_V = 28
 
-// ── Render the page border inherited from the cover page config ───────────────
 function CoverBorderOverlay({ config }: { config: any }) {
   const { borderStyle, borderColor = '#1B4FD8', borderWidth = 8 } = config
   if (!borderStyle || borderStyle === 'none') return null
-
-  const base: React.CSSProperties = {
-    position: 'absolute', inset: 0, pointerEvents: 'none',
-    zIndex: 200, boxSizing: 'border-box',
-  }
-
+  const base: React.CSSProperties = { position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 200, boxSizing: 'border-box' }
   if (borderStyle === 'simple') return <div style={{ ...base, border: `${borderWidth}px solid ${borderColor}` }} />
   if (borderStyle === 'double') return <div style={{ ...base, border: `${borderWidth}px double ${borderColor}` }} />
   if (borderStyle === 'thick')  return <div style={{ ...base, border: `${borderWidth * 2}px solid ${borderColor}` }} />
   if (borderStyle === 'dashed') return <div style={{ ...base, border: `${borderWidth}px dashed ${borderColor}` }} />
   if (borderStyle === 'dotted') return <div style={{ ...base, border: `${borderWidth}px dotted ${borderColor}` }} />
   if (borderStyle === 'shadow') return <div style={{ ...base, boxShadow: `inset 0 0 0 ${borderWidth}px ${borderColor}, inset 0 0 ${borderWidth * 3}px ${borderColor}40` }} />
-  if (borderStyle === 'inset')  return (
+  if (borderStyle === 'inset') return (
     <div style={{ ...base }}>
       <div style={{ position: 'absolute', inset: borderWidth, border: `${Math.max(1, borderWidth / 2)}px solid ${borderColor}`, boxSizing: 'border-box' }} />
       <div style={{ position: 'absolute', inset: 0, border: `${borderWidth}px solid ${borderColor}`, boxSizing: 'border-box' }} />
@@ -57,29 +51,9 @@ function CoverBorderOverlay({ config }: { config: any }) {
       <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: borderWidth, background: borderColor }} />
     </div>
   )
-  if (borderStyle === 'frame3d') {
-    return (
-      <div style={{ ...base }}>
-        <div style={{ position: 'absolute', inset: 0, borderTop: `${borderWidth}px solid rgba(255,255,255,0.6)`, borderLeft: `${borderWidth}px solid rgba(255,255,255,0.6)`, borderBottom: `${borderWidth}px solid rgba(0,0,0,0.35)`, borderRight: `${borderWidth}px solid rgba(0,0,0,0.35)`, boxSizing: 'border-box' }} />
-        <div style={{ position: 'absolute', inset: borderWidth, border: `${borderWidth}px solid ${borderColor}`, boxSizing: 'border-box' }} />
-      </div>
-    )
-  }
-  if (borderStyle === 'blueprint') return (
-    <div style={{ ...base }}>
-      <div style={{ position: 'absolute', inset: borderWidth, border: `${Math.max(1, borderWidth * 0.5)}px dashed ${borderColor}`, boxSizing: 'border-box', opacity: 0.5 }} />
-      <div style={{ position: 'absolute', inset: 0, border: `${borderWidth}px solid ${borderColor}`, boxSizing: 'border-box' }} />
-    </div>
-  )
   if (borderStyle === 'neon') return (
     <div style={{ ...base, border: `${Math.max(1, borderWidth * 0.4)}px solid ${borderColor}`, boxShadow: [`inset 0 0 ${borderWidth}px ${borderColor}`, `inset 0 0 ${borderWidth * 3}px ${borderColor}88`, `0 0 ${borderWidth}px ${borderColor}`, `0 0 ${borderWidth * 3}px ${borderColor}88`].join(',') }} />
   )
-  if (borderStyle === 'glow') return (
-    <div style={{ ...base, boxShadow: `inset 0 0 ${borderWidth * 2}px ${borderColor}, inset 0 0 ${borderWidth * 5}px ${borderColor}55, inset 0 0 ${borderWidth * 10}px ${borderColor}22`, border: `1px solid ${borderColor}44` }} />
-  )
-  // wave — simplified as dashed for content pages
-  if (borderStyle === 'wave') return <div style={{ ...base, border: `${borderWidth}px dashed ${borderColor}`, borderRadius: 2 }} />
-
   return null
 }
 
@@ -91,23 +65,20 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
   const { profile } = useProfile()
   const { layout } = usePageLayout()
 
-  const accentColor   = profile.color || '#1B4FD8'
-  const entityName    = profile.name  || 'Votre Entreprise'
-  const absolutePage  = pageIndex + 2
+  const accentColor  = profile.color || '#1B4FD8'
+  const entityName   = profile.name  || 'Votre Entreprise'
+  const absolutePage = pageIndex + 2
   const absoluteTotal = totalPages + 1
 
-  // ── Border inherited from cover page config ──────────────────────────────
   const pageConfig = (coverStyle as any)?.pageConfig || {}
 
   const headerH = layout.header.show ? layout.header.height : 0
   const footerH = layout.footer.show ? layout.footer.height : 0
   const CONTENT_MAX_H = A4_H - headerH - footerH - PAD_V * 2 - 32
 
-  // ── Drag & drop state ────────────────────────────────────────────────────
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId,  setDragOverId] = useState<string | null>(null)
 
-  // ── Context menu state ───────────────────────────────────────────────────
   const [contextMenu, setContextMenu] = useState<{
     x: number; y: number; blockId: string; blockIdx: number
   } | null>(null)
@@ -117,8 +88,8 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
   const handleDrop = (targetId: string) => {
     if (!draggingId || draggingId === targetId) return
     const blocks = [...page.blocks]
-    const from   = blocks.findIndex(b => b.id === draggingId)
-    const to     = blocks.findIndex(b => b.id === targetId)
+    const from = blocks.findIndex(b => b.id === draggingId)
+    const to   = blocks.findIndex(b => b.id === targetId)
     const [moved] = blocks.splice(from, 1)
     blocks.splice(to, 0, moved)
     setPageBlocks(page.id, blocks)
@@ -139,7 +110,6 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
     setPageBlocks(page.id, b)
   }, [page.blocks, page.id, setPageBlocks])
 
-  // Section prefix for auto-numbering
   function getSectionPrefix(sectionOrdinal: number): string {
     const n = sectionOrdinal + 1
     const { numberStyle } = layout.hierarchy
@@ -156,7 +126,6 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
 
   const currentSection = page.blocks.find(b => b.type === 'section')?.content || ''
 
-  // Overflow detection
   const contentRef       = useRef<HTMLDivElement>(null)
   const overflowFiredRef = useRef(false)
 
@@ -178,7 +147,6 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
     return () => ro.disconnect()
   }, [checkOverflow])
 
-  // ── Context menu block target ────────────────────────────────────────────
   const ctxBlock = contextMenu
     ? page.blocks.find(b => b.id === contextMenu.blockId)
     : null
@@ -189,35 +157,15 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
       display: 'flex', flexDirection: 'column',
       position: 'relative', overflow: 'hidden', boxSizing: 'border-box',
     }}>
-      {/* Watermark */}
       <WatermarkOverlay />
-
-      {/* Border inherited from cover page */}
       <CoverBorderOverlay config={pageConfig} />
 
-      {/* Accent side bar */}
-      <div style={{
-        position: 'absolute', left: 0, top: 0, width: 3, height: '100%',
-        background: accentColor, opacity: .18, zIndex: 1,
-      }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 3, height: '100%', background: accentColor, opacity: .18, zIndex: 1 }} />
 
-      {/* Header */}
-      <PageHeader
-        pageNumber={absolutePage}
-        totalPages={absoluteTotal}
-        accentColor={accentColor}
-        currentSection={currentSection}
-      />
+      <PageHeader pageNumber={absolutePage} totalPages={absoluteTotal} accentColor={accentColor} currentSection={currentSection} />
 
-      {/* Page label + delete */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: `${PAD_V / 2}px 40px 0`, flexShrink: 0, zIndex: 2,
-      }}>
-        <div style={{
-          fontSize: 8, fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase',
-          color: '#ccc', display: 'flex', alignItems: 'center', gap: 5,
-        }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${PAD_V / 2}px 40px 0`, flexShrink: 0, zIndex: 2 }}>
+        <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: '#ccc', display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ color: accentColor }}>//</span>
           Page {pageIndex + 1}
           {totalPages > 1 && <span style={{ color: '#e0e0e0' }}>/ {totalPages}</span>}
@@ -226,46 +174,25 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
           <button
             onClick={() => { if (window.confirm(`Supprimer la page ${pageIndex + 1} ?`)) removePage(page.id) }}
             className="pdf-hidden"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 3,
-              padding: '2px 7px', borderRadius: 5, border: '1px solid #FCA5A5',
-              background: '#FEF2F2', color: '#DC2626', cursor: 'pointer', fontSize: 8, fontWeight: 700,
-            }}
+            style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 5, border: '1px solid #FCA5A5', background: '#FEF2F2', color: '#DC2626', cursor: 'pointer', fontSize: 8, fontWeight: 700 }}
           >
             <Trash2 size={8} /> Supprimer
           </button>
         )}
       </div>
 
-      {/* Content zone */}
-      <div
-        ref={contentRef}
-        style={{
-          flex: 1, maxHeight: CONTENT_MAX_H,
-          overflowY: 'hidden', overflowX: 'hidden',
-          padding: `${PAD_V / 2}px 40px`, zIndex: 2,
-        }}
-      >
+      <div ref={contentRef} style={{ flex: 1, maxHeight: CONTENT_MAX_H, overflowY: 'hidden', overflowX: 'hidden', padding: `${PAD_V / 2}px 40px`, zIndex: 2 }}>
         {page.blocks.length === 0 ? (
-          <div className="pdf-hidden" style={{
-            textAlign: 'center', padding: '40px 0',
-            border: '1.5px dashed #e8e8e8', borderRadius: 12, color: '#ccc',
-          }}>
+          <div className="pdf-hidden" style={{ textAlign: 'center', padding: '40px 0', border: '1.5px dashed #e8e8e8', borderRadius: 12, color: '#ccc' }}>
             <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Page vide</div>
             <div style={{ fontSize: 10 }}>Ajoutez des blocs depuis le panneau de gauche</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {page.blocks.map((block, idx) => {
-              // Section auto-numbering
               const sectionOrdinal = page.blocks.slice(0, idx).filter(b => b.type === 'section').length
               const prefix = layout.hierarchy.autoNumberSections && block.type === 'section'
                 ? getSectionPrefix(sectionOrdinal) + ' ' : ''
-
-              // ── Applied visual styles from block.styles ──────────────────
-              const blockAlign = block.styles?.align
-              const blockColor = block.styles?.color
-              const blockTs    = block.styles?.textStyles || {}
 
               return (
                 <div
@@ -276,8 +203,7 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                   onDrop={() => handleDrop(block.id)}
                   onDragEnd={() => { setDraggingId(null); setDragOverId(null) }}
                   onContextMenu={e => {
-                    e.preventDefault()
-                    e.stopPropagation()
+                    e.preventDefault(); e.stopPropagation()
                     setContextMenu({ x: e.clientX, y: e.clientY, blockId: block.id, blockIdx: idx })
                   }}
                   className="block-wrapper"
@@ -286,24 +212,21 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                     outline: dragOverId === block.id && draggingId !== block.id ? `2px solid ${accentColor}` : 'none',
                     opacity: draggingId === block.id ? 0.45 : 1,
                     transition: 'opacity .15s, outline .1s',
-                    // Apply alignment and text styles via CSS on wrapper
-                    textAlign: (blockAlign as any) || undefined,
-                    fontWeight: blockTs.bold ? 700 : undefined,
-                    fontStyle:  blockTs.italic ? 'italic' : undefined,
-                    textDecoration: blockTs.underline ? 'underline' : undefined,
-                    color: blockColor || undefined,
                   }}
                 >
-                  {/* Hover block controls */}
+                  {/* Hover block controls — positioned inside the block */}
                   <div className="pdf-hidden block-controls" style={{
-                    position: 'absolute', right: -200, top: 0,
+                    position: 'absolute', right: 0, top: 0,
                     display: 'flex', flexDirection: 'column', gap: 2,
                     opacity: 0, transition: 'opacity .15s',
-                    padding: 6, background: '#fff', border: '1px solid #e8e8e8', borderRadius: 6,
+                    padding: 4, background: 'rgba(255,255,255,.95)',
+                    border: '1px solid #e8e8e8', borderRadius: 6,
+                    transform: 'translateX(calc(100% + 4px))',
+                    zIndex: 50,
                   }}>
-                    {/* Text alignment */}
+                    {/* Quick alignment buttons for text blocks */}
                     {['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote'].includes(block.type) && (
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 2, marginBottom: 4 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 2, marginBottom: 3 }}>
                         {[
                           { value: 'left', label: '⇤' },
                           { value: 'center', label: '↔' },
@@ -349,6 +272,7 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                     color={accentColor}
                     entityName={entityName}
                     pageId={page.id}
+                    blockStyles={block.styles}
                     onUpdateContent={(blockId, content) => {
                       updateBlock(page.id, blockId, prefix ? content.replace(prefix, '').trim() : content)
                     }}
@@ -364,14 +288,9 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
         )}
       </div>
 
-      {/* Footer */}
-      <PageFooter
-        pageNumber={absolutePage}
-        totalPages={absoluteTotal}
-        accentColor={accentColor}
-      />
+      <PageFooter pageNumber={absolutePage} totalPages={absoluteTotal} accentColor={accentColor} />
 
-      {/* ── Right-click context menu ───────────────────────────────────────── */}
+      {/* Right-click context menu */}
       {contextMenu && ctxBlock && (
         <BlockContextMenu
           x={contextMenu.x}
@@ -387,6 +306,8 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
             textStyles: { ...(ctxBlock.styles?.textStyles || {}), [key]: val },
           })}
           onColor={color => updateBlockStyle(page.id, contextMenu.blockId, { color })}
+          onFontFamily={font => updateBlockStyle(page.id, contextMenu.blockId, { fontFamily: font })}
+          onFontSize={size => updateBlockStyle(page.id, contextMenu.blockId, { fontSize: size })}
           onMoveUp={() => moveBlockUp(contextMenu.blockId)}
           onMoveDown={() => moveBlockDown(contextMenu.blockId)}
           onRemove={() => removeBlock(page.id, contextMenu.blockId)}

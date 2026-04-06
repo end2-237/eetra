@@ -6,6 +6,35 @@ import {
   Bold, Italic, Underline, Trash2, ArrowUp, ArrowDown,
 } from 'lucide-react'
 
+const FONT_OPTIONS = [
+  { value: 'Times New Roman',     label: 'Times' },
+  { value: 'Bricolage Grotesque', label: 'Bricolage' },
+  { value: 'DM Sans',             label: 'DM Sans' },
+  { value: 'Playfair Display',    label: 'Playfair' },
+  { value: 'Lora',                label: 'Lora' },
+  { value: 'Syne',                label: 'Syne' },
+  { value: 'DM Mono',             label: 'Mono' },
+  { value: 'Georgia',             label: 'Georgia' },
+  { value: 'Arial',               label: 'Arial' },
+]
+
+const FONT_SIZES = [9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 40, 48]
+
+const QUICK_COLORS = [
+  { v: '#0A0F1E', l: 'Noir profond' },
+  { v: '#444444', l: 'Gris foncé' },
+  { v: '#1B4FD8', l: 'Bleu' },
+  { v: '#059669', l: 'Vert' },
+  { v: '#DC2626', l: 'Rouge' },
+  { v: '#D97706', l: 'Orange' },
+  { v: '#7C3AED', l: 'Violet' },
+  { v: '#0E7490', l: 'Cyan' },
+  { v: '#EC4899', l: 'Rose' },
+  { v: '#6B7280', l: 'Gris' },
+]
+
+const TEXT_BLOCKS = ['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote', 'clause', 'bullet-list', 'numbered-list', 'checklist', 'kpi']
+
 interface Props {
   x: number
   y: number
@@ -14,6 +43,8 @@ interface Props {
   currentStyles?: {
     align?: string
     color?: string
+    fontFamily?: string
+    fontSize?: number
     textStyles?: { bold?: boolean; italic?: boolean; underline?: boolean }
   }
   accentColor: string
@@ -22,35 +53,25 @@ interface Props {
   onAlign: (align: 'left' | 'center' | 'right' | 'justify') => void
   onTextStyle: (key: 'bold' | 'italic' | 'underline', val: boolean) => void
   onColor: (color: string) => void
+  onFontFamily: (font: string) => void
+  onFontSize: (size: number) => void
   onMoveUp: () => void
   onMoveDown: () => void
   onRemove: () => void
   onClose: () => void
 }
 
-const QUICK_COLORS = [
-  { v: '#111111', l: 'Noir' },
-  { v: '#1B4FD8', l: 'Bleu' },
-  { v: '#059669', l: 'Vert' },
-  { v: '#DC2626', l: 'Rouge' },
-  { v: '#D97706', l: 'Orange' },
-  { v: '#7C3AED', l: 'Violet' },
-  { v: '#6B7280', l: 'Gris' },
-]
-
-const TEXT_BLOCKS = ['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote', 'clause']
-
 export function BlockContextMenu({
   x, y, blockId, blockType, currentStyles, accentColor,
   canMoveUp, canMoveDown,
-  onAlign, onTextStyle, onColor, onMoveUp, onMoveDown, onRemove, onClose,
+  onAlign, onTextStyle, onColor, onFontFamily, onFontSize,
+  onMoveUp, onMoveDown, onRemove, onClose,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const isText = TEXT_BLOCKS.includes(blockType)
-  const align = currentStyles?.align || 'left'
+  const align = currentStyles?.align || 'justify'
   const ts = currentStyles?.textStyles || {}
 
-  // Close on outside click or Escape
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) onClose()
@@ -66,13 +87,17 @@ export function BlockContextMenu({
     }
   }, [onClose])
 
-  // Keep within viewport
+  // Smart positioning: appears immediately next to cursor, flips if near edge
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
   const vh = typeof window !== 'undefined' ? window.innerHeight : 800
-  const menuW = 210
-  const menuH = isText ? 260 : 130
-  const adjX = Math.min(x, vw - menuW - 8)
-  const adjY = Math.min(y, vh - menuH - 8)
+  const menuW = 228
+  const menuH = isText ? 440 : 170
+
+  const spaceRight = vw - x
+  const spaceBelow = vh - y
+
+  const finalX = spaceRight >= menuW + 12 ? x + 6 : Math.max(6, x - menuW - 6)
+  const finalY = spaceBelow >= menuH + 12 ? y + 4 : Math.max(6, y - menuH)
 
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 6,
@@ -81,14 +106,19 @@ export function BlockContextMenu({
     width: '100%', textAlign: 'left',
   }
 
+  const sectionLabel = {
+    fontSize: 9, fontWeight: 700, letterSpacing: '.12em',
+    textTransform: 'uppercase' as const, color: 'var(--text4)', marginBottom: 6,
+  }
+
   return (
     <div
       ref={ref}
       onContextMenu={e => e.preventDefault()}
       style={{
         position: 'fixed',
-        left: adjX,
-        top: adjY,
+        left: finalX,
+        top: finalY,
         width: menuW,
         background: 'var(--surface)',
         border: '1px solid var(--border)',
@@ -97,16 +127,16 @@ export function BlockContextMenu({
         zIndex: 99999,
         overflow: 'hidden',
         userSelect: 'none',
+        maxHeight: '90vh',
+        overflowY: 'auto',
       }}
     >
       {/* ── TEXT FORMATTING ── */}
       {isText && (
         <>
-          {/* Alignment row */}
-          <div style={{ padding: '8px 10px 4px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 6 }}>
-              Alignement
-            </div>
+          {/* Alignment */}
+          <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border)' }}>
+            <div style={sectionLabel}>Alignement</div>
             <div style={{ display: 'flex', gap: 3 }}>
               {(
                 [
@@ -119,8 +149,7 @@ export function BlockContextMenu({
                 const active = align === v
                 return (
                   <button
-                    key={v}
-                    title={label}
+                    key={v} title={label}
                     onClick={() => { onAlign(v); onClose() }}
                     style={{
                       flex: 1, height: 30, borderRadius: 7,
@@ -138,33 +167,28 @@ export function BlockContextMenu({
             </div>
           </div>
 
-          {/* Style row: Bold / Italic / Underline */}
-          <div style={{ padding: '8px 10px 4px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 6 }}>
-              Style de texte
-            </div>
+          {/* Style: Bold / Italic / Underline */}
+          <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border)' }}>
+            <div style={sectionLabel}>Style de texte</div>
             <div style={{ display: 'flex', gap: 3 }}>
               {(
                 [
-                  { k: 'bold',      label: 'G',  Icon: Bold,      extraStyle: { fontWeight: 800 } },
-                  { k: 'italic',    label: 'I',  Icon: Italic,    extraStyle: { fontStyle: 'italic' } },
-                  { k: 'underline', label: 'S',  Icon: Underline, extraStyle: { textDecoration: 'underline' } },
+                  { k: 'bold',      Icon: Bold,      label: 'Gras' },
+                  { k: 'italic',    Icon: Italic,    label: 'Italique' },
+                  { k: 'underline', Icon: Underline, label: 'Souligné' },
                 ] as const
-              ).map(({ k, label, Icon, extraStyle }) => {
+              ).map(({ k, Icon, label }) => {
                 const active = !!ts[k]
                 return (
-                  <button
-                    key={k}
-                    title={k}
+                  <button key={k} title={label}
                     onClick={() => { onTextStyle(k, !active); onClose() }}
                     style={{
                       flex: 1, height: 30, borderRadius: 7,
                       border: `1.5px solid ${active ? accentColor : 'var(--border)'}`,
                       background: active ? `${accentColor}18` : 'var(--bg2)',
-                      cursor: 'pointer', fontSize: 13,
-                      color: active ? accentColor : 'var(--text3)',
+                      cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      ...extraStyle,
+                      color: active ? accentColor : 'var(--text3)',
                     }}
                   >
                     <Icon size={13} />
@@ -174,22 +198,71 @@ export function BlockContextMenu({
             </div>
           </div>
 
-          {/* Color row */}
-          <div style={{ padding: '8px 10px 4px', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text4)', marginBottom: 6 }}>
-              Couleur du texte
+          {/* Font family */}
+          <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border)' }}>
+            <div style={sectionLabel}>Police de caractères</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3 }}>
+              {FONT_OPTIONS.map(({ value, label }) => {
+                const isActive = currentStyles?.fontFamily === value
+                return (
+                  <button key={value} title={value}
+                    onClick={() => { onFontFamily(value); onClose() }}
+                    style={{
+                      padding: '5px 3px', borderRadius: 6,
+                      border: `1.5px solid ${isActive ? accentColor : 'var(--border)'}`,
+                      background: isActive ? `${accentColor}18` : 'var(--bg2)',
+                      cursor: 'pointer', textAlign: 'center',
+                    }}
+                  >
+                    <span style={{ fontFamily: value, fontSize: 14, display: 'block', color: 'var(--text)', lineHeight: 1.1 }}>Aa</span>
+                    <span style={{
+                      fontSize: 7, fontWeight: 700, display: 'block', marginTop: 2,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      color: isActive ? accentColor : 'var(--text4)',
+                    }}>
+                      {label}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
+          </div>
+
+          {/* Font size */}
+          <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border)' }}>
+            <div style={sectionLabel}>Taille (px)</div>
+            <div style={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {FONT_SIZES.map(size => {
+                const isActive = currentStyles?.fontSize === size
+                return (
+                  <button key={size}
+                    onClick={() => { onFontSize(size); onClose() }}
+                    style={{
+                      padding: '3px 6px', borderRadius: 5,
+                      border: `1.5px solid ${isActive ? accentColor : 'var(--border)'}`,
+                      background: isActive ? `${accentColor}18` : 'transparent',
+                      cursor: 'pointer', fontSize: 10, fontWeight: 700,
+                      color: isActive ? accentColor : 'var(--text4)',
+                    }}
+                  >
+                    {size}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Color */}
+          <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border)' }}>
+            <div style={sectionLabel}>Couleur du texte</div>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {QUICK_COLORS.map(({ v, l }) => (
-                <button
-                  key={v}
-                  title={l}
+                <button key={v} title={l}
                   onClick={() => { onColor(v); onClose() }}
                   style={{
                     width: 22, height: 22, borderRadius: 5, background: v, cursor: 'pointer',
-                    border: `2.5px solid ${currentStyles?.color === v ? 'var(--text)' : 'transparent'}`,
+                    border: `2.5px solid ${currentStyles?.color === v ? 'var(--text)' : 'rgba(0,0,0,.08)'}`,
                     padding: 0, flexShrink: 0,
-                    boxShadow: v === '#ffffff' ? 'inset 0 0 0 1px #ddd' : 'none',
                   }}
                 />
               ))}
@@ -198,14 +271,33 @@ export function BlockContextMenu({
         </>
       )}
 
-      {/* ── MOVE ── */}
+      {/* Non-text blocks: color accent */}
+      {!isText && (
+        <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border)' }}>
+          <div style={sectionLabel}>Couleur accent</div>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {QUICK_COLORS.map(({ v, l }) => (
+              <button key={v} title={l}
+                onClick={() => { onColor(v); onClose() }}
+                style={{
+                  width: 22, height: 22, borderRadius: 5, background: v, cursor: 'pointer',
+                  border: `2.5px solid ${currentStyles?.color === v ? 'var(--text)' : 'rgba(0,0,0,.08)'}`,
+                  padding: 0, flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Move */}
       <div style={{ borderBottom: '1px solid var(--border)', display: 'flex' }}>
         <button
           disabled={!canMoveUp}
           onClick={() => { onMoveUp(); onClose() }}
           style={{
             ...row, flex: 1, justifyContent: 'center', gap: 4, padding: '7px',
-            opacity: canMoveUp ? 1 : 0.35, cursor: canMoveUp ? 'pointer' : 'not-allowed',
+            opacity: canMoveUp ? 1 : 0.3, cursor: canMoveUp ? 'pointer' : 'not-allowed',
           }}
           onMouseEnter={e => { if (canMoveUp) (e.currentTarget as HTMLElement).style.background = 'var(--bg2)' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
@@ -218,7 +310,7 @@ export function BlockContextMenu({
           onClick={() => { onMoveDown(); onClose() }}
           style={{
             ...row, flex: 1, justifyContent: 'center', gap: 4, padding: '7px',
-            opacity: canMoveDown ? 1 : 0.35, cursor: canMoveDown ? 'pointer' : 'not-allowed',
+            opacity: canMoveDown ? 1 : 0.3, cursor: canMoveDown ? 'pointer' : 'not-allowed',
           }}
           onMouseEnter={e => { if (canMoveDown) (e.currentTarget as HTMLElement).style.background = 'var(--bg2)' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
@@ -227,12 +319,10 @@ export function BlockContextMenu({
         </button>
       </div>
 
-      {/* ── DELETE ── */}
+      {/* Delete */}
       <button
         onClick={() => { onRemove(); onClose() }}
-        style={{
-          ...row, color: '#DC2626', padding: '8px 12px', gap: 8,
-        }}
+        style={{ ...row, color: '#DC2626', padding: '8px 12px', gap: 8 }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(220,38,38,.08)' }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
       >

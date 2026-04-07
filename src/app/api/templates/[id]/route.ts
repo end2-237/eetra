@@ -17,15 +17,16 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
   const updated = await prisma.customTemplate.update({
     where: { id: params.id },
     data: {
-      ...(body.name        !== undefined && { name:        body.name }),
-      ...(body.description !== undefined && { description: body.description }),
-      ...(body.category    !== undefined && { category:    body.category }),
-      ...(body.icon        !== undefined && { icon:        body.icon }),
-      ...(body.tags        !== undefined && { tags:        body.tags }),
-      ...(body.blocks      !== undefined && { blocks:      body.blocks }),
-      ...(body.docStyle    !== undefined && { docStyle:    body.docStyle }),
-      ...(body.coverStyle  !== undefined && { coverStyle:  body.coverStyle }),
-      ...(body.isPublic    !== undefined && { isPublic:    body.isPublic }),
+      ...(body.name             !== undefined && { name:             body.name }),
+      ...(body.description      !== undefined && { description:      body.description }),
+      ...(body.category         !== undefined && { category:         body.category }),
+      ...(body.icon             !== undefined && { icon:             body.icon }),
+      ...(body.tags             !== undefined && { tags:             body.tags }),
+      ...(body.blocks           !== undefined && { blocks:           body.blocks }),
+      ...(body.docStyle         !== undefined && { docStyle:         body.docStyle }),
+      ...(body.coverStyle       !== undefined && { coverStyle:       body.coverStyle }),
+      ...(body.isPublic         !== undefined && { isPublic:         body.isPublic }),
+      ...(body.previewImageUrl  !== undefined && { previewImageUrl:  body.previewImageUrl }),
     },
   })
   return NextResponse.json({ id: updated.id, isPublic: updated.isPublic, updatedAt: updated.updatedAt.toISOString() })

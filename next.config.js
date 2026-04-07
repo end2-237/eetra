@@ -50,6 +50,9 @@ const nextConfig = {
   },
 
   trailingSlash: false,
+  devIndicators: {
+    buildActivity: true,
+  },
 }
 
 module.exports = nextConfig

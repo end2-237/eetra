@@ -78,48 +78,7 @@ const updateTemplate = async (templateId: string, data: any) => {
   }
 }
 
-const { updateTemplate: updateTemplateCtx } = useCustomTemplates()
-const handleSavePreview = async (templateId: string, imageDataUrl: string) => {
-  try {
-    // 1. Convertir le data URL en blob
-    const res = await fetch(imageDataUrl)
-    const blob = await res.blob()
 
-    // 2. Uploader vers Supabase Storage via API route
-    const formData = new FormData()
-    formData.append('file', blob, `template-preview-${templateId}.jpg`)
-    formData.append('templateId', templateId)
-
-    const uploadRes = await fetch('/api/templates/upload-preview', {
-      method: 'POST',
-      body: formData,
-    })
-
-    if (!uploadRes.ok) {
-      const err = await uploadRes.json()
-      showToast(err.error || 'Erreur upload', 'error')
-      return
-    }
-
-    const { publicUrl } = await uploadRes.json()
-
-    // 3. Mettre à jour le template avec l'URL publique
-    await fetch(`/api/templates/${templateId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ previewImageUrl: publicUrl }),
-    })
-    await updateTemplate(templateId, { previewImageUrl: publicUrl } as any)
-
-    // 4. Mettre à jour l'état local du context
-    // (important pour que l'affichage se mette à jour sans reload)
-    showToast('Aperçu mis à jour', 'ok')
-    //setCoverModalTpl(null)
-  } catch (err) {
-    console.error(err)
-    showToast('Erreur lors de la sauvegarde', 'error')
-  }
-}
 
 interface TplDef {
   id: string; name: string; desc: string; cat: string; subcat?: string;
@@ -433,7 +392,7 @@ const CSS = `
   .tpl-modal-left { width:190px; flex-shrink:0; background:var(--bg2); padding:18px; display:flex; flex-direction:column; align-items:center; gap:12px; }
   .tpl-modal-right { flex:1; padding:20px; overflow-y:auto; min-width:0; }
 
-  /* ── Buttons ─────────────────────────────────────────────────────────────── */
+  /* ── Buttons ─────────────────────────��───────────────────────────────────── */
   .btn-primary { display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:6px; background:var(--accent); color:#fff; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .15s; white-space:nowrap; }
   .btn-primary:hover { opacity:.88; }
   .btn-ghost { display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border-radius:6px; background:transparent; color:var(--text2); border:1px solid var(--border); font-size:12px; font-weight:500; cursor:pointer; transition:all .12s; white-space:nowrap; }
@@ -645,6 +604,48 @@ const [coverModalTpl, setCoverModalTpl] = useState<CustomTemplate | null>(null)
       showToast('Erreur lors de la duplication', 'err')
     } finally {
       setBusy(id + '_dup', false)
+    }
+  }
+
+  const handleSavePreview = async (templateId: string, imageDataUrl: string) => {
+    try {
+      // 1. Convertir le data URL en blob
+      const res = await fetch(imageDataUrl)
+      const blob = await res.blob()
+
+      // 2. Uploader vers Supabase Storage via API route
+      const formData = new FormData()
+      formData.append('file', blob, `template-preview-${templateId}.jpg`)
+      formData.append('templateId', templateId)
+
+      const uploadRes = await fetch('/api/templates/upload-preview', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!uploadRes.ok) {
+        const err = await uploadRes.json()
+        showToast(err.error || 'Erreur upload', 'error')
+        return
+      }
+
+      const { publicUrl } = await uploadRes.json()
+
+      // 3. Mettre à jour le template avec l'URL publique
+      await fetch(`/api/templates/${templateId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ previewImageUrl: publicUrl }),
+      })
+      await updateTemplate(templateId, { previewImageUrl: publicUrl } as any)
+
+      // 4. Mettre à jour l'état local du context
+      // (important pour que l'affichage se mette à jour sans reload)
+      showToast('Aperçu mis à jour', 'ok')
+      //setCoverModalTpl(null)
+    } catch (err) {
+      console.error(err)
+      showToast('Erreur lors de la sauvegarde', 'error')
     }
   }
 

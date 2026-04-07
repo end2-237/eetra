@@ -36,8 +36,11 @@ const lato         = Lato               ({ weight: ['400','700'],      subsets: 
 const dmMono       = DM_Mono            ({ weight: ['400','500'],      subsets: ['latin'], variable: '--font-dm-mono',  display: 'swap' })
 
 export const metadata: Metadata = {
-  title:       'EETRA — Documents Professionnels',
+  title: 'EETRA — Documents Professionnels',
   description: "Plateforme de création de documents professionnels pour l'Afrique de l'Ouest",
+  verification: {
+    google: 'Afiv0dJG3MwcocdR37oR5qkm2XjVoG7Mb6owCAtIz_E',
+  },
 }
 
 export const viewport: Viewport = {

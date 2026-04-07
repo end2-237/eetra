@@ -77,9 +77,48 @@ const updateTemplate = async (templateId: string, data: any) => {
     throw error
   }
 }
+
+const { updateTemplate: updateTemplateCtx } = useCustomTemplates()
 const handleSavePreview = async (templateId: string, imageDataUrl: string) => {
-  await updateTemplate(templateId, { previewImageUrl: imageDataUrl } as any)
-  showToast('Aperçu mis à jour', 'ok')
+  try {
+    // 1. Convertir le data URL en blob
+    const res = await fetch(imageDataUrl)
+    const blob = await res.blob()
+
+    // 2. Uploader vers Supabase Storage via API route
+    const formData = new FormData()
+    formData.append('file', blob, `template-preview-${templateId}.jpg`)
+    formData.append('templateId', templateId)
+
+    const uploadRes = await fetch('/api/templates/upload-preview', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json()
+      showToast(err.error || 'Erreur upload', 'error')
+      return
+    }
+
+    const { publicUrl } = await uploadRes.json()
+
+    // 3. Mettre à jour le template avec l'URL publique
+    await fetch(`/api/templates/${templateId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ previewImageUrl: publicUrl }),
+    })
+    await updateTemplate(templateId, { previewImageUrl: publicUrl } as any)
+
+    // 4. Mettre à jour l'état local du context
+    // (important pour que l'affichage se mette à jour sans reload)
+    showToast('Aperçu mis à jour', 'ok')
+    //setCoverModalTpl(null)
+  } catch (err) {
+    console.error(err)
+    showToast('Erreur lors de la sauvegarde', 'error')
+  }
 }
 
 interface TplDef {

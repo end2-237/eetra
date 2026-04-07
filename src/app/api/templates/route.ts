@@ -19,6 +19,7 @@ export async function GET() {
       category: t.category, icon: t.icon, tags: t.tags,
       blocks: t.blocks, docStyle: t.docStyle, coverStyle: t.coverStyle,
       isPublic: t.isPublic, usageCount: t.usageCount,
+      previewImageUrl: t.previewImageUrl ?? null,   // ← ajouter cette ligne
       createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(),
       author: session.user.name || 'Moi',
     })))

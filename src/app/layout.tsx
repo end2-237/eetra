@@ -19,6 +19,7 @@ import { NextAuthProvider }       from '@/components/providers/NextAuthProvider'
 import { FloatingHelpChat }       from '@/components/ui/FloatingHelpChat'
 import { Toaster }                from '@/components/ui/Sonner'
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             {children}
                             <FloatingHelpChat />
                             <Toaster />
+                            <Analytics />
                           </RealtimeProvider>
                         </TeamProvider>
                       </HistoryProvider>

@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt'
 import { NextRequest, NextResponse } from 'next/server'
 
-const PUBLIC_PATHS = ['/', '/login', '/legal', '/designs']
+const PUBLIC_PATHS = ['/', '/login', '/legal', '/designs', '/sitemap.xml', '/robots.txt']
 const PUBLIC_PREFIXES = ['/verify/', '/view/', '/api/auth/', '/api/ai/']
 
 export async function middleware(req: NextRequest) {
@@ -37,6 +37,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|icon\\.png|.*\\.svg|.*\\.png|.*\\.jpg).*)',
+    '/((?!api|_next/static|_next/image|favicon\\.ico|sitemap\\.xml|robots\\.txt|icon\\.png|.*\\.svg|.*\\.png|.*\\.jpg).*)',
   ],
 }

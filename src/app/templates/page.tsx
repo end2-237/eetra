@@ -533,6 +533,7 @@ export default function TemplatesPage() {
     publishTemplate,
     unpublishTemplate,
     refreshCommunity,
+    updateTemplate,
   } = useCustomTemplates()
   const { toast, showToast } = useToast()
   const { canCreateDocument, checkDocumentLimit, plan, getRemainingDocs } = usePlan()
@@ -609,9 +610,16 @@ const [coverModalTpl, setCoverModalTpl] = useState<CustomTemplate | null>(null)
 
   const handleSavePreview = async (templateId: string, imageDataUrl: string) => {
     try {
-      // 1. Convertir le data URL en blob
-      const res = await fetch(imageDataUrl)
-      const blob = await res.blob()
+      // 1. Convertir data URL en blob (ne pas utiliser fetch sur data URL)
+      const arr = imageDataUrl.split(',')
+      const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+      const bstr = atob(arr[1])
+      const n = bstr.length
+      const u8arr = new Uint8Array(n)
+      for (let i = 0; i < n; i++) {
+        u8arr[i] = bstr.charCodeAt(i)
+      }
+      const blob = new Blob([u8arr], { type: mime })
 
       // 2. Uploader vers Supabase Storage via API route
       const formData = new FormData()
@@ -625,26 +633,29 @@ const [coverModalTpl, setCoverModalTpl] = useState<CustomTemplate | null>(null)
 
       if (!uploadRes.ok) {
         const err = await uploadRes.json()
+        console.error('[upload-preview error]', err)
         showToast(err.error || 'Erreur upload', 'error')
         return
       }
 
       const { publicUrl } = await uploadRes.json()
+      console.log('[v0] Preview URL saved:', publicUrl)
 
-      // 3. Mettre à jour le template avec l'URL publique
-      await fetch(`/api/templates/${templateId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ previewImageUrl: publicUrl }),
-      })
-      await updateTemplate(templateId, { previewImageUrl: publicUrl } as any)
+      // 3. Mettre à jour le context local (qui va appeler l'API automatiquement)
+      await updateTemplate(templateId, { previewImageUrl: publicUrl })
 
-      // 4. Mettre à jour l'état local du context
-      // (important pour que l'affichage se mette à jour sans reload)
+      // 4. Mettre à jour aussi le modal s'il est encore ouvert
+      if (coverModalTpl?.id === templateId) {
+        setCoverModalTpl({
+          ...coverModalTpl,
+          previewImageUrl: publicUrl,
+        } as any)
+      }
+
       showToast('Aperçu mis à jour', 'ok')
-      //setCoverModalTpl(null)
+      setCoverModalTpl(null)
     } catch (err) {
-      console.error(err)
+      console.error('[handleSavePreview error]', err)
       showToast('Erreur lors de la sauvegarde', 'error')
     }
   }

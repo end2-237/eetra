@@ -1,15 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-// Initialise Supabase (utilise tes variables d'environnement Vercel)
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Utilise la clé Service Role pour bypasser les RLS si c'est un backup privé
-);
+// Initialisation avec tes variables exactes du .env
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY; 
+
+// On crée le client Supabase
+const supabase = (supabaseUrl && supabaseKey) 
+  ? createClient(supabaseUrl, supabaseKey) 
+  : null;
 
 export async function POST(request: Request) {
-  // 1. Vérification de la clé API
+  // Vérification si les variables sont chargées (évite le crash au build Vercel)
+  if (!supabase) {
+    return NextResponse.json({ error: 'Configuration Supabase manquante' }, { status: 500 });
+  }
+
+  // 1. Vérification de la clé secrète SNL
   const apiKey = request.headers.get('X-API-KEY');
+  
+  // Note: Assure-toi d'ajouter SNL_CLOUD_SECRET dans Vercel ou ton .env
   if (apiKey !== process.env.SNL_CLOUD_SECRET) {
     return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
   }
@@ -18,22 +28,29 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { data, siteId, timestamp } = body;
 
-    // 2. Stockage dans Supabase
-    // Tu peux stocker l'objet JSON entier dans une colonne de type "jsonb"
+    // 2. Insertion dans la table 'backups'
     const { error } = await supabase
       .from('backups')
       .insert([
         { 
           site_id: siteId, 
           payload: data, 
-          created_at: timestamp 
+          created_at: timestamp || new Date().toISOString()
         }
       ]);
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return NextResponse.json({ 
+      success: true, 
+      message: "Sauvegarde effectuée avec succès" 
+    });
+
+  } catch (err: any) {
+    console.error("Erreur de synchronisation:", err.message);
+    return NextResponse.json({ 
+      error: 'Erreur serveur', 
+      details: err.message 
+    }, { status: 500 });
   }
 }

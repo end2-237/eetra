@@ -149,6 +149,20 @@ model CustomTemplate {
   updatedAt   DateTime @updatedAt
 }
 
+model Backup {
+  id          String   @id @default(cuid())
+  created_at   DateTime @default(now())
+  
+  // Détails du site (Douala, Bafoussam, etc.)
+  site_id      String   // ID du site qui envoie la sync (ex: "MAIN-DLA")
+  
+  // Les données synchronisées
+  // On utilise Json pour stocker tout le contenu de snl_db_v2
+  payload     Json     
+  
+  @@map("backups") // Pour que la table s'appelle "backups" au pluriel dans Supabase
+}
+
 // Team management models
 model Team {
   id        String   @id @default(cuid())

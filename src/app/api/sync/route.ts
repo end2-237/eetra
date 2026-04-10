@@ -54,3 +54,14 @@ export async function POST(request: Request) {
     }, { status: 500 });
   }
 }
+
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, X-API-KEY', // <--- C'EST CA QUI MANQUE
+    },
+  });
+}

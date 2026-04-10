@@ -74,3 +74,39 @@ export async function POST(request: Request) {
     );
   }
 }
+
+// api/sync/route.ts
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const siteId = searchParams.get('siteId');
+  const metaOnly = searchParams.get('meta') === 'true'; // Est-ce qu'on veut juste la date ?
+  const apiKey = request.headers.get('X-API-KEY');
+
+  if (apiKey !== process.env.SNL_CLOUD_SECRET) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders });
+  }
+
+  // On récupère la dernière ligne pour ce siteId
+  const { data, error } = await supabase! 
+    .from('backups')
+    .select('payload, created_at')
+    .eq('site_id', siteId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500, headers: corsHeaders });
+  if (!data) return NextResponse.json({ timestamp: null, data: null }, { headers: corsHeaders });
+
+  // Si l'utilisateur veut juste checker la date (Smart Sync)
+  if (metaOnly) {
+    return NextResponse.json({ timestamp: data.created_at }, { headers: corsHeaders });
+  }
+
+  // Sinon on renvoie tout pour la restauration
+  return NextResponse.json({ 
+    data: data.payload, 
+    timestamp: data.created_at 
+  }, { headers: corsHeaders });
+}

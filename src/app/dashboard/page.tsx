@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import Image from 'next/image'
 import logo from '../../app/icon.png'
 import {
@@ -222,6 +223,10 @@ export default function DashboardPage() {
   ].sort((a, b) => b.time.getTime() - a.time.getTime()).slice(0, 6)
 
   const go = (path: string) => { router.push(path); setSideOpen(false) }
+  const handleLogout = async () => {
+    setSideOpen(false)
+    await signOut({ redirect: true, callbackUrl: '/login' })
+  }
 
   const newDoc = async () => {
     const allowed = await checkDocumentLimit()
@@ -267,7 +272,7 @@ export default function DashboardPage() {
             <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
             <button className="db-nav-btn" onClick={() => go('/settings')}><Settings size={14} color="var(--text4)" /> Paramètres</button>
             <button className="db-nav-btn" onClick={() => go('/onboarding')}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
-            <button className="db-nav-btn" onClick={() => go('/')}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
+            <button className="db-nav-btn" onClick={handleLogout}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
           </nav>
 
           <div className="db-plan-box">
@@ -315,7 +320,7 @@ export default function DashboardPage() {
             <div className="db-nav-label" style={{ marginTop: 4 }}>Compte</div>
             <button className="db-nav-btn" onClick={() => { go('/settings'); setSideOpen(false) }}><Settings size={14} color="var(--text4)" /> Paramètres</button>
             <button className="db-nav-btn" onClick={() => { go('/onboarding'); setSideOpen(false) }}><ExternalLink size={14} color="var(--text4)" /> Profil entreprise</button>
-            <button className="db-nav-btn" onClick={() => { go('/'); setSideOpen(false) }}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
+            <button className="db-nav-btn" onClick={handleLogout}><LogOut size={14} color="var(--text4)" /> Déconnexion</button>
           </nav>
         </div>
 

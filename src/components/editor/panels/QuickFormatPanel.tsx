@@ -12,7 +12,7 @@ export function QuickFormatPanel() {
   if (allBlocks.length === 0) return null
 
   return (
-    <div style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+    <div data-tour="quick-format" style={{ borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
       <button
         onClick={() => setOpen(o => !o)}
         style={{

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { ArrowRight, Zap, Shield, FileText, Users, Download, BarChart3, ChevronDown, Check, X, Star, Globe, Lock, Sparkles, Play, TrendingUp, Clock, Award, Menu } from 'lucide-react'
 import logo from './icon.png'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { StudentSection } from '@/components/landing/StudentSection'
 
 // ─── Scroll Observer Hook ─────────────────────────────────────────────────────
 function useScrollObserver() {
@@ -878,6 +879,7 @@ export default function EetraLanding() {
       <Navbar />
       <Hero />
       <StatsBar />
+      <StudentSection />
       <Features />
       <MarqueeBanner />
       <DesignsShowcase />

@@ -20,6 +20,10 @@ import { MobileEditor }       from './MobileEditor'
 import { TEMPLATES }          from '@/lib/templates'
 import { generateId }         from '@/lib/utils'
 import type { DocBlock }      from '@/types'
+import { useStudentConfig } from '@/hooks/useStudentConfig'
+import { GuidedTour } from '@/components/onboarding/GuidedTour'
+
+
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false)
@@ -39,6 +43,7 @@ function useIsMobile() {
 }
 
 export function EditorLayout() {
+  useStudentConfig()
   const router = useRouter()
   const {
     pages, addPage, addBlock, setSelectedTemplate, docStyle, docId,
@@ -196,6 +201,7 @@ export function EditorLayout() {
       <PageLayoutProvider>
         <PlanUpgradeModal />
         <MobileEditor onExport={() => setShowExport(true)} />
+        <GuidedTour />
         {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       </PageLayoutProvider>
     )
@@ -223,6 +229,7 @@ export function EditorLayout() {
         </div>
 
         <LiveCursors containerRef={canvasRef} />
+        <GuidedTour />
 
         {showExport && <ExportModal onClose={() => setShowExport(false)} />}
       </div>

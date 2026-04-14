@@ -6,7 +6,7 @@ import Image from 'next/image'
 import logo from '../../app/icon.png'
 import {
   Layers, LayoutGrid, Layout, BarChart2, MessageSquare,
-  BookOpen, Download, Settings, BookMarked, Users, Menu, X,
+  BookOpen, Download, Settings, BookMarked, Users, Menu, X, CircleHelp,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile }  from '@/contexts/ProfileContext'
@@ -82,6 +82,12 @@ export function Sidebar({ onExport }: Props) {
   }
 
   const closeSidebar = () => setSidebarOpen(false)
+  const openGuide = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('eetra-open-guide'))
+    }
+    closeSidebar()
+  }
 
   return (
     <>
@@ -112,7 +118,7 @@ export function Sidebar({ onExport }: Props) {
         </button>
 
         {/* Tab nav */}
-        <div className="sb-nav" style={{ display:'flex', flexDirection:'column', gap:2, flex:1, width:'100%', padding:'0 8px' }}>
+        <div data-tour="sidebar-nav" className="sb-nav" style={{ display:'flex', flexDirection:'column', gap:2, flex:1, width:'100%', padding:'0 8px' }}>
           {TABS.map(({ id, Icon, tip }) => {
             const isActive = activeTab === id
             const isOZ = id === 'orientation'
@@ -121,6 +127,7 @@ export function Sidebar({ onExport }: Props) {
             return (
               <button
                 key={id}
+                data-tour={id === 'templates' ? 'templates-nav' : undefined}
                 className={`sb-btn${isActive && !isOZ ? ' active' : ''}${ozActive ? ' active-oz' : ''}`}
                 title={tip}
                 onClick={() => { setActiveTab(id as any); closeSidebar() }}
@@ -159,11 +166,20 @@ export function Sidebar({ onExport }: Props) {
           </button>
 
           <button
+            data-tour="export-btn"
             title="Exporter en PDF"
             onClick={onExport}
             style={{ width:36, height:36, borderRadius:7, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--accent)', color:'#fff', flexShrink:0 }}
           >
             <Download size={15}/>
+          </button>
+
+          <button
+            className="sb-btn"
+            title="Guide"
+            onClick={openGuide}
+          >
+            <CircleHelp size={15}/>
           </button>
 
           <div className="sb-divider sb-top"/>

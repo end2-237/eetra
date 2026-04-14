@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Layers, LayoutGrid, BarChart2, MessageSquare, FileText,
   Download, X, Plus, Layout, BookMarked, ChevronLeft,
-  ZoomIn, ZoomOut, Maximize2,
+  ZoomIn, ZoomOut, CircleHelp,
 } from "lucide-react";
 import { useDocument } from "@/contexts/DocumentContext";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -87,12 +87,17 @@ export function MobileEditor({ onExport }: Props) {
   }, [activeTab]);
 
   const showPanel = activeTab !== "view";
+  const openGuide = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("eetra-open-guide"));
+    }
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
 
       {/* ─── Top bar ─────────────────────────────────────────────────────── */}
-      <div style={{
+      <div data-tour="mobile-toolbar" style={{
         height: 48, flexShrink: 0,
         background: "var(--surface)", borderBottom: "1px solid var(--border)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -128,7 +133,15 @@ export function MobileEditor({ onExport }: Props) {
           </button>
         </div>
 
-        <button onClick={onExport}
+        <button
+          onClick={openGuide}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, background: "var(--bg2)", color: "var(--text4)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0 }}
+          title="Guide"
+        >
+          <CircleHelp size={14} />
+        </button>
+
+        <button data-tour="mobile-export-btn" onClick={onExport}
           style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
           <Download size={13} /> PDF
         </button>
@@ -138,7 +151,7 @@ export function MobileEditor({ onExport }: Props) {
       <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
 
         {/* Document scroll view */}
-        <div style={{
+        <div data-tour="mobile-canvas" style={{
           position: "absolute", inset: 0,
           overflowY: "auto", overflowX: "auto",
           background: "var(--bg3)",
@@ -189,7 +202,7 @@ export function MobileEditor({ onExport }: Props) {
           ))}
 
           {/* Add page button */}
-          <button onClick={addPage}
+          <button data-tour="mobile-pages-panel" onClick={addPage}
             style={{
               display: "flex", alignItems: "center", gap: 8, padding: "10px 28px",
               borderRadius: 12, border: "2px dashed var(--border2)",
@@ -232,6 +245,7 @@ export function MobileEditor({ onExport }: Props) {
       {/* ─── Bottom tab bar ──────────────────────────────────────────────── */}
       <div style={{ flexShrink: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
         <div
+          data-tour="mobile-tabbar"
           ref={tabBarRef}
           style={{
             display: "flex", overflowX: "auto", overflowY: "hidden",
@@ -243,7 +257,7 @@ export function MobileEditor({ onExport }: Props) {
           {TABS.map(({ id, Icon, label }) => {
             const isActive = activeTab === id;
             return (
-              <button key={id} data-tab={id} onClick={() => handleTabChange(id)}
+              <button key={id} data-tab={id} data-tour={id === "templates" ? "mobile-templates-nav" : undefined} onClick={() => handleTabChange(id)}
                 style={{
                   flexShrink: 0, display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 3,

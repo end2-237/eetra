@@ -39,7 +39,9 @@ export async function GET() {
       { headers: { 'Cache-Control': 'no-store' } }
     )
   } catch (err) {
-    console.error('[GET /api/templates/community]', err)
+    const message = err instanceof Error ? err.message : 'Unknown database error'
+    // Database can be temporarily unreachable in local/dev; return an empty list gracefully.
+    console.warn('[GET /api/templates/community] fallback to empty list:', message)
     return NextResponse.json([], { status: 200 })
   }
 }

@@ -128,6 +128,8 @@ function LoginContent() {
   const [suEmail,   setSuEmail]   = useState('')
   const [company,   setCompany]   = useState('')
   const [suPw,      setSuPw]      = useState('')
+  const redirectParam = params.get('redirect')
+  const safeRedirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : null
 
   useEffect(() => {
     if (params.get('demo') === '1') handleDemo()
@@ -165,13 +167,13 @@ function LoginContent() {
       const result = await signIn('credentials', { email: suEmail, password: suPw, redirect: false })
       if (result?.error) { showToast('Erreur de connexion', 'err'); setLoading(false); return }
       showToast('Compte créé !', 'ok')
-      router.push('/onboarding')
+      router.push(safeRedirect || '/onboarding')
     } else {
       // Connexion
       const result = await signIn('credentials', { email, password, redirect: false })
       if (result?.error) { showToast('Email ou mot de passe incorrect', 'err'); setLoading(false); return }
       showToast('Connexion réussie', 'ok')
-      router.push('/dashboard')
+      router.push(safeRedirect || '/dashboard')
     }
     setLoading(false)
   }

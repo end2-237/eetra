@@ -257,7 +257,7 @@ export function DocumentViewer({ onExport }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
       {/* ── Toolbar ── */}
-      <div style={{
+      <div data-tour="document-toolbar" style={{
         height: 48, flexShrink: 0,
         borderBottom: '1px solid var(--border)',
         background: 'var(--surface)',
@@ -341,6 +341,7 @@ export function DocumentViewer({ onExport }: Props) {
 
       {/* ── Canvas ── */}
       <div
+        id="canvas"
         ref={viewerRef}
         style={{
           flex: 1, overflowY: 'auto', overflowX: 'auto',
@@ -351,7 +352,7 @@ export function DocumentViewer({ onExport }: Props) {
         {buildPageList()}
 
         {/* Add page button */}
-        <button onClick={addPage}
+        <button data-tour="pages-panel" onClick={addPage}
           style={{
             display: 'flex', alignItems: 'center', gap: 8, padding: '10px 24px',
             borderRadius: 12, border: '2px dashed var(--border2)',
@@ -367,7 +368,7 @@ export function DocumentViewer({ onExport }: Props) {
 
       {/* ── Bottom page navigation ── */}
       {pages.length > 1 && (
-        <div style={{
+        <div data-tour="pages-panel" style={{
           height: 40, flexShrink: 0,
           borderTop: '1px solid var(--border)', background: 'var(--surface)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,

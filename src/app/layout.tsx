@@ -18,6 +18,7 @@ import { RealtimeProvider }       from '@/contexts/RealtimeContext'
 import { NextAuthProvider }       from '@/components/providers/NextAuthProvider'
 import { FloatingHelpChat }       from '@/components/ui/FloatingHelpChat'
 import { Toaster }                from '@/components/ui/Sonner'
+import { NetworkStatusNotifier }  from '@/components/ui/NetworkStatusNotifier'
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next"
 
@@ -72,6 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                           <RealtimeProvider>
                             {children}
                             <FloatingHelpChat />
+                            <NetworkStatusNotifier />
                             <Toaster />
                             <Analytics />
                           </RealtimeProvider>

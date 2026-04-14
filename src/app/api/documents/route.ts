@@ -45,11 +45,24 @@ export async function POST(req: NextRequest) {
     const monthlyLimit = PLAN_LIMITS[planId] ?? 5
 
     const body = await req.json()
+    const requestedId = typeof body?.id === 'string' ? body.id : undefined
+    const { id: _ignoredId, userId: _ignoredUserId, ...safeBody } = body ?? {}
 
     // If plan is unlimited, just create the document
     if (monthlyLimit === Infinity) {
+      // If client retries with same id, avoid crashing on unique constraint.
+      if (requestedId) {
+        const existingById = await prisma.document.findUnique({ where: { id: requestedId } })
+        if (existingById && existingById.userId === session.user.id) {
+          const updated = await prisma.document.update({
+            where: { id: requestedId },
+            data: { ...safeBody, userId: session.user.id },
+          })
+          return NextResponse.json(updated, { status: 200 })
+        }
+      }
       const doc = await prisma.document.create({
-        data: { ...body, userId: session.user.id },
+        data: requestedId ? { id: requestedId, ...safeBody, userId: session.user.id } : { ...safeBody, userId: session.user.id },
       })
       return NextResponse.json(doc, { status: 201 })
     }
@@ -76,8 +89,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (requestedId) {
+      const existingById = await prisma.document.findUnique({ where: { id: requestedId } })
+      if (existingById && existingById.userId === session.user.id) {
+        const updated = await prisma.document.update({
+          where: { id: requestedId },
+          data: { ...safeBody, userId: session.user.id },
+        })
+        return NextResponse.json(updated, { status: 200 })
+      }
+    }
+
     const doc = await prisma.document.create({
-      data: { ...body, userId: session.user.id },
+      data: requestedId ? { id: requestedId, ...safeBody, userId: session.user.id } : { ...safeBody, userId: session.user.id },
     })
     return NextResponse.json(doc, { status: 201 })
   } catch (error) {

@@ -170,7 +170,7 @@ export function EditorPanel() {
   if (activeTab === 'orientation') return (<><OrientationZonePanel showToast={showToast} /><Toast {...toast} /></>)
 
   return (
-    <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+    <div data-tour="editor-panel" style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <DocumentPropertiesPanel />
       <QuickFormatPanel />
       <div style={{ flexShrink: 0, padding: '10px 14px 6px' }}>
@@ -178,7 +178,7 @@ export function EditorPanel() {
           Bibliothèque de Blocs
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto' }}>
+      <div data-tour="block-library" style={{ flex: 1, overflowY: 'auto' }}>
         <BlockLibrary />
       </div>
       <div style={{ borderTop: '1px solid var(--border)', flexShrink: 0 }}>

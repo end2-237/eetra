@@ -36,6 +36,13 @@ interface StudentConfig {
   template?: string
 }
 
+function parseDesiredPages(raw: string | undefined): number {
+  if (!raw) return 20
+  const numeric = Number.parseInt(raw.replace(/[^\d]/g, ''), 10)
+  if (Number.isNaN(numeric)) return 20
+  return Math.min(60, Math.max(8, numeric))
+}
+
 /** Map template name → CoverLayout */
 const TEMPLATE_MAP: Record<string, string> = {
   classic: 'classic',
@@ -94,38 +101,58 @@ function pickChapterTitles(type: string | undefined, chapterCount: number): stri
 
 function buildStarterPages(config: StudentConfig): DocPage[] {
   const chapterCount = Math.min(7, Math.max(3, Number(config.chapitres || 4)))
-  const targetPages = Math.min(60, Math.max(8, Number(config.pages || 20)))
+  const targetPages = parseDesiredPages(config.pages)
   const chapterTitles = pickChapterTitles(config.type, chapterCount)
 
-  const introBlocks: DocBlock[] = [
-    {
-      id: generateId(),
-      type: 'h2',
-      content: 'Introduction générale',
-    },
-    {
-      id: generateId(),
-      type: 'text',
-      content: `Ce document est préconfiguré pour ${targetPages} pages environ avec ${chapterCount} chapitres principaux.`,
-    },
-  ]
+  const contentTargetPages = Math.max(6, targetPages - 1)
+  const chapterTargetPages = Math.max(chapterCount, contentTargetPages - 2) // keep 1 intro + 1 conclusion
+  const basePerChapter = Math.floor(chapterTargetPages / chapterCount)
+  const remainder = chapterTargetPages % chapterCount
 
-  const chapterPages: DocPage[] = chapterTitles.map((title, idx) => ({
+  const introPage: DocPage = {
     id: generateId(),
     blocks: [
-      { id: generateId(), type: 'h1', content: `Chapitre ${idx + 1} — ${title}` },
+      { id: generateId(), type: 'h2', content: 'Introduction générale' },
       {
         id: generateId(),
         type: 'text',
-        content:
-          idx === 0
-            ? 'Présente ici le contexte, les objectifs et le cadre du travail.'
-            : idx === chapterTitles.length - 1
-            ? 'Synthétise les principaux enseignements avant la conclusion.'
-            : 'Développe cette section avec des sous-parties, analyses et résultats.',
+        content: `Ce rapport est préparé pour environ ${targetPages} pages, avec ${chapterCount} chapitres principaux.`,
+      },
+      {
+        id: generateId(),
+        type: 'text',
+        content: 'Présente ici le contexte, la problématique, les objectifs, la méthode et le plan du document.',
       },
     ],
-  }))
+  }
+
+  const chapterPages: DocPage[] = []
+  chapterTitles.forEach((title, idx) => {
+    const pagesForThisChapter = basePerChapter + (idx < remainder ? 1 : 0)
+    for (let pageIdx = 0; pageIdx < pagesForThisChapter; pageIdx++) {
+      const sectionNo = pageIdx + 1
+      const isChapterOpening = pageIdx === 0
+      chapterPages.push({
+        id: generateId(),
+        blocks: [
+          ...(isChapterOpening ? [{ id: generateId(), type: 'h1' as const, content: `Chapitre ${idx + 1} — ${title}` }] : []),
+          { id: generateId(), type: 'h2', content: `Section ${idx + 1}.${sectionNo}` },
+          {
+            id: generateId(),
+            type: 'text',
+            content: isChapterOpening
+              ? 'Développe cette partie en présentant le cadre, les objectifs opérationnels et les points-clés à traiter.'
+              : 'Complète cette section avec des analyses détaillées, des observations, des exemples chiffrés et une discussion critique.',
+          },
+          {
+            id: generateId(),
+            type: 'text',
+            content: 'Ajoute ici des éléments de preuve: méthodologie, résultats, interprétations, limites et recommandations.',
+          },
+        ],
+      })
+    }
+  })
 
   const conclusionPage: DocPage = {
     id: generateId(),
@@ -139,7 +166,7 @@ function buildStarterPages(config: StudentConfig): DocPage[] {
     ],
   }
 
-  return [{ id: generateId(), blocks: introBlocks }, ...chapterPages, conclusionPage]
+  return [introPage, ...chapterPages, conclusionPage]
 }
 
 export function useStudentConfig() {

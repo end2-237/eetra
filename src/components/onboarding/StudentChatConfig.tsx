@@ -612,6 +612,7 @@ const STEPS: Step[] = [
       { label: 'Court (8 à 12 pages)', value: '10' },
       { label: 'Standard (15 à 25 pages)', value: '20' },
       { label: 'Complet (30 à 40 pages)', value: '35' },
+      { label: 'Très complet (40 à 60 pages)', value: '45' },
     ],
     progress: 84,
     label: 'Étape 6 sur 9',

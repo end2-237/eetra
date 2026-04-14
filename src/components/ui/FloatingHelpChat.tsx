@@ -16,6 +16,10 @@ const SUGGESTED_QUESTIONS = [
 export function FloatingHelpChat() {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
+  const [fabPos, setFabPos] = useState<{ x: number; y: number } | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const dragStartRef = useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null)
+  const movedRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { messages, sendMessage, status } = useChat({
@@ -23,9 +27,6 @@ export function FloatingHelpChat() {
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
-
-  console.log('[v0] Chat status:', status)
-  console.log('[v0] Messages:', messages.length, messages)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -49,16 +50,80 @@ export function FloatingHelpChat() {
     sendMessage({ text: question })
   }
 
+  useEffect(() => {
+    const setDefaultPosition = () => {
+      const margin = 24
+      const size = 56
+      const x = Math.max(12, window.innerWidth - size - margin)
+      const y = Math.max(12, window.innerHeight - size - margin)
+      setFabPos((prev) => prev ?? { x, y })
+    }
+    setDefaultPosition()
+    window.addEventListener('resize', setDefaultPosition, { passive: true })
+    return () => window.removeEventListener('resize', setDefaultPosition)
+  }, [])
+
+  const clampFabPosition = (x: number, y: number) => {
+    const size = 56
+    const min = 8
+    const maxX = Math.max(min, window.innerWidth - size - min)
+    const maxY = Math.max(min, window.innerHeight - size - min)
+    return {
+      x: Math.min(Math.max(x, min), maxX),
+      y: Math.min(Math.max(y, min), maxY),
+    }
+  }
+
+  const onFabPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!fabPos) return
+    movedRef.current = false
+    setDragging(true)
+    dragStartRef.current = {
+      pointerX: e.clientX,
+      pointerY: e.clientY,
+      x: fabPos.x,
+      y: fabPos.y,
+    }
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  const onFabPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (!dragging || !dragStartRef.current) return
+    const dx = e.clientX - dragStartRef.current.pointerX
+    const dy = e.clientY - dragStartRef.current.pointerY
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) movedRef.current = true
+    const next = clampFabPosition(dragStartRef.current.x + dx, dragStartRef.current.y + dy)
+    setFabPos(next)
+  }
+
+  const onFabPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (dragging) {
+      setDragging(false)
+      dragStartRef.current = null
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      } catch {}
+    }
+  }
+
+  const onFabClick = () => {
+    if (movedRef.current) return
+    setIsOpen(true)
+  }
+
   return (
     <>
       {/* Floating Button */}
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={onFabClick}
+        onPointerDown={onFabPointerDown}
+        onPointerMove={onFabPointerMove}
+        onPointerUp={onFabPointerUp}
         className="floating-help-btn"
         style={{
           position: 'fixed',
-          bottom: 24,
-          right: 24,
+          top: fabPos?.y ?? undefined,
+          left: fabPos?.x ?? undefined,
           width: 56,
           height: 56,
           borderRadius: '50%',
@@ -69,7 +134,9 @@ export function FloatingHelpChat() {
           display: isOpen ? 'none' : 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          transition: dragging ? 'none' : 'transform 0.2s, box-shadow 0.2s',
+          touchAction: 'none',
+          userSelect: 'none',
           zIndex: 9998,
         }}
         onMouseEnter={(e) => {

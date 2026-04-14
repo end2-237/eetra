@@ -251,7 +251,10 @@ export function MobileEditor({ onExport }: Props) {
             display: "flex", overflowX: "auto", overflowY: "hidden",
             scrollbarWidth: "none", msOverflowStyle: "none",
             WebkitOverflowScrolling: "touch",
-            padding: "5px 6px", gap: 4, height: 58, alignItems: "center",
+            touchAction: "pan-x",
+            scrollBehavior: "smooth",
+            padding: "5px 8px calc(5px + env(safe-area-inset-bottom, 0)) 8px",
+            gap: 4, height: 58, alignItems: "center",
           } as React.CSSProperties}
         >
           {TABS.map(({ id, Icon, label }) => {
@@ -261,12 +264,12 @@ export function MobileEditor({ onExport }: Props) {
                 style={{
                   flexShrink: 0, display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 3,
-                  padding: "4px 10px", height: 46,
+                  padding: "4px 8px", height: 46,
                   background: isActive ? "var(--accentS)" : "transparent",
                   border: isActive ? "1px solid rgba(27,79,216,.25)" : "1px solid transparent",
                   borderRadius: 10, cursor: "pointer",
                   color: isActive ? "var(--accent)" : "var(--text4)",
-                  minWidth: 52, transition: "all .12s",
+                  minWidth: 46, transition: "all .12s",
                 }}
               >
                 <Icon size={17} />

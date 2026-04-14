@@ -30,7 +30,8 @@ const CSS = `
   @media (max-width:1023px) {
     .sidebar { position:fixed; bottom:0; left:0; right:0; width:100%; height:56px; flex-direction:row; padding:0 8px; border-right:none; border-top:1px solid var(--border); border-left:none; align-items:center; z-index:40; }
     .sb-top { display:none !important; }
-    .sb-nav { flex:1; display:flex !important; gap:2; padding:0 4px; flex-direction:row !important; overflow-x:auto; overflow-y:hidden; }
+    .sb-nav { flex:1; min-width:0; display:flex !important; gap:2; padding:0 4px; flex-direction:row !important; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; scrollbar-width:none; }
+    .sb-nav::-webkit-scrollbar { display:none; }
     .sb-bottom { display:flex !important; gap:2; flex-direction:row !important; }
     .sb-btn { width:32px !important; height:32px !important; font-size:12px; flex-shrink:0; }
     .sb-divider { width:1px !important; height:20px !important; margin:0 4px !important; }

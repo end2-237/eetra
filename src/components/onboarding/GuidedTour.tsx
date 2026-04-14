@@ -77,6 +77,17 @@ export function GuidedTour() {
   }, [session?.user?.id])
 
   const computeTooltipPosition = useCallback((rect: DOMRect | null, position: TourStep['position']) => {
+    if (window.innerWidth < 1024) {
+      return {
+        position: 'fixed' as const,
+        left: 10,
+        right: 10,
+        bottom: `calc(10px + env(safe-area-inset-bottom, 0px))`,
+        width: 'auto',
+        maxWidth: 'none',
+      }
+    }
+
     const margin = 16
     const maxWidth = Math.min(360, window.innerWidth - margin * 2)
     const tooltipW = maxWidth
@@ -231,6 +242,15 @@ export function GuidedTour() {
 
   if (!isVisible) return null
 
+  const mobileTooltipStyles: React.CSSProperties = isMobile
+    ? {
+        maxHeight: '58dvh',
+        overflowY: 'auto',
+        borderRadius: 12,
+        padding: 14,
+      }
+    : {}
+
   return (
     <>
       <div style={{ position: 'fixed', inset: 0, zIndex: 9990, pointerEvents: 'none' }}>
@@ -261,6 +281,7 @@ export function GuidedTour() {
           boxShadow: '0 18px 52px rgba(0,0,0,.32)',
           pointerEvents: 'all',
           animation: 'fadeUp .2s ease both',
+          ...mobileTooltipStyles,
         }}
       >
         <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
@@ -297,19 +318,19 @@ export function GuidedTour() {
           </div>
         )}
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', gap: 8, flexDirection: isMobile ? 'column' : 'row' }}>
           <button onClick={closeTour} style={{ fontSize: 11, color: 'var(--text4)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 0' }}>
             Fermer le guide
           </button>
 
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-start' }}>
             {currentStep > 0 && (
-              <button onClick={prevStep} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text3)', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
+              <button onClick={prevStep} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text3)', cursor: 'pointer', fontSize: 12, fontWeight: 600, flex: isMobile ? 1 : undefined, justifyContent: 'center' }}>
                 <ChevronLeft size={13} />
                 Precedent
               </button>
             )}
-            <button onClick={nextStep} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+            <button onClick={nextStep} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12, fontWeight: 700, flex: isMobile ? 1 : undefined, justifyContent: 'center' }}>
               {currentStep < steps.length - 1 ? (
                 <>
                   Suivant <ChevronRight size={13} />

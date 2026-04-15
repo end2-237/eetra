@@ -107,6 +107,35 @@ body.pdf-exporting .block-drag-handle { display: none !important; }
 .sr-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.8s cubic-bezier(.23,1,.32,1), transform 0.8s cubic-bezier(.23,1,.32,1); }
 .sr-scale.visible { opacity: 1; transform: scale(1); }
 
+/*
+ * Titre hero accueil — tailles figées ici (pas via Tailwind) pour éviter les conflits
+ * et les rendus « trop petits » sur mobile. max-width 767px = téléphones / petites tablettes.
+ */
+.home-hero-title {
+  font-size: clamp(6.25rem, 34vw, 11rem);
+  line-height: 0.84;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+@media (min-width: 768px) {
+  .home-hero-title {
+    font-size: clamp(2.25rem, 5vw, 5rem);
+    line-height: 0.95;
+    letter-spacing: -0.05em;
+  }
+}
+
+.home-hero-title .home-hero-cursor {
+  width: 0.28em;
+  min-width: 5px;
+}
+@media (min-width: 768px) {
+  .home-hero-title .home-hero-cursor {
+    width: 0.1em;
+    min-width: 3px;
+  }
+}
+
 /* Glassmorphism utilities */
 .glass {
   background: var(--glass-bg);
@@ -134,6 +163,16 @@ body.pdf-exporting .block-drag-handle { display: none !important; }
 }
 
 /* Gradient text */
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
 .gradient-text {
   background: linear-gradient(135deg, var(--accent) 0%, var(--electric) 50%, #EC4899 100%);
   background-size: 200% 200%;

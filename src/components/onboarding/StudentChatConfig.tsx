@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { ArrowRight, ArrowLeft, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useProfile } from '@/contexts/ProfileContext'
+import { buildStudentCoverPreviewDataUri } from '@/lib/studentCoverPreview'
 
 type FlowPhase = 'welcome' | 'step' | 'done'
 type StudentData = Record<string, string>
@@ -417,6 +419,29 @@ const css = `
     transform: none;
   }
 
+  .student-chat-config .doc-cover-preview {
+    width: 100%;
+    max-width: 440px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: linear-gradient(155deg, #e4eaf3 0%, #f4f7fb 55%, #eef2f7 100%);
+    border: 1px solid var(--border);
+    box-shadow:
+      0 4px 6px -1px rgba(15, 23, 42, 0.07),
+      0 22px 44px -14px rgba(15, 23, 42, 0.2);
+    padding: 14px 12px 16px;
+  }
+  .student-chat-config .doc-cover-preview img {
+    width: 100%;
+    display: block;
+    aspect-ratio: 210 / 297;
+    object-fit: contain;
+    object-position: center top;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04), 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+
   @keyframes studentChatSpin {
     to { transform: rotate(360deg); }
   }
@@ -529,6 +554,190 @@ const css = `
     justify-content: center;
     cursor: not-allowed;
     opacity: 0.4;
+  }
+
+  /* Mobile nav (replaces sidebar) — hidden on desktop */
+  .student-chat-config .mobile-nav-bar {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .student-chat-config .sidebar {
+      display: none !important;
+    }
+
+    .student-chat-config .mobile-nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 52px;
+      padding: 8px 12px;
+      padding-left: max(12px, env(safe-area-inset-left, 0px));
+      padding-right: max(12px, env(safe-area-inset-right, 0px));
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .student-chat-config .mobile-back {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text2);
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .student-chat-config .mobile-back:active:not(:disabled) {
+      background: var(--bg2);
+    }
+    .student-chat-config .mobile-back:disabled {
+      opacity: 0.28;
+      cursor: not-allowed;
+    }
+
+    .student-chat-config .mobile-step-meta {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .student-chat-config .mobile-step-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .student-chat-config .mobile-progress-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.25;
+    }
+
+    .student-chat-config .mobile-dots {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: flex-end;
+      align-items: center;
+      align-content: center;
+      flex-shrink: 0;
+      max-width: 112px;
+      min-height: 0;
+    }
+    /* Bouton fixe: évite la zone tactile 44px imposée aux div[role=button] */
+    .student-chat-config .mobile-dot-btn {
+      flex: 0 0 auto;
+      width: 14px;
+      height: 14px;
+      min-width: 14px;
+      min-height: 14px;
+      max-width: 14px;
+      max-height: 14px;
+      padding: 0;
+      margin: 0;
+      border: none;
+      background: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: default;
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    .student-chat-config .mobile-dot-btn:not(:disabled) {
+      cursor: pointer;
+    }
+    .student-chat-config .mobile-dot-btn:disabled {
+      cursor: default;
+      opacity: 1;
+    }
+    .student-chat-config .mobile-dot-inner {
+      width: 7px;
+      height: 7px;
+      min-width: 7px;
+      min-height: 7px;
+      border-radius: 50%;
+      background: var(--border2);
+      transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+      pointer-events: none;
+      display: block;
+    }
+    .student-chat-config .mobile-dot-btn.done .mobile-dot-inner {
+      background: var(--accent);
+    }
+    .student-chat-config .mobile-dot-btn.active .mobile-dot-inner {
+      background: var(--accent);
+      transform: scale(1.25);
+      box-shadow: 0 0 0 2px var(--accentS2);
+    }
+
+    .student-chat-config .tabbar {
+      height: auto;
+      min-height: 40px;
+      padding: 6px 12px;
+      gap: 8px;
+    }
+    .student-chat-config .tab:not(.active) {
+      display: none;
+    }
+    .student-chat-config .tab.active {
+      width: 100%;
+      justify-content: center;
+      border: none;
+      background: transparent;
+      font-size: 12px;
+    }
+
+    .student-chat-config .content {
+      padding: 16px 14px 20px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+
+    .student-chat-config .step-card,
+    .student-chat-config .welcome-card,
+    .student-chat-config .done-card {
+      min-height: unset;
+      max-width: 100%;
+    }
+
+    .student-chat-config .step-question {
+      font-size: clamp(20px, 5.2vw, 28px);
+      margin-bottom: 20px;
+    }
+
+    .student-chat-config .choices {
+      max-height: min(50vh, 380px);
+    }
+
+    .student-chat-config .choice-btn:hover {
+      transform: none;
+    }
+
+    .student-chat-config .submit-btn {
+      align-self: stretch;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .student-chat-config .bottom-bar {
+      padding: 10px 12px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .student-chat-config .done-title {
+      font-size: clamp(22px, 6vw, 28px);
+    }
   }
 `
 
@@ -666,7 +875,8 @@ function getVisibleSteps(data: StudentData) {
 
 export default function StudentChatConfig() {
   const router = useRouter()
-  const { status } = useSession()
+  const { status, data: session } = useSession()
+  const { profile } = useProfile()
   const [mounted, setMounted] = useState(false)
   const [phase, setPhase] = useState<FlowPhase>('welcome')
   const [stepIdx, setStepIdx] = useState(0)
@@ -748,33 +958,17 @@ export default function StudentChatConfig() {
 
   const canGoBack = phase === 'step' || phase === 'done'
 
-  const docPreviewSvg = encodeURIComponent(`
-    <svg xmlns='http://www.w3.org/2000/svg' width='900' height='1280' viewBox='0 0 900 1280'>
-      <defs>
-        <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-          <stop offset='0%' stop-color='${data.couleur || '#6B47ED'}' stop-opacity='0.95'/>
-          <stop offset='100%' stop-color='${data.couleur || '#6B47ED'}' stop-opacity='0.7'/>
-        </linearGradient>
-      </defs>
-      <rect width='900' height='1280' fill='#fff'/>
-      <rect x='0' y='0' width='900' height='320' fill='url(#g)'/>
-      <text x='70' y='130' fill='white' font-size='34' font-family='Arial, sans-serif' font-weight='700'>${(data.type || 'Rapport académique').toUpperCase()}</text>
-      <text x='70' y='190' fill='white' font-size='56' font-family='Arial, sans-serif' font-weight='700'>${(data.titre || 'Titre du rapport').replace(/&/g, 'et')}</text>
-      <text x='70' y='246' fill='rgba(255,255,255,.92)' font-size='26' font-family='Arial, sans-serif'>${data.entreprise || 'Entreprise / Université'}</text>
-      <rect x='70' y='390' width='760' height='2' fill='#ECECEC'/>
-      <text x='70' y='470' fill='#334155' font-size='30' font-family='Arial, sans-serif' font-weight='700'>Plan du document</text>
-      <text x='70' y='530' fill='#475569' font-size='23' font-family='Arial, sans-serif'>1. Introduction</text>
-      <text x='70' y='580' fill='#475569' font-size='23' font-family='Arial, sans-serif'>2. Contexte et objectifs</text>
-      <text x='70' y='630' fill='#475569' font-size='23' font-family='Arial, sans-serif'>3. Méthodologie</text>
-      <text x='70' y='680' fill='#475569' font-size='23' font-family='Arial, sans-serif'>4. Résultats / analyse</text>
-      <text x='70' y='730' fill='#475569' font-size='23' font-family='Arial, sans-serif'>5. Conclusion et recommandations</text>
-      <text x='70' y='860' fill='#0F172A' font-size='22' font-family='Arial, sans-serif'>Volume prévu : ${data.pages || '20'} pages</text>
-      <text x='70' y='900' fill='#0F172A' font-size='22' font-family='Arial, sans-serif'>Chapitres : ${data.chapitres || '4'} principaux</text>
-      <rect x='70' y='960' rx='12' ry='12' width='360' height='74' fill='rgba(15,23,42,.05)'/>
-      <text x='92' y='1008' fill='#0F172A' font-size='21' font-family='Arial, sans-serif'>Template: ${(data.template || 'classic')}</text>
-    </svg>
-  `)
-  const docPreviewSrc = `data:image/svg+xml;charset=UTF-8,${docPreviewSvg}`
+  const studentDisplayName = session?.user?.name?.trim() ?? ''
+
+  const docPreviewSrc = useMemo(
+    () =>
+      buildStudentCoverPreviewDataUri({
+        data,
+        profile,
+        studentName: studentDisplayName,
+      }),
+    [data, profile, studentDisplayName],
+  )
 
   const handleFinish = () => {
     if (isFinishing) return
@@ -815,9 +1009,12 @@ export default function StudentChatConfig() {
         <aside className="sidebar">
           {/* Logo mark */}
           <div className="sidebar-logo">
-            <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
-              <rect width="26" height="26" rx="8" fill="var(--accent)"/>
-              <path d="M7 13h12M13 7v12" stroke="#fff" strokeWidth="2.2" strokeLinecap="round"/>
+            <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden>
+              <rect width="32" height="32" rx="7" fill="#1B4FD8"/>
+              <path d="M10 8h8l5 5v11a1 1 0 01-1 1H10a1 1 0 01-1-1V9a1 1 0 011-1z" stroke="white" strokeWidth="1.5" fill="none"/>
+              <polyline points="18 8 18 13 23 13" stroke="white" strokeWidth="1.5" fill="none"/>
+              <line x1="12" y1="17" x2="20" y2="17" stroke="white" strokeWidth="1.5"/>
+              <line x1="12" y1="20" x2="20" y2="20" stroke="white" strokeWidth="1.5"/>
             </svg>
           </div>
 
@@ -850,6 +1047,64 @@ export default function StudentChatConfig() {
 
         {/* ── Main ── */}
         <div className="main">
+          {/* Mobile: barre retour + étape (pas de sidebar) */}
+          <div className="mobile-nav-bar">
+            <button
+              type="button"
+              className="mobile-back"
+              onClick={() => goBack()}
+              disabled={!canGoBack}
+              title="Retour"
+              aria-label="Étape précédente"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div className="mobile-step-meta">
+              {phase === 'welcome' && (
+                <>
+                  <span className="mobile-step-title">Configuration</span>
+                  <span className="mobile-progress-text">Crée ton rapport étape par étape</span>
+                </>
+              )}
+              {phase === 'step' && currentStep && (
+                <>
+                  <span className="mobile-step-title">{currentStep.label}</span>
+                  <span className="mobile-progress-text">
+                    Étape {stepIdx + 1} / {visibleSteps.length}
+                  </span>
+                </>
+              )}
+              {phase === 'done' && (
+                <>
+                  <span className="mobile-step-title">Récapitulatif</span>
+                  <span className="mobile-progress-text">Tout est prêt</span>
+                </>
+              )}
+            </div>
+            {phase !== 'welcome' && (
+              <div className="mobile-dots" role="group" aria-label="Progression des étapes">
+                {visibleSteps.map((s, i) => {
+                  const isDone = phase === 'done' || i < stepIdx
+                  const isActive = phase === 'step' && i === stepIdx
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      className={`mobile-dot-btn${isDone ? ' done' : ''}${isActive ? ' active' : ''}`}
+                      disabled={!isDone}
+                      title={isDone ? `Revenir : ${s.label}` : `Étape ${i + 1}`}
+                      aria-label={isDone ? `Revenir à ${s.label}` : `Étape ${i + 1} (non atteinte)`}
+                      aria-current={isActive ? 'step' : undefined}
+                      onClick={() => isDone && goBack(i)}
+                    >
+                      <span className="mobile-dot-inner" />
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Tab bar */}
           <div className="tabbar">
             <div className="tab active">
@@ -961,8 +1216,11 @@ export default function StudentChatConfig() {
                   "{data.titre ?? 'Ton rapport'}" est prêt à être rédigé.<br />
                   L'export PDF / Word se débloque à la fin de ta rédaction.
                 </p>
-                <div style={{ width: '100%', maxWidth: 360, border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', background: 'var(--surface)' }}>
-                  <img src={docPreviewSrc} alt="Aperçu première page du document" style={{ width: '100%', display: 'block', aspectRatio: '210 / 297', objectFit: 'cover' }} />
+                <div className="doc-cover-preview">
+                  <img
+                    src={docPreviewSrc}
+                    alt="Aperçu de la couverture — mise en page institutionnelle avec marque EETRA"
+                  />
                 </div>
                 <button className="done-btn" onClick={handleFinish} disabled={isFinishing}>
                   {isFinishing ? 'Chargement...' : 'Terminer mon rapport'}

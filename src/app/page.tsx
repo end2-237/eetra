@@ -259,13 +259,13 @@ function Hero() {
           <span className="text-xs font-semibold text-[var(--accent)] tracking-wider uppercase">Document Intelligence - Afrique de l&apos;Ouest</span>
         </div>
 
-        {/* Headline */}
-        <h1 className="sr-hidden text-[clamp(40px,6vw,80px)] font-extrabold tracking-tighter leading-[0.95] text-[var(--text)] mb-6">
+        {/* Headline — tailles dans globals.css (.home-hero-title) pour un rendu mobile fiable */}
+        <h1 className="sr-hidden home-hero-title text-[var(--text)] mb-6">
           <span className="block">Creez des</span>
-          <span className="block font-serif font-normal italic text-[1.1em] text-[var(--text3)]">
-            {typed}<span className="inline-block w-[3px] h-[0.9em] bg-[var(--accent)] ml-0.5 rounded-sm align-text-bottom animate-pulse" />
+          <span className="block font-serif font-normal italic text-[1.12em] lg:text-[1.1em] text-[var(--text3)]">
+            {typed}<span className="home-hero-cursor inline-block h-[0.9em] bg-[var(--accent)] ml-1 rounded-sm align-text-bottom animate-pulse max-lg:shadow-[0_0_14px_var(--electricGlow)]" />
           </span>
-          <span className="block">
+          <span className="block max-lg:mt-1">
             <span className="gradient-text">de niveau executif.</span>
           </span>
         </h1>

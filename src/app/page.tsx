@@ -113,7 +113,7 @@ function Navbar() {
               <span className="hidden xs:inline">Demarrer</span>
               <ArrowRight size={14} />
             </button>
-            
+
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -141,7 +141,7 @@ function Navbar() {
             <X size={20} />
           </button>
         </div>
-        
+
         <div className="flex flex-col gap-2">
           {navItems.map(item => (
             <button
@@ -153,16 +153,16 @@ function Navbar() {
             </button>
           ))}
         </div>
-        
+
         <div className="h-px bg-[var(--border)] my-6" />
-        
+
         <button
           onClick={() => { setMobileOpen(false); router.push('/login') }}
           className="w-full px-4 py-3 text-[var(--text3)] hover:text-[var(--text)] rounded-xl font-medium transition-colors"
         >
           Connexion
         </button>
-        
+
         <button
           onClick={() => { setMobileOpen(false); router.push('/login') }}
           className="w-full mt-4 px-4 py-3 text-white font-bold bg-gradient-to-r from-[var(--accent)] to-[var(--electric)] rounded-xl flex items-center justify-center gap-2"
@@ -260,13 +260,19 @@ function Hero() {
         </div>
 
         {/* Headline — tailles dans globals.css (.home-hero-title) pour un rendu mobile fiable */}
-        <h1 className="sr-hidden home-hero-title text-[var(--text)] mb-6">
-          <span className="block">Creez des</span>
-          <span className="block font-serif font-normal italic text-[1.12em] lg:text-[1.1em] text-[var(--text3)]">
-            {typed}<span className="home-hero-cursor inline-block h-[0.9em] bg-[var(--accent)] ml-1 rounded-sm align-text-bottom animate-pulse max-lg:shadow-[0_0_14px_var(--electricGlow)]" />
+        <h1 className="sr-hidden home-hero-title text-[var(--text)] mb-8">
+          {/* On augmente la marge en bas (mb-8) car les lettres géantes ont besoin d'air */}
+          <span className="block leading-[0.8] tracking-tighter">Creez des</span>
+
+          <span className="block font-serif font-normal italic text-[1.2em] lg:text-[1.1em] text-[var(--text3)] -mt-2 mb-2">
+            {/* Augmentation à 1.2em pour le mobile pour que l'italique reste lisible face au gras massif */}
+            {typed}
+            <span className="home-hero-cursor inline-block h-[0.85em] bg-[var(--accent)] ml-2 rounded-sm align-middle animate-pulse max-lg:shadow-[0_0_20px_var(--electricGlow)]" />
           </span>
-          <span className="block max-lg:mt-1">
-            <span className="gradient-text">de niveau executif.</span>
+
+          <span className="block max-lg:mt-4 leading-[0.8]">
+            {/* On augmente le mt-4 pour séparer le bloc dégradé du bloc italique qui prend de la place */}
+            <span className="gradient-text tracking-tighter">de niveau executif.</span>
           </span>
         </h1>
 
@@ -311,7 +317,7 @@ function Hero() {
           {/* Window bar */}
           <div className="px-5 py-3 bg-[var(--bg2)] border-b border-[var(--border)] flex items-center gap-4">
             <div className="flex gap-1.5">
-              {['#FF5F57','#FEBC2E','#28C840'].map(c => <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />)}
+              {['#FF5F57', '#FEBC2E', '#28C840'].map(c => <div key={c} className="w-3 h-3 rounded-full" style={{ background: c }} />)}
             </div>
             <div className="flex-1 bg-[var(--bg3)] rounded-md px-3 py-1 text-xs text-[var(--text3)] font-mono flex items-center gap-2">
               <Lock size={10} /> eetra.app/editor
@@ -336,7 +342,7 @@ function Hero() {
                   {label}
                 </div>
               ))}
-              
+
               <div className="mt-auto">
                 <div className="p-2.5 rounded-lg bg-[var(--accentS)] border border-[var(--accent)]/15 text-center">
                   <Sparkles size={14} className="text-[var(--accent)] mx-auto mb-1" />
@@ -351,7 +357,7 @@ function Hero() {
               <div className="w-full max-w-[340px] bg-white dark:bg-[#1a1a2e] rounded shadow-xl text-[#111] dark:text-white">
                 <div className="bg-gradient-to-br from-[var(--accent)] to-[var(--electric)] -mx-0 -mt-0 px-5 py-4 rounded-t">
                   <div className="text-[9px] text-white/70 font-bold tracking-widest uppercase mb-1.5">ACACIA CONSULTING - CONFIDENTIEL</div>
-                  <div className="text-lg font-black text-white leading-tight">BUSINESS PLAN<br/>2026 — 2030</div>
+                  <div className="text-lg font-black text-white leading-tight">BUSINESS PLAN<br />2026 — 2030</div>
                 </div>
                 <div className="p-4">
                   <div className="grid grid-cols-3 gap-1.5 mb-3">

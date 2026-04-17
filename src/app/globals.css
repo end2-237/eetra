@@ -111,14 +111,17 @@ body.pdf-exporting .block-drag-handle { display: none !important; }
  * Titre hero accueil — tailles figées ici (pas via Tailwind) pour éviter les conflits
  * et les rendus « trop petits » sur mobile. max-width 767px = téléphones / petites tablettes.
  */
-.home-hero-title {
-  font-size: clamp(6.25rem, 34vw, 11rem);
-  line-height: 0.84;
-  letter-spacing: -0.045em;
+ .home-hero-title {
+  /* On booste le minimum à 8rem et le scaling à 45vw pour occuper presque la moitié de la largeur du viewport par caractère */
+  font-size: clamp(8rem, 45vw, 15rem);
+  line-height: 0.8; /* Légère réduction pour éviter trop d'espace entre les lignes géantes */
+  letter-spacing: -0.06em; /* On resserre un peu plus car les grandes tailles paraissent plus écartées */
   font-weight: 800;
 }
+
 @media (min-width: 768px) {
   .home-hero-title {
+    /* On garde tes tailles desktop ou on les ajuste si nécessaire */
     font-size: clamp(2.25rem, 5vw, 5rem);
     line-height: 0.95;
     letter-spacing: -0.05em;
@@ -126,16 +129,17 @@ body.pdf-exporting .block-drag-handle { display: none !important; }
 }
 
 .home-hero-title .home-hero-cursor {
-  width: 0.28em;
-  min-width: 5px;
+  /* On ajuste la largeur du curseur pour qu'il reste proportionnel à la nouvelle taille géante */
+  width: 0.35em; 
+  min-width: 8px;
 }
+
 @media (min-width: 768px) {
   .home-hero-title .home-hero-cursor {
     width: 0.1em;
     min-width: 3px;
   }
 }
-
 /* Glassmorphism utilities */
 .glass {
   background: var(--glass-bg);

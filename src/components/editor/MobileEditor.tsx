@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Layers, LayoutGrid, BarChart2, MessageSquare, FileText,
   Download, X, Plus, Layout, BookMarked, ChevronLeft,
-  ZoomIn, ZoomOut, CircleHelp,
+  ZoomIn, ZoomOut, CircleHelp, Radar,
 } from "lucide-react";
 import { useDocument } from "@/contexts/DocumentContext";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -20,6 +20,7 @@ const TABS = [
   { id: "templates",   Icon: LayoutGrid,    label: "Templates"    },
   { id: "layout",      Icon: Layout,        label: "Mise en page" },
   { id: "analytics",   Icon: BarChart2,     label: "Stats"        },
+  { id: "radar",       Icon: Radar,         label: "Radar"        },
   { id: "comments",    Icon: MessageSquare, label: "Notes"        },
   { id: "orientation", Icon: BookMarked,    label: "TdM"          },
 ];
@@ -28,7 +29,6 @@ interface Props {
   onExport: () => void;
 }
 
-// A4 at 96 CSS dpi = exactly 21cm wide
 const PAGE_W = 794;
 const PAGE_H = 1123;
 const MIN_SCALE = 0.3;
@@ -50,7 +50,6 @@ export function MobileEditor({ onExport }: Props) {
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 390
   );
-  // User-controlled scale; null = auto-fit
   const [userScale, setUserScale] = useState<number | null>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
 
@@ -60,10 +59,8 @@ export function MobileEditor({ onExport }: Props) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Auto-fit scale: fills the screen width
   const fitScale = Math.round((windowWidth / PAGE_W) * 100) / 100;
   const scale = userScale ?? fitScale;
-
   const scaledH = Math.round(PAGE_H * scale);
 
   const handleTabChange = (tab: string) => {
@@ -77,7 +74,6 @@ export function MobileEditor({ onExport }: Props) {
   const zoomOut = useCallback(() => setUserScale(s => Math.max(MIN_SCALE, Math.round(((s ?? fitScale) - 0.1) * 10) / 10)), [fitScale])
   const zoomFit = useCallback(() => setUserScale(null), [])
 
-  // Scroll active tab into view
   useEffect(() => {
     if (!tabBarRef.current) return;
     const btn = tabBarRef.current.querySelector(
@@ -161,16 +157,13 @@ export function MobileEditor({ onExport }: Props) {
           pointerEvents: showPanel ? "none" : "auto",
           transition: "opacity .15s",
         }}>
-          {/* Cover page */}
           <EditableCoverPageMobile scale={scale} windowWidth={windowWidth} />
 
-          {/* Content pages */}
           {pages.map((page, idx) => (
             <div
               key={page.id}
               onClick={() => setCurrentPageIndex(idx)}
               style={{
-                // Outer container clips the scaled content
                 width: Math.max(windowWidth, PAGE_W * scale),
                 height: scaledH,
                 flexShrink: 0,
@@ -185,7 +178,6 @@ export function MobileEditor({ onExport }: Props) {
                 margin: "0 auto",
               }}
             >
-              {/* Inner A4 at full resolution, scaled */}
               <div style={{
                 width: PAGE_W, height: PAGE_H,
                 transform: `scale(${scale})`,
@@ -201,7 +193,6 @@ export function MobileEditor({ onExport }: Props) {
             </div>
           ))}
 
-          {/* Add page button */}
           <button data-tour="mobile-pages-panel" onClick={addPage}
             style={{
               display: "flex", alignItems: "center", gap: 8, padding: "10px 28px",
@@ -259,16 +250,25 @@ export function MobileEditor({ onExport }: Props) {
         >
           {TABS.map(({ id, Icon, label }) => {
             const isActive = activeTab === id;
+            const isRadar  = id === "radar";
             return (
-              <button key={id} data-tab={id} data-tour={id === "templates" ? "mobile-templates-nav" : undefined} onClick={() => handleTabChange(id)}
+              <button key={id} data-tab={id}
+                data-tour={id === "templates" ? "mobile-templates-nav" : undefined}
+                onClick={() => handleTabChange(id)}
                 style={{
                   flexShrink: 0, display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 3,
                   padding: "4px 8px", height: 46,
-                  background: isActive ? "var(--accentS)" : "transparent",
-                  border: isActive ? "1px solid rgba(27,79,216,.25)" : "1px solid transparent",
+                  background: isActive
+                    ? isRadar ? "rgba(16,185,129,.12)" : "var(--accentS)"
+                    : "transparent",
+                  border: isActive
+                    ? isRadar ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(27,79,216,.25)"
+                    : "1px solid transparent",
                   borderRadius: 10, cursor: "pointer",
-                  color: isActive ? "var(--accent)" : "var(--text4)",
+                  color: isActive
+                    ? isRadar ? "#059669" : "var(--accent)"
+                    : "var(--text4)",
                   minWidth: 46, transition: "all .12s",
                 }}
               >

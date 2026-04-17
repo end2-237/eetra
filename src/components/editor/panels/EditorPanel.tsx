@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import {
   AlignLeft, BarChart2, CheckSquare, ChevronRight, Image, Minus, Quote,
   Table, Type, Zap, Scale, PenTool, ChevronDown, ChevronUp, SlidersHorizontal,
-  List, Hash, BookMarked,
+  List, Hash, BookMarked, Radar,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useToast }    from '@/hooks/useToast'
@@ -18,6 +18,7 @@ import { LayoutPanel }           from './LayoutPanel'
 import { OrientationZonePanel }  from './OrientationZonePanel'
 import { BlockStylePanel }       from './BlockStylePanel'
 import { QuickFormatPanel }      from './QuickFormatPanel'
+import { RadarPanel }            from './RadarPanel'
 
 interface BlockDef {
   type: BlockType; label: string; icon: React.ReactNode; desc: string; group: string
@@ -98,7 +99,6 @@ function DocumentPropertiesPanel() {
               </div>
             ))}
           </div>
-
         </div>
       )}
     </div>
@@ -168,6 +168,7 @@ export function EditorPanel() {
   if (activeTab === 'comments')    return (<><CommentsPanel showToast={showToast} /><Toast {...toast} /></>)
   if (activeTab === 'layout')      return <LayoutPanel />
   if (activeTab === 'orientation') return (<><OrientationZonePanel showToast={showToast} /><Toast {...toast} /></>)
+  if (activeTab === 'radar')       return <RadarPanel />
 
   return (
     <div data-tour="editor-panel" style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

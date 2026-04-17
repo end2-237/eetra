@@ -6,7 +6,7 @@ import Image from 'next/image'
 import logo from '../../app/icon.png'
 import {
   Layers, LayoutGrid, Layout, BarChart2, MessageSquare,
-  BookOpen, Download, Settings, BookMarked, Users, Menu, X, CircleHelp,
+  BookOpen, Download, Settings, BookMarked, Users, Menu, X, CircleHelp, Radar,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile }  from '@/contexts/ProfileContext'
@@ -21,6 +21,8 @@ const CSS = `
   .sb-btn.active { background:var(--accentS); color:var(--accent); }
   .sb-btn.active-oz { background:rgba(124,58,237,.1); color:#7C3AED; }
   .sb-btn.active-oz:hover { background:rgba(124,58,237,.18); }
+  .sb-btn.active-radar { background:rgba(16,185,129,.1); color:#059669; }
+  .sb-btn.active-radar:hover { background:rgba(16,185,129,.18); }
   .sb-divider { width:24px; height:1px; background:var(--border); margin:5px 0; flex-shrink:0; }
   .sb-avatar { width:26px; height:26px; border-radius:6px; background:var(--accentS); display:flex; align-items:center; justify-content:center; overflow:hidden; }
   .sb-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:39; opacity:0; visibility:hidden; transition:opacity .25s, visibility .25s; }
@@ -50,6 +52,7 @@ const TABS = [
   { id:'templates',   Icon:LayoutGrid,   tip:'Templates'          },
   { id:'layout',      Icon:Layout,       tip:'Mise en page'       },
   { id:'analytics',   Icon:BarChart2,    tip:'Analyse'            },
+  { id:'radar',       Icon:Radar,        tip:'Radar Qualité'      },
   { id:'comments',    Icon:MessageSquare,tip:'Notes'              },
   { id:'orientation', Icon:BookMarked,   tip:"Zone d'Orientation" },
 ]
@@ -122,14 +125,16 @@ export function Sidebar({ onExport }: Props) {
         <div data-tour="sidebar-nav" className="sb-nav" style={{ display:'flex', flexDirection:'column', gap:2, flex:1, width:'100%', padding:'0 8px' }}>
           {TABS.map(({ id, Icon, tip }) => {
             const isActive = activeTab === id
-            const isOZ = id === 'orientation'
-            const ozActive = isOZ && isActive
+            const isOZ     = id === 'orientation'
+            const isRadar  = id === 'radar'
+            const ozActive    = isOZ && isActive
+            const radarActive = isRadar && isActive
             const ozEnabled = isOZ && orientationZone?.enabled && !isActive
             return (
               <button
                 key={id}
                 data-tour={id === 'templates' ? 'templates-nav' : undefined}
-                className={`sb-btn${isActive && !isOZ ? ' active' : ''}${ozActive ? ' active-oz' : ''}`}
+                className={`sb-btn${isActive && !isOZ && !isRadar ? ' active' : ''}${ozActive ? ' active-oz' : ''}${radarActive ? ' active-radar' : ''}`}
                 title={tip}
                 onClick={() => { setActiveTab(id as any); closeSidebar() }}
                 style={ozEnabled ? { position: 'relative' } : {}}

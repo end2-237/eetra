@@ -148,7 +148,7 @@ export interface CompanyProfile {
   watermark: boolean
 }
 
-export type TabName = 'editor' | 'templates' | 'layout' | 'analytics' | 'comments' | 'orientation'
+export type TabName = 'editor' | 'templates' | 'layout' | 'analytics' | 'comments' | 'orientation'  | 'radar'
 
 export interface TeamMember {
   id: string

@@ -183,7 +183,7 @@ export function RadarPanel() {
     setStatus('loading')
 
     try {
-      const res = await fetch('/api/ai/document-assistant', {
+      const res = await fetch('/api/document-assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme: theme.trim(), docType, niveau, chapterCount }),

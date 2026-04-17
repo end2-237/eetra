@@ -209,9 +209,19 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Pick available API key (Groq first, Gemini fallback, Anthropic last) ────
-  const groqKey    = "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"
-  const geminiKey  = ""
-  const anthropicKey = ""
+  // ── Pick available API key (Groq first, Gemini fallback, Anthropic last) ────
+  const groqKey      = process.env.GROQ_API_KEY
+  const geminiKey    = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+
+  if (!groqKey && !geminiKey && !anthropicKey) {
+    return NextResponse.json(
+      {
+        error: "Service IA non configuré. Ajoutez vos clés dans le fichier .env",
+      },
+      { status: 503 }
+    )
+  }
 
   if (!groqKey && !geminiKey && !anthropicKey) {
     return NextResponse.json(

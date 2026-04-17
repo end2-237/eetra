@@ -52,7 +52,7 @@ const TABS = [
   { id:'templates',   Icon:LayoutGrid,   tip:'Templates'          },
   { id:'layout',      Icon:Layout,       tip:'Mise en page'       },
   { id:'analytics',   Icon:BarChart2,    tip:'Analyse'            },
-  { id:'radar',       Icon:Radar,        tip:'Radar Qualité'      },
+  { id:'radar',       Icon:Radar,        tip:'Assistant Qualité'      },
   { id:'comments',    Icon:MessageSquare,tip:'Notes'              },
   { id:'orientation', Icon:BookMarked,   tip:"Zone d'Orientation" },
 ]

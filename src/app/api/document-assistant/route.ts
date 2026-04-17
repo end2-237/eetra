@@ -129,7 +129,7 @@ RÈGLES IMPÉRATIVES :
 
 // ── Groq API call (free, fast, powerful — llama-3.3-70b) ─────────────────────
 
-async function callGroq(prompt: string, apiKey: string | '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'): Promise<string> {
+async function callGroq(prompt: string, apiKey: string): Promise<string> {
   const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {

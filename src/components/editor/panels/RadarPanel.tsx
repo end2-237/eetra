@@ -2,9 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import {
-  Sparkles, Plus, ChevronDown, ChevronUp, RotateCcw,
-  CheckCircle2, Loader2, BookOpen, FileText, GraduationCap,
-  Wand2, AlignLeft, ArrowRight, Download, Layers,
+  Wand2, Sparkles, RotateCcw, Loader2,
+  CheckCircle2, Plus, ChevronDown, ChevronUp,
+  Layers, FileText, GraduationCap, BookOpen,
+  ClipboardList, Presentation, Target, ArrowRight,
+  CheckCheck,
 } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
@@ -14,21 +16,21 @@ import type { DocBlock } from '@/types'
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DOC_TYPES = [
-  { id: 'rapport-stage',  label: 'Rapport de Stage',  icon: '🏢', short: 'Stage' },
-  { id: 'memoire',        label: 'Mémoire / TFE',      icon: '🎓', short: 'Mémoire' },
-  { id: 'these',          label: 'Thèse de Doctorat',  icon: '📚', short: 'Thèse' },
-  { id: 'rapport-projet', label: 'Rapport de Projet',  icon: '📋', short: 'Projet' },
-  { id: 'expose',         label: 'Exposé Académique',  icon: '🎤', short: 'Exposé' },
+  { id: 'rapport-stage',  label: 'Rapport de Stage',  Icon: ClipboardList,  short: 'Stage' },
+  { id: 'memoire',        label: 'Mémoire / TFE',      Icon: BookOpen,       short: 'Mémoire' },
+  { id: 'these',          label: 'Thèse de Doctorat',  Icon: GraduationCap,  short: 'Thèse' },
+  { id: 'rapport-projet', label: 'Rapport de Projet',  Icon: FileText,       short: 'Projet' },
+  { id: 'expose',         label: 'Exposé Académique',  Icon: Presentation,   short: 'Exposé' },
 ]
 
 const NIVEAUX = [
   'BTS / DUT', 'Licence', 'Master 1', 'Master 2', 'Ingénieur', 'Doctorat',
 ]
 
-const SECTION_TYPE_COLORS: Record<string, { bg: string; accent: string }> = {
-  introduction: { bg: 'rgba(27,79,216,.08)',   accent: '#1B4FD8' },
-  chapter:      { bg: 'rgba(5,150,105,.07)',   accent: '#059669' },
-  conclusion:   { bg: 'rgba(124,58,237,.07)',  accent: '#7C3AED' },
+const SECTION_TYPE_CONFIG: Record<string, { color: string; bg: string; Icon: React.ComponentType<any> }> = {
+  introduction: { color: '#1B4FD8', bg: 'rgba(27,79,216,.08)',  Icon: FileText },
+  chapter:      { color: '#059669', bg: 'rgba(5,150,105,.07)',  Icon: BookOpen },
+  conclusion:   { color: '#7C3AED', bg: 'rgba(124,58,237,.07)', Icon: Target },
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -40,7 +42,7 @@ interface GeneratedSection {
   type: 'introduction' | 'chapter' | 'conclusion'
   chapterNum?: number
   title: string
-  emoji: string
+  emoji?: string
   preview?: string
   blocks: GeneratedBlock[]
 }
@@ -50,18 +52,16 @@ interface GeneratedSection {
 export function RadarPanel() {
   const {
     title, pages, currentPageIndex,
-    addPage, setPageBlocks, addBlock, setCurrentPageIndex,
+    addPage, setPageBlocks, setCurrentPageIndex,
   } = useDocument()
   const { profile } = useProfile()
   const accent = profile.color || '#1B4FD8'
 
-  // Form state
   const [theme, setTheme]               = useState(title || '')
   const [docType, setDocType]           = useState('rapport-stage')
   const [niveau, setNiveau]             = useState('Licence')
   const [chapterCount, setChapterCount] = useState(4)
 
-  // UI state
   const [status, setStatus]                 = useState<'idle' | 'loading' | 'results'>('idle')
   const [sections, setSections]             = useState<GeneratedSection[]>([])
   const [error, setError]                   = useState('')
@@ -70,17 +70,14 @@ export function RadarPanel() {
   const [insertingAll, setInsertingAll]     = useState(false)
   const [successMsg, setSuccessMsg]         = useState('')
 
-  // Sync theme with document title
   useEffect(() => {
     if (title && !theme) setTheme(title)
   }, [title])
 
-  // Pending insert ref (for page-add flow)
   const pendingRef         = useRef<{ sectionId: string; blocks: DocBlock[] } | null>(null)
   const prevPagesLenRef    = useRef(pages.length)
   const insertQueueRef     = useRef<{ sectionId: string; blocks: DocBlock[] }[]>([])
 
-  // Effect: detects when a new page was added and inserts pending blocks
   useEffect(() => {
     if (pages.length <= prevPagesLenRef.current) {
       prevPagesLenRef.current = pages.length
@@ -91,7 +88,6 @@ export function RadarPanel() {
     const lastPage = pages[pages.length - 1]
     if (!lastPage) return
 
-    // Single section pending
     if (pendingRef.current) {
       setPageBlocks(lastPage.id, pendingRef.current.blocks)
       setInserted(prev => new Set([...prev, pendingRef.current!.sectionId]))
@@ -100,7 +96,6 @@ export function RadarPanel() {
       setCurrentPageIndex(pages.length - 1)
     }
 
-    // Queue mode (insert all)
     if (insertQueueRef.current.length > 0) {
       const next = insertQueueRef.current.shift()!
       setPageBlocks(lastPage.id, next.blocks)
@@ -108,21 +103,19 @@ export function RadarPanel() {
       setCurrentPageIndex(pages.length - 1)
 
       if (insertQueueRef.current.length > 0) {
-        // Trigger next page
         setTimeout(() => addPage(), 80)
       } else {
         setInsertingAll(false)
-        showSuccess('Tout le document a été inséré 🎉')
+        showSuccess('Tout le document a été inséré')
       }
     }
-  }, [pages.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pages.length])
 
   const showSuccess = (msg: string) => {
     setSuccessMsg(msg)
     setTimeout(() => setSuccessMsg(''), 3000)
   }
 
-  // Convert generated blocks to DocBlocks
   const toDocBlocks = (rawBlocks: GeneratedBlock[]): DocBlock[] =>
     rawBlocks.map(b => ({
       id: generateId(),
@@ -130,12 +123,10 @@ export function RadarPanel() {
       content: b.content,
     }))
 
-  // Insert a single section
   const insertSection = useCallback((section: GeneratedSection) => {
     if (inserted.has(section.id)) return
     const blocks = toDocBlocks(section.blocks)
 
-    // Find an existing empty page first
     const emptyPage = pages.find(p => p.blocks.length === 0)
     if (emptyPage) {
       setPageBlocks(emptyPage.id, blocks)
@@ -146,12 +137,10 @@ export function RadarPanel() {
       return
     }
 
-    // No empty page → create one
     pendingRef.current = { sectionId: section.id, blocks }
     addPage()
   }, [pages, inserted, setPageBlocks, addPage, setCurrentPageIndex])
 
-  // Insert all sections
   const insertAll = useCallback(() => {
     if (sections.length === 0 || insertingAll) return
     const remaining = sections.filter(s => !inserted.has(s.id))
@@ -164,7 +153,6 @@ export function RadarPanel() {
       blocks: toDocBlocks(s.blocks),
     }))
 
-    // Find empty pages first, use them
     const emptyPages = pages.filter(p => p.blocks.length === 0)
     let queueIdx = 0
 
@@ -177,17 +165,15 @@ export function RadarPanel() {
       if (idx !== -1) setCurrentPageIndex(idx)
     }
 
-    // Remaining sections need new pages
     if (queueIdx < queue.length) {
       insertQueueRef.current = queue.slice(queueIdx)
       addPage()
     } else {
       setInsertingAll(false)
-      showSuccess('Tout le document a été inséré 🎉')
+      showSuccess('Tout le document a été inséré')
     }
   }, [sections, inserted, insertingAll, pages, setPageBlocks, addPage, setCurrentPageIndex])
 
-  // Generate document structure
   const generate = useCallback(async () => {
     if (!theme.trim() || theme.trim().length < 5) {
       setError('Entrez un thème (au moins 5 caractères)')
@@ -248,14 +234,12 @@ export function RadarPanel() {
       flexDirection: 'column' as const,
       background: 'var(--bg2)',
       overflowY: 'auto' as const,
-    } as React.CSSProperties,
-
+    },
     header: {
       padding: '14px 14px 10px',
       borderBottom: '1px solid var(--border)',
       flexShrink: 0,
-    } as React.CSSProperties,
-
+    },
     body: {
       flex: 1,
       overflowY: 'auto' as const,
@@ -263,8 +247,7 @@ export function RadarPanel() {
       display: 'flex',
       flexDirection: 'column' as const,
       gap: 10,
-    } as React.CSSProperties,
-
+    },
     label: {
       fontSize: 9,
       fontWeight: 800 as const,
@@ -273,8 +256,7 @@ export function RadarPanel() {
       color: 'var(--text4)',
       display: 'block' as const,
       marginBottom: 5,
-    } as React.CSSProperties,
-
+    },
     input: {
       width: '100%',
       padding: '8px 10px',
@@ -287,7 +269,7 @@ export function RadarPanel() {
       outline: 'none',
       boxSizing: 'border-box' as const,
       lineHeight: 1.4,
-    } as React.CSSProperties,
+    },
   }
 
   // ── RENDER: IDLE ──────────────────────────────────────────────────────────
@@ -302,13 +284,13 @@ export function RadarPanel() {
           </span>
         </div>
         <p style={{ fontSize: 10, color: 'var(--text4)', margin: 0, lineHeight: 1.5 }}>
-          Génère le plan complet de ton document — introduction, chapitres, conclusion — et insère-le en un clic.
+          Génère le plan complet de ton document et insère-le en un clic.
         </p>
       </div>
 
       <div style={S.body}>
 
-        {/* Theme input */}
+        {/* Theme */}
         <div>
           <label style={S.label}>Thème / Titre du document</label>
           <textarea
@@ -326,29 +308,33 @@ export function RadarPanel() {
         <div>
           <label style={S.label}>Type de document</label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5 }}>
-            {DOC_TYPES.map(dt => (
-              <button key={dt.id} onClick={() => setDocType(dt.id)}
+            {DOC_TYPES.map(({ id, label, Icon }) => (
+              <button key={id} onClick={() => setDocType(id)}
                 style={{
                   padding: '8px 8px',
                   borderRadius: 8,
                   border: '1.5px solid',
-                  borderColor: docType === dt.id ? accent : 'var(--border)',
-                  background: docType === dt.id ? `${accent}12` : 'var(--surface)',
+                  borderColor: docType === id ? accent : 'var(--border)',
+                  background: docType === id ? `${accent}12` : 'var(--surface)',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 7,
                   textAlign: 'left' as const,
                   transition: 'all .12s',
                 }}>
-                <span style={{ fontSize: 14, flexShrink: 0 }}>{dt.icon}</span>
+                <Icon
+                  size={14}
+                  color={docType === id ? accent : 'var(--text4)'}
+                  style={{ flexShrink: 0 }}
+                />
                 <span style={{
                   fontSize: 10,
                   fontWeight: 700,
-                  color: docType === dt.id ? accent : 'var(--text3)',
+                  color: docType === id ? accent : 'var(--text3)',
                   lineHeight: 1.3,
                 }}>
-                  {dt.label}
+                  {label}
                 </span>
               </button>
             ))}
@@ -361,7 +347,7 @@ export function RadarPanel() {
           <select
             value={niveau}
             onChange={e => setNiveau(e.target.value)}
-            style={{ ...S.input }}
+            style={S.input}
             onFocus={e => { e.target.style.borderColor = accent }}
             onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
           >
@@ -444,15 +430,27 @@ export function RadarPanel() {
           borderRadius: 8,
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          fontSize: 10,
-          color: 'var(--text4)',
-          lineHeight: 1.6,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 6,
         }}>
-          <strong style={{ color: 'var(--text3)' }}>💡 Comment ça marche :</strong><br />
-          1. Entre ton thème<br />
-          2. Choisis le type et le niveau<br />
-          3. Clique "Générer"<br />
-          4. Insère chaque section dans ton document en un clic
+          {[
+            { step: '1', text: 'Entre ton thème ou colle un titre existant' },
+            { step: '2', text: 'Choisis le type de document et le niveau' },
+            { step: '3', text: 'Clique "Générer" et patiente quelques secondes' },
+            { step: '4', text: 'Insère chaque section sur une nouvelle page' },
+          ].map(({ step, text }) => (
+            <div key={step} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <div style={{
+                width: 18, height: 18, borderRadius: '50%', background: `${accent}18`,
+                border: `1.5px solid ${accent}40`, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', flexShrink: 0, marginTop: 1,
+              }}>
+                <span style={{ fontSize: 9, fontWeight: 800, color: accent }}>{step}</span>
+              </div>
+              <span style={{ fontSize: 10, color: 'var(--text4)', lineHeight: 1.5 }}>{text}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -463,14 +461,9 @@ export function RadarPanel() {
   if (status === 'loading') return (
     <div style={{ ...S.root, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 }}>
       <div style={{
-        width: 56,
-        height: 56,
-        borderRadius: '50%',
-        background: `${accent}18`,
-        border: `2px solid ${accent}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: 56, height: 56, borderRadius: '50%',
+        background: `${accent}18`, border: `2px solid ${accent}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         animation: 'pulse 2s infinite',
       }}>
         <Sparkles size={22} color={accent} />
@@ -480,26 +473,24 @@ export function RadarPanel() {
           Génération en cours...
         </div>
         <div style={{ fontSize: 11, color: 'var(--text4)', lineHeight: 1.6 }}>
-          L'IA analyse ton thème et rédige<br />
-          l'introduction, les chapitres et la conclusion
+          Rédaction de l'introduction,<br />des chapitres et de la conclusion
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', maxWidth: 220 }}>
-        {['Analyse du thème...', 'Structure académique...', 'Rédaction du contenu...'].map((step, i) => (
+        {[
+          { label: 'Analyse du thème', Icon: Wand2 },
+          { label: 'Structure académique', Icon: Layers },
+          { label: 'Rédaction du contenu', Icon: FileText },
+        ].map(({ label, Icon }, i) => (
           <div key={i} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '7px 10px',
-            borderRadius: 8,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            fontSize: 10,
-            color: 'var(--text4)',
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 10px', borderRadius: 8,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            fontSize: 10, color: 'var(--text4)',
             animation: `fadeIn .5s ease ${i * 0.4}s both`,
           }}>
-            <Loader2 size={10} color={accent} style={{ animation: 'spin 1s linear infinite' }} />
-            {step}
+            <Loader2 size={10} color={accent} style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+            {label}
           </div>
         ))}
       </div>
@@ -530,10 +521,13 @@ export function RadarPanel() {
         gap: 8,
       }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>
-            Plan généré ✨
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <CheckCircle2 size={13} color="#059669" />
+            <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>
+              Plan généré
+            </span>
           </div>
-          <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 1 }}>
+          <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 2 }}>
             {sections.length} sections · {insertedCount} insérée{insertedCount > 1 ? 's' : ''}
           </div>
         </div>
@@ -571,31 +565,23 @@ export function RadarPanel() {
         </div>
       )}
 
-      {/* Insert all button */}
+      {/* Insert all */}
       {!allInserted && sections.length > 0 && (
         <div style={{ padding: '10px 14px 0', flexShrink: 0 }}>
           <button
             onClick={insertAll}
             disabled={insertingAll}
             style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: 9,
+              width: '100%', padding: '10px', borderRadius: 9,
               border: `1.5px solid ${accent}`,
               background: insertingAll ? 'var(--bg2)' : `${accent}12`,
-              color: accent,
-              cursor: insertingAll ? 'not-allowed' : 'pointer',
-              fontSize: 12,
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 7,
-              opacity: insertingAll ? .6 : 1,
-              transition: 'all .15s',
+              color: accent, cursor: insertingAll ? 'not-allowed' : 'pointer',
+              fontSize: 12, fontWeight: 800,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              opacity: insertingAll ? .6 : 1, transition: 'all .15s',
             }}>
             {insertingAll
-              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Insertion en cours...</>
+              ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Insertion...</>
               : <><Layers size={13} /> Tout insérer dans le document</>
             }
           </button>
@@ -604,8 +590,9 @@ export function RadarPanel() {
 
       {/* Sections list */}
       <div style={S.body}>
-        {sections.map((section, idx) => {
-          const colors = SECTION_TYPE_COLORS[section.type] || SECTION_TYPE_COLORS.chapter
+        {sections.map((section) => {
+          const cfg = SECTION_TYPE_CONFIG[section.type] || SECTION_TYPE_CONFIG.chapter
+          const SectionIcon = cfg.Icon
           const isInserted = inserted.has(section.id)
           const isExpanded = expanded === section.id
           const blockCount = section.blocks.length
@@ -619,35 +606,21 @@ export function RadarPanel() {
               transition: 'all .15s',
             }}>
               {/* Section header */}
-              <div style={{
-                padding: '10px 12px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 10,
-              }}>
-                {/* Icon */}
+              <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 8,
-                  background: isInserted ? 'rgba(5,150,105,.12)' : colors.bg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  flexShrink: 0,
+                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                  background: isInserted ? 'rgba(5,150,105,.12)' : cfg.bg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  {isInserted ? '✅' : section.emoji}
+                  {isInserted
+                    ? <CheckCheck size={15} color="#059669" />
+                    : <SectionIcon size={15} color={cfg.color} />
+                  }
                 </div>
-
-                {/* Title + preview */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: 11,
-                    fontWeight: 800,
+                    fontSize: 11, fontWeight: 800, lineHeight: 1.3, marginBottom: 3,
                     color: isInserted ? '#059669' : 'var(--text)',
-                    lineHeight: 1.3,
-                    marginBottom: 3,
                   }}>
                     {section.type === 'chapter' && section.chapterNum
                       ? `Ch. ${section.chapterNum} — `
@@ -656,43 +629,31 @@ export function RadarPanel() {
                     {section.title}
                   </div>
                   {section.preview && (
-                    <div style={{
-                      fontSize: 10,
-                      color: 'var(--text4)',
-                      lineHeight: 1.4,
-                    }}>
+                    <div style={{ fontSize: 10, color: 'var(--text4)', lineHeight: 1.4 }}>
                       {section.preview}
                     </div>
                   )}
-                  <div style={{
-                    marginTop: 4,
-                    fontSize: 9,
-                    color: 'var(--text4)',
-                  }}>
-                    {blockCount} blocs · {section.type === 'introduction' ? 'Introduction' : section.type === 'conclusion' ? 'Conclusion' : 'Chapitre'}
+                  <div style={{ marginTop: 4, fontSize: 9, color: 'var(--text4)' }}>
+                    {blockCount} blocs ·{' '}
+                    {section.type === 'introduction' ? 'Introduction'
+                      : section.type === 'conclusion' ? 'Conclusion'
+                      : 'Chapitre'}
                   </div>
                 </div>
               </div>
 
-              {/* Expand/collapse content preview */}
+              {/* Expand/collapse */}
               {section.blocks.length > 0 && (
                 <>
                   <button
                     onClick={() => toggleExpand(section.id)}
                     style={{
-                      width: '100%',
-                      padding: '4px 12px',
+                      width: '100%', padding: '4px 12px',
                       borderTop: '1px solid var(--border)',
-                      background: 'var(--bg3)',
-                      border: 'none',
-                      borderTopColor: 'var(--border)',
-                      borderTopStyle: 'solid',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      fontSize: 10,
-                      color: 'var(--text4)',
+                      background: 'var(--bg3)', border: 'none',
+                      borderTopColor: 'var(--border)', borderTopStyle: 'solid',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'space-between', fontSize: 10, color: 'var(--text4)',
                     }}>
                     <span>Aperçu du contenu</span>
                     {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
@@ -700,21 +661,14 @@ export function RadarPanel() {
 
                   {isExpanded && (
                     <div style={{
-                      padding: '8px 12px',
-                      borderTop: '1px solid var(--border)',
-                      maxHeight: 200,
-                      overflowY: 'auto',
-                      background: 'var(--bg)',
+                      padding: '8px 12px', borderTop: '1px solid var(--border)',
+                      maxHeight: 200, overflowY: 'auto', background: 'var(--bg)',
                     }}>
                       {section.blocks.map((block, bi) => {
                         if (block.type === 'section') return (
                           <div key={bi} style={{
-                            fontSize: 9,
-                            fontWeight: 800,
-                            letterSpacing: '.15em',
-                            textTransform: 'uppercase',
-                            color: colors.accent,
-                            marginBottom: 6,
+                            fontSize: 9, fontWeight: 800, letterSpacing: '.15em',
+                            textTransform: 'uppercase', color: cfg.color, marginBottom: 6,
                             marginTop: bi > 0 ? 8 : 0,
                           }}>
                             {block.content}
@@ -722,32 +676,23 @@ export function RadarPanel() {
                         )
                         if (block.type === 'h2') return (
                           <div key={bi} style={{
-                            fontSize: 11,
-                            fontWeight: 700,
-                            color: 'var(--text)',
-                            marginBottom: 4,
-                            marginTop: bi > 0 ? 8 : 0,
+                            fontSize: 11, fontWeight: 700, color: 'var(--text)',
+                            marginBottom: 4, marginTop: bi > 0 ? 8 : 0,
                           }}>
                             {block.content}
                           </div>
                         )
                         if (block.type === 'h3') return (
                           <div key={bi} style={{
-                            fontSize: 10,
-                            fontWeight: 600,
-                            color: 'var(--text2)',
-                            marginBottom: 3,
-                            marginTop: 6,
+                            fontSize: 10, fontWeight: 600, color: 'var(--text2)',
+                            marginBottom: 3, marginTop: 6,
                           }}>
                             {block.content}
                           </div>
                         )
                         return (
                           <p key={bi} style={{
-                            fontSize: 10,
-                            color: 'var(--text4)',
-                            lineHeight: 1.6,
-                            margin: '0 0 6px',
+                            fontSize: 10, color: 'var(--text4)', lineHeight: 1.6, margin: '0 0 6px',
                           }}>
                             {block.content?.slice(0, 180)}{block.content?.length > 180 ? '...' : ''}
                           </p>
@@ -759,25 +704,13 @@ export function RadarPanel() {
               )}
 
               {/* Insert button */}
-              <div style={{
-                padding: '8px 12px',
-                borderTop: '1px solid var(--border)',
-                display: 'flex',
-                gap: 6,
-              }}>
+              <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 6 }}>
                 {isInserted ? (
                   <div style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    padding: '7px',
-                    borderRadius: 7,
-                    background: 'rgba(5,150,105,.1)',
-                    color: '#059669',
-                    fontSize: 11,
-                    fontWeight: 700,
+                    flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    gap: 6, padding: '7px', borderRadius: 7,
+                    background: 'rgba(5,150,105,.1)', color: '#059669',
+                    fontSize: 11, fontWeight: 700,
                   }}>
                     <CheckCircle2 size={13} />
                     Inséré dans le document
@@ -786,19 +719,10 @@ export function RadarPanel() {
                   <button
                     onClick={() => insertSection(section)}
                     style={{
-                      flex: 1,
-                      padding: '8px',
-                      borderRadius: 7,
-                      border: 'none',
-                      background: colors.accent,
-                      color: '#fff',
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 5,
+                      flex: 1, padding: '8px', borderRadius: 7, border: 'none',
+                      background: cfg.color, color: '#fff', cursor: 'pointer',
+                      fontSize: 11, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
                       transition: 'opacity .15s',
                     }}
                     onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '.85' }}
@@ -813,37 +737,33 @@ export function RadarPanel() {
           )
         })}
 
-        {/* Bottom info */}
+        {/* All done */}
         {allInserted && (
           <div style={{
-            padding: '12px',
-            borderRadius: 10,
-            background: 'rgba(5,150,105,.08)',
-            border: '1px solid rgba(5,150,105,.2)',
+            padding: '16px 12px', borderRadius: 10,
+            background: 'rgba(5,150,105,.08)', border: '1px solid rgba(5,150,105,.2)',
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 24, marginBottom: 6 }}>🎉</div>
+            <CheckCheck size={28} color="#059669" style={{ margin: '0 auto 8px' }} />
             <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', marginBottom: 4 }}>
               Tout le plan est inséré !
             </div>
             <div style={{ fontSize: 10, color: 'var(--text4)', lineHeight: 1.5 }}>
-              Clique sur chaque page dans l'éditeur<br />
-              pour compléter et personnaliser ton document.
+              Cliquez sur chaque page dans l'éditeur<br />
+              pour compléter et personnaliser votre document.
             </div>
           </div>
         )}
 
         {!allInserted && (
           <div style={{
-            padding: '10px 12px',
-            borderRadius: 8,
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            fontSize: 10,
-            color: 'var(--text4)',
-            lineHeight: 1.6,
+            padding: '10px 12px', borderRadius: 8,
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            fontSize: 10, color: 'var(--text4)', lineHeight: 1.6,
+            display: 'flex', alignItems: 'flex-start', gap: 8,
           }}>
-            💡 Chaque section sera insérée sur sa propre page. Tu pourras ensuite éditer le contenu directement dans l'éditeur.
+            <ArrowRight size={12} color="var(--text4)" style={{ flexShrink: 0, marginTop: 1 }} />
+            Chaque section sera insérée sur sa propre page. Vous pourrez éditer le contenu directement dans l'éditeur.
           </div>
         )}
       </div>

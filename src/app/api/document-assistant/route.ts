@@ -127,6 +127,73 @@ RÈGLES IMPÉRATIVES :
 5. JSON valide uniquement`
 }
 
+// ── Groq API call (free, fast, powerful — llama-3.3-70b) ─────────────────────
+
+async function callGroq(prompt: string, apiKey: string | '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'): Promise<string> {
+  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: 4096,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'system',
+          content: 'Tu es un expert académique. Tu réponds UNIQUEMENT en JSON valide sans markdown ni texte avant/après le JSON. Pas de markdown, pas de commentaires.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(`Groq API error ${response.status}: ${JSON.stringify(err)}`)
+  }
+
+  const data = await response.json()
+  return data.choices?.[0]?.message?.content?.trim() || '{}'
+}
+
+// ── Google Gemini Flash fallback (also free) ──────────────────────────────────
+
+async function callGemini(prompt: string, apiKey: string): Promise<string> {
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: 4096,
+          temperature: 0.7,
+        },
+        systemInstruction: {
+          parts: [{ text: 'Tu es un expert académique. Tu réponds UNIQUEMENT en JSON valide sans markdown ni texte avant/après.' }],
+        },
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(`Gemini API error ${response.status}: ${JSON.stringify(err)}`)
+  }
+
+  const data = await response.json()
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '{}'
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
+
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
@@ -141,9 +208,18 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'Service IA non configuré' }, { status: 503 })
+  // ── Pick available API key (Groq first, Gemini fallback, Anthropic last) ────
+  const groqKey    = process.env.GROQ_API_KEY
+  const geminiKey  = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+
+  if (!groqKey && !geminiKey && !anthropicKey) {
+    return NextResponse.json(
+      {
+        error: 'Service IA non configuré. Ajoutez GROQ_API_KEY (gratuit sur console.groq.com) dans vos variables d\'environnement.',
+      },
+      { status: 503 }
+    )
   }
 
   let body: any
@@ -165,47 +241,60 @@ export async function POST(req: NextRequest) {
   }
 
   const safeChapterCount = Math.min(7, Math.max(2, Number(chapterCount) || 4))
+  const promptText = buildPrompt(String(theme).trim(), docType, niveau, safeChapterCount)
+
+  let rawText = '{}'
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000,
-        system: 'Tu es un expert académique. Tu réponds UNIQUEMENT en JSON valide sans markdown ni texte avant/après.',
-        messages: [{ role: 'user', content: buildPrompt(String(theme).trim(), docType, niveau, safeChapterCount) }],
-      }),
-    })
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}))
-      console.error('[Document Assistant] Anthropic error:', err)
-      return NextResponse.json({ error: 'Erreur du service IA' }, { status: 502 })
+    // Try Groq first (fastest + most capable free tier)
+    if (groqKey) {
+      rawText = await callGroq(promptText, groqKey)
     }
-
-    const data = await response.json()
-    const rawText = data.content?.[0]?.text?.trim() || '{}'
-
-    let parsed: any
-    try {
-      const match = rawText.match(/\{[\s\S]*\}/)
-      parsed = JSON.parse(match ? match[0] : rawText)
-    } catch (e) {
-      console.error('[Document Assistant] JSON parse error:', rawText.slice(0, 300))
-      return NextResponse.json({ error: 'Format de réponse invalide' }, { status: 502 })
+    // Fallback to Gemini
+    else if (geminiKey) {
+      rawText = await callGemini(promptText, geminiKey)
     }
+    // Last resort: Anthropic
+    else if (anthropicKey) {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 4000,
+          system: 'Tu es un expert académique. Tu réponds UNIQUEMENT en JSON valide sans markdown ni texte avant/après le JSON.',
+          messages: [{ role: 'user', content: promptText }],
+        }),
+      })
 
-    return NextResponse.json({
-      ...parsed,
-      remaining: rl.remaining,
-    })
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(`Anthropic error: ${JSON.stringify(err)}`)
+      }
+
+      const data = await response.json()
+      rawText = data.content?.[0]?.text?.trim() || '{}'
+    }
   } catch (error) {
-    console.error('[Document Assistant] Network error:', error)
-    return NextResponse.json({ error: 'Erreur réseau' }, { status: 503 })
+    console.error('[Document Assistant] API error:', error)
+    return NextResponse.json({ error: 'Erreur du service IA. Vérifiez votre clé GROQ_API_KEY.' }, { status: 502 })
   }
+
+  let parsed: any
+  try {
+    const match = rawText.match(/\{[\s\S]*\}/)
+    parsed = JSON.parse(match ? match[0] : rawText)
+  } catch (e) {
+    console.error('[Document Assistant] JSON parse error:', rawText.slice(0, 300))
+    return NextResponse.json({ error: 'Format de réponse invalide' }, { status: 502 })
+  }
+
+  return NextResponse.json({
+    ...parsed,
+    remaining: rl.remaining,
+  })
 }

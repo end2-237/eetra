@@ -209,9 +209,9 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Pick available API key (Groq first, Gemini fallback, Anthropic last) ────
-  const groqKey    = process.env.GROQ_API_KEY
-  const geminiKey  = process.env.GOOGLE_GEMINI_API_KEY || process.env.GEMINI_API_KEY
-  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  const groqKey    = "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"
+  const geminiKey  = ""
+  const anthropicKey = ""
 
   if (!groqKey && !geminiKey && !anthropicKey) {
     return NextResponse.json(
@@ -247,8 +247,8 @@ export async function POST(req: NextRequest) {
 
   try {
     // Try Groq first (fastest + most capable free tier)
-    if (groqKey) {
-      rawText = await callGroq(promptText, groqKey)
+    if (process.env.GROQ_API_KEY) {
+      rawText = await callGroq(promptText, process.env.GROQ_API_KEY)
     }
     // Fallback to Gemini
     else if (geminiKey) {

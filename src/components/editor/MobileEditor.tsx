@@ -235,49 +235,58 @@ export function MobileEditor({ onExport }: Props) {
 
       {/* ─── Bottom tab bar ──────────────────────────────────────────────── */}
       <div style={{ flexShrink: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
-        <div
-          data-tour="mobile-tabbar"
-          ref={tabBarRef}
-          style={{
-            display: "flex", overflowX: "auto", overflowY: "hidden",
-            scrollbarWidth: "none", msOverflowStyle: "none",
-            WebkitOverflowScrolling: "touch",
-            touchAction: "pan-x",
-            scrollBehavior: "smooth",
-            padding: "5px 8px calc(5px + env(safe-area-inset-bottom, 0)) 8px",
-            gap: 4, height: 58, alignItems: "center",
-          } as React.CSSProperties}
-        >
-          {TABS.map(({ id, Icon, label }) => {
-            const isActive = activeTab === id;
-            const isRadar  = id === "radar";
-            return (
-              <button key={id} data-tab={id}
-                data-tour={id === "templates" ? "mobile-templates-nav" : undefined}
-                onClick={() => handleTabChange(id)}
-                style={{
-                  flexShrink: 0, display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", gap: 3,
-                  padding: "4px 8px", height: 46,
-                  background: isActive
-                    ? isRadar ? "rgba(16,185,129,.12)" : "var(--accentS)"
-                    : "transparent",
-                  border: isActive
-                    ? isRadar ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(27,79,216,.25)"
-                    : "1px solid transparent",
-                  borderRadius: 10, cursor: "pointer",
-                  color: isActive
-                    ? isRadar ? "#059669" : "var(--accent)"
-                    : "var(--text4)",
-                  minWidth: 46, transition: "all .12s",
-                }}
-              >
-                <Icon size={17} />
-                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: ".03em", whiteSpace: "nowrap" }}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div
+  data-tour="mobile-tabbar"
+  ref={tabBarRef}
+  style={{
+    display: "flex", overflowX: "auto", overflowY: "hidden",
+    scrollbarWidth: "none" as any, msOverflowStyle: "none" as any,
+    WebkitOverflowScrolling: "touch" as any,
+    touchAction: "pan-x",
+    scrollBehavior: "smooth",
+    padding: "4px 6px calc(4px + env(safe-area-inset-bottom, 0)) 6px",
+    gap: 2,
+    height: 56,
+    alignItems: "center",
+    // width: "100%" implicite, flex sans wrap → scroll horizontal
+  } as React.CSSProperties}
+>
+  {TABS.map(({ id, Icon, label }) => {
+    const isActive = activeTab === id;
+    const isRadar  = id === "radar";
+    return (
+      <button key={id} data-tab={id}
+        data-tour={id === "templates" ? "mobile-templates-nav" : undefined}
+        onClick={() => handleTabChange(id)}
+        style={{
+          flexShrink: 0,          // NE PAS rétrécir
+          flexGrow: 0,            // NE PAS s'étirer
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center", gap: 2,
+          padding: "4px 7px",    // légèrement réduit
+          height: 46,
+          minWidth: 42,           // réduit de 46 → 42
+          maxWidth: 64,
+          background: isActive
+            ? isRadar ? "rgba(16,185,129,.12)" : "var(--accentS)"
+            : "transparent",
+          border: isActive
+            ? isRadar ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(27,79,216,.25)"
+            : "1px solid transparent",
+          borderRadius: 10, cursor: "pointer",
+          color: isActive
+            ? isRadar ? "#059669" : "var(--accent)"
+            : "var(--text4)",
+          transition: "all .12s",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <Icon size={16} />
+        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".02em", whiteSpace: "nowrap" }}>{label}</span>
+      </button>
+    );
+  })}
+</div>
       </div>
 
       <style>{`

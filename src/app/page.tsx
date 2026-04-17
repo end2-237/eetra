@@ -261,20 +261,25 @@ function Hero() {
 
         {/* Headline — tailles dans globals.css (.home-hero-title) pour un rendu mobile fiable */}
         <h1 className="sr-hidden home-hero-title text-[var(--text)] mb-8">
-          {/* On augmente la marge en bas (mb-8) car les lettres géantes ont besoin d'air */}
-          <span className="block leading-[0.8] tracking-tighter">Creez des</span>
+  <span className="block tracking-tighter" style={{ lineHeight: '0.95', marginBottom: '0.06em' }}>
+    Creez des
+  </span>
 
-          <span className="block font-serif font-normal italic text-[1.2em] lg:text-[1.1em] text-[var(--text3)] -mt-2 mb-2">
-            {/* Augmentation à 1.2em pour le mobile pour que l'italique reste lisible face au gras massif */}
-            {typed}
-            <span className="home-hero-cursor inline-block h-[0.85em] bg-[var(--accent)] ml-2 rounded-sm align-middle animate-pulse max-lg:shadow-[0_0_20px_var(--electricGlow)]" />
-          </span>
+  <span
+    className="block font-serif font-normal italic text-[var(--text3)]"
+    style={{ fontSize: 'clamp(44px, 8.5vw, 108px)', lineHeight: '1.1', marginBottom: '0.08em' }}
+  >
+    {typed}
+    <span
+      className="inline-block bg-[var(--accent)] rounded-sm align-middle animate-pulse"
+      style={{ width: '0.055em', minWidth: '3px', height: '0.82em', marginLeft: '0.07em' }}
+    />
+  </span>
 
-          <span className="block max-lg:mt-4 leading-[0.8]">
-            {/* On augmente le mt-4 pour séparer le bloc dégradé du bloc italique qui prend de la place */}
-            <span className="gradient-text tracking-tighter">de niveau executif.</span>
-          </span>
-        </h1>
+  <span className="block tracking-tighter" style={{ lineHeight: '0.95' }}>
+    <span className="gradient-text">de niveau executif.</span>
+  </span>
+</h1>
 
         {/* Subline */}
         <p className="sr-hidden text-lg text-[var(--text3)] leading-relaxed max-w-[600px] mx-auto mb-10">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { MessageSquare, X, Check, ChevronDown, ChevronRight, Reply } from 'lucide-react'
+import { MessageSquare, X, Check, CheckCheck, ChevronDown, ChevronRight, Reply } from 'lucide-react'
 import { useDocument } from '@/contexts/DocumentContext'
 import { useProfile } from '@/contexts/ProfileContext'
 import { Button } from '@/components/ui/Button'
@@ -50,43 +50,81 @@ export function CommentsPanel({ showToast }: Props) {
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: `Tous (${comments.length})` },
-    { key: 'open', label: `En attente (${comments.filter(c => !c.resolved).length})` },
+    { key: 'open', label: `Attente (${comments.filter(c => !c.resolved).length})` },
     { key: 'resolved', label: `Résolus (${comments.filter(c => c.resolved).length})` },
   ]
 
   return (
-    <div className="border-r overflow-y-auto hide-scroll flex flex-col" style={{ width: '100%', maxWidth: '280px', minWidth: '280px', background: 'var(--bg2)', borderColor: 'var(--border)' }}>
-      <div className="p-4 flex-1 min-h-0">
-        <div className="flex items-center gap-2 mb-4">
+    <div style={{
+      width: '100%',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      background: 'var(--bg2)',
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <div style={{ padding: '12px 14px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           <MessageSquare size={13} color="var(--accent)" strokeWidth={2} />
-          <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>Revue Collaborative</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Revue Collaborative</span>
         </div>
 
         {/* New comment */}
         <textarea
-          value={input} onChange={e => setInput(e.target.value)}
+          value={input}
+          onChange={e => setInput(e.target.value)}
           placeholder="Ajoutez une annotation de révision..."
-          className="w-full rounded-lg px-3.5 py-2.5 text-[13px] border outline-none resize-y min-h-[72px] leading-relaxed font-sans mb-2"
-          style={{ background: 'var(--bg3)', borderColor: 'var(--border)', color: 'var(--text)' }}
-          onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = 'var(--surface)'; }}
-          onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg3)'; }}
+          style={{
+            width: '100%',
+            borderRadius: 8,
+            padding: '10px 12px',
+            fontSize: 12,
+            border: '1px solid var(--border)',
+            outline: 'none',
+            resize: 'vertical',
+            minHeight: 64,
+            lineHeight: 1.5,
+            fontFamily: 'inherit',
+            background: 'var(--bg3)',
+            color: 'var(--text)',
+            marginBottom: 8,
+            boxSizing: 'border-box',
+          }}
+          onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.background = 'var(--surface)' }}
+          onBlur={e => { e.target.style.borderColor = 'var(--border)'; e.target.style.background = 'var(--bg3)' }}
           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAdd() }}
         />
-        <Button variant="primary" fullWidth size="sm" onClick={handleAdd} style={{ marginBottom: 16 }}>
+        <Button variant="primary" fullWidth size="sm" onClick={handleAdd} style={{ marginBottom: 12 }}>
           Ajouter
         </Button>
 
         {/* Filters */}
-        <div className="flex rounded-lg border overflow-hidden mb-4" style={{ borderColor: 'var(--border)' }}>
+        <div style={{
+          display: 'flex',
+          borderRadius: 8,
+          border: '1px solid var(--border)',
+          overflow: 'hidden',
+          marginBottom: 14,
+        }}>
           {filters.map(f => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className="flex-1 py-1.5 text-[10px] font-bold cursor-pointer border-none transition-colors"
-              style={filter === f.key
-                ? { background: 'var(--accent)', color: '#fff' }
-                : { background: 'var(--bg3)', color: 'var(--text4)' }
-              }
+              style={{
+                flex: 1,
+                padding: '6px 4px',
+                fontSize: 9,
+                fontWeight: 700,
+                cursor: 'pointer',
+                border: 'none',
+                background: filter === f.key ? 'var(--accent)' : 'var(--bg3)',
+                color: filter === f.key ? '#fff' : 'var(--text4)',
+                transition: 'all .12s',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
             >
               {f.label}
             </button>
@@ -95,87 +133,75 @@ export function CommentsPanel({ showToast }: Props) {
 
         {/* Comments list */}
         {filtered.length === 0 ? (
-          <div className="text-[11px] text-center py-6" style={{ color: 'var(--text4)' }}>
+          <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 11, color: 'var(--text4)' }}>
             Aucun commentaire{filter !== 'all' ? ' dans cette catégorie' : ''}.
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {filtered.map(c => (
-              <div key={c.id}
-                className="rounded-lg border"
-                style={{
-                  background: c.resolved ? 'var(--bg3)' : 'var(--surface)',
-                  borderColor: c.resolved ? 'var(--border)' : 'var(--accentS2)',
-                  borderLeft: `3px solid ${c.resolved ? 'var(--text4)' : 'var(--accent)'}`,
-                  opacity: c.resolved ? .75 : 1,
-                }}>
-                <div className="p-3">
-                  <div className="flex justify-between items-start mb-1.5 gap-2">
-                    <span className="text-[11px] font-bold" style={{ color: c.resolved ? 'var(--text4)' : 'var(--accent)' }}>
+              <div key={c.id} style={{
+                borderRadius: 8,
+                border: '1px solid',
+                borderColor: c.resolved ? 'var(--border)' : 'var(--accentS2)',
+                borderLeft: `3px solid ${c.resolved ? 'var(--text4)' : 'var(--accent)'}`,
+                background: c.resolved ? 'var(--bg3)' : 'var(--surface)',
+                opacity: c.resolved ? .75 : 1,
+                overflow: 'hidden',
+              }}>
+                <div style={{ padding: '10px 12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 5 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: c.resolved ? 'var(--text4)' : 'var(--accent)', flexShrink: 0 }}>
                       {c.author.slice(0, 16)}
                     </span>
-                    <span className="font-mono text-[9px] flex-shrink-0" style={{ color: 'var(--text4)' }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'var(--text4)', flexShrink: 0 }}>
                       {c.createdAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
 
-                  <p className="text-[12px] leading-relaxed mb-2" style={{ color: 'var(--text2)' }}>
+                  <p style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 8, color: 'var(--text2)', margin: '0 0 8px' }}>
                     {c.text}
                   </p>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <button
-                      onClick={() => resolveComment(c.id)}
-                      className="flex items-center gap-1 text-[10px] cursor-pointer border-none bg-transparent transition-colors"
-                      style={{ color: c.resolved ? 'var(--text4)' : 'var(--success)' }}
-                    >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <button onClick={() => resolveComment(c.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, cursor: 'pointer', border: 'none', background: 'transparent', color: c.resolved ? 'var(--text4)' : 'var(--success)', padding: 0 }}>
                       <Check size={9} />
                       {c.resolved ? 'Rouvrir' : 'Résoudre'}
                     </button>
-                    <button
-                      onClick={() => { setReplyingTo(replyingTo === c.id ? null : c.id); setReplyText('') }}
-                      className="flex items-center gap-1 text-[10px] cursor-pointer border-none bg-transparent"
-                      style={{ color: 'var(--text4)' }}
-                    >
+                    <button onClick={() => { setReplyingTo(replyingTo === c.id ? null : c.id); setReplyText('') }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, cursor: 'pointer', border: 'none', background: 'transparent', color: 'var(--text4)', padding: 0 }}>
                       <Reply size={9} />
                       Répondre
                     </button>
                     {c.replies.length > 0 && (
-                      <button
-                        onClick={() => toggleExpand(c.id)}
-                        className="flex items-center gap-1 text-[10px] cursor-pointer border-none bg-transparent"
-                        style={{ color: 'var(--text4)' }}
-                      >
+                      <button onClick={() => toggleExpand(c.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, cursor: 'pointer', border: 'none', background: 'transparent', color: 'var(--text4)', padding: 0 }}>
                         {expanded.has(c.id) ? <ChevronDown size={9} /> : <ChevronRight size={9} />}
-                        {c.replies.length} réponse{c.replies.length > 1 ? 's' : ''}
+                        {c.replies.length} rép.
                       </button>
                     )}
-                    <button
-                      onClick={() => removeComment(c.id)}
-                      className="flex items-center gap-1 text-[10px] cursor-pointer border-none bg-transparent ml-auto"
-                      style={{ color: 'var(--danger)' }}
-                    >
+                    <button onClick={() => removeComment(c.id)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, cursor: 'pointer', border: 'none', background: 'transparent', color: 'var(--danger)', marginLeft: 'auto', padding: 0 }}>
                       <X size={9} /> Suppr.
                     </button>
                   </div>
 
                   {/* Reply input */}
                   {replyingTo === c.id && (
-                    <div className="mt-2 flex gap-2">
+                    <div style={{ marginTop: 8, display: 'flex', gap: 6 }}>
                       <input
                         value={replyText}
                         onChange={e => setReplyText(e.target.value)}
                         placeholder="Votre réponse..."
-                        className="flex-1 rounded px-2.5 py-1.5 text-[11px] border outline-none font-sans"
-                        style={{ background: 'var(--bg2)', borderColor: 'var(--border)', color: 'var(--text)' }}
+                        style={{ flex: 1, borderRadius: 6, padding: '6px 10px', fontSize: 11, border: '1px solid var(--border)', outline: 'none', background: 'var(--bg2)', color: 'var(--text)', fontFamily: 'inherit' }}
                         onKeyDown={e => { if (e.key === 'Enter') handleReply(c.id) }}
                         autoFocus
                       />
-                      <button
-                        onClick={() => handleReply(c.id)}
-                        style={{ padding: '4px 10px', borderRadius: 5, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}
-                      >↵</button>
+                      <button onClick={() => handleReply(c.id)}
+                        style={{ padding: '4px 10px', borderRadius: 5, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700 }}>
+                        ↵
+                      </button>
                     </div>
                   )}
                 </div>
@@ -191,8 +217,8 @@ export function CommentsPanel({ showToast }: Props) {
                           </span>
                         </div>
                         <div>
-                          <span className="text-[10px] font-bold" style={{ color: 'var(--text3)' }}>{r.author}</span>
-                          <p className="text-[11px]" style={{ color: 'var(--text2)', margin: '2px 0 0' }}>{r.text}</p>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)' }}>{r.author}</span>
+                          <p style={{ fontSize: 11, color: 'var(--text2)', margin: '2px 0 0' }}>{r.text}</p>
                         </div>
                       </div>
                     ))}

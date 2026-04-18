@@ -13,38 +13,78 @@ export function AnalyticsPanel() {
   const bars = [{ label: 'Mots', val: wordCount, max: 600 }, { label: 'Blocs', val: total, max: 12 }, { label: 'Pages', val: pages.length + 1, max: 8 }]
 
   return (
-    <div style={{ width: '100%', maxWidth: '280px', minWidth: '280px', borderRight: '1px solid var(--border)', overflowY: 'auto', background: 'var(--bg2)', borderColor: 'var(--border)' }} className="hide-scroll">
-      <div className="p-4">
-        <div className="flex items-center gap-2 mb-4">
+    <div style={{
+      width: '100%',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      background: 'var(--bg2)',
+      boxSizing: 'border-box',
+    }}>
+      <div style={{ padding: '12px 14px', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
           <BarChart2 size={13} color="var(--accent)" strokeWidth={2} />
-          <span className="text-[13px] font-bold" style={{ color: 'var(--text)' }}>Structure Analytics</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Structure Analytics</span>
         </div>
         {total === 0 ? (
-          <p className="text-[12px] text-center py-8" style={{ color: 'var(--text4)' }}>Ajoutez des blocs pour voir les analytics.</p>
+          <p style={{ fontSize: 12, textAlign: 'center', padding: '24px 0', color: 'var(--text4)' }}>
+            Ajoutez des blocs pour voir les analytics.
+          </p>
         ) : (
           <>
-            <div className="rounded-xl p-4 mb-4 border" style={{ background: 'var(--accentS)', borderColor: 'var(--accentS2)' }}>
-              <div className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: 'var(--text3)' }}>Score Complétude</div>
-              <div className="text-[36px] font-black" style={{ color: 'var(--accent)' }}>{score}%</div>
-              <div className="text-[11px] mt-1" style={{ color: 'var(--text4)' }}>{total} blocs · {wordCount} mots · {pages.length + 1} page{pages.length > 0 ? 's' : ''}</div>
+            <div style={{
+              borderRadius: 12,
+              padding: '12px 14px',
+              marginBottom: 14,
+              border: '1px solid var(--accentS2)',
+              background: 'var(--accentS)',
+            }}>
+              <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--text3)', marginBottom: 4 }}>
+                Score Complétude
+              </div>
+              <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--accent)' }}>{score}%</div>
+              <div style={{ fontSize: 11, marginTop: 4, color: 'var(--text4)' }}>
+                {total} blocs · {wordCount} mots · {pages.length + 1} page{pages.length > 0 ? 's' : ''}
+              </div>
             </div>
+
             {bars.map(({ label, val, max }) => (
-              <div key={label} className="mb-3">
-                <div className="flex justify-between mb-1.5">
-                  <span className="text-[11px]" style={{ color: 'var(--text3)' }}>{label}</span>
-                  <span className="font-mono text-[11px]" style={{ color: 'var(--accent)' }}>{val}</span>
+              <div key={label} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text3)' }}>{label}</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: 11, color: 'var(--accent)', fontWeight: 700 }}>{val}</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg3)' }}>
-                  <div className="h-full rounded-full transition-all duration-1000" style={{ background: 'var(--accent)', width: `${Math.min(100, (val / max) * 100)}%` }} />
+                <div style={{ height: 5, borderRadius: 99, overflow: 'hidden', background: 'var(--bg3)' }}>
+                  <div style={{
+                    height: '100%',
+                    borderRadius: 99,
+                    background: 'var(--accent)',
+                    width: `${Math.min(100, (val / max) * 100)}%`,
+                    transition: 'width 1s ease',
+                  }} />
                 </div>
               </div>
             ))}
-            <div className="h-px my-4" style={{ background: 'var(--border)' }} />
-            <div className="text-[9px] font-bold uppercase tracking-widest mb-3" style={{ color: 'var(--text4)' }}>Répartition</div>
+
+            <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
+
+            <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.14em', color: 'var(--text4)', marginBottom: 10 }}>
+              Répartition
+            </div>
+
             {Object.entries(typeCount).map(([t, c]) => (
-              <div key={t} className="flex justify-between items-center py-1.5 border-b" style={{ borderColor: 'var(--border)' }}>
-                <span className="text-[11px] uppercase font-500" style={{ color: 'var(--text3)', fontWeight: 500 }}>{t}</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: 'var(--accentS2)', color: 'var(--accent)' }}>{c}</span>
+              <div key={t} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '6px 0',
+                borderBottom: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 500, textTransform: 'uppercase' }}>{t}</span>
+                <span style={{
+                  fontSize: 10, fontWeight: 800,
+                  padding: '1px 7px', borderRadius: 99,
+                  background: 'var(--accentS2)', color: 'var(--accent)',
+                }}>{c}</span>
               </div>
             ))}
           </>

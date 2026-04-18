@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Layers, LayoutGrid, BarChart2, MessageSquare, FileText,
   Download, X, Plus, Layout, BookMarked, ChevronLeft,
-  ZoomIn, ZoomOut, CircleHelp, Radar,
+  ZoomIn, ZoomOut, CircleHelp, Radar, ChevronRight,
 } from "lucide-react";
 import { useDocument } from "@/contexts/DocumentContext";
 import { useProfile } from "@/contexts/ProfileContext";
@@ -15,14 +15,14 @@ import { EditorPanel } from "./panels/EditorPanel";
 import { TabName } from "@/types";
 
 const TABS = [
-  { id: "view",        Icon: FileText,      label: "Doc"          },
-  { id: "editor",      Icon: Layers,        label: "Blocs"        },
-  { id: "templates",   Icon: LayoutGrid,    label: "Templates"    },
+  { id: "view",        Icon: FileText,      label: "Doc"      },
+  { id: "editor",      Icon: Layers,        label: "Blocs"    },
+  { id: "templates",   Icon: LayoutGrid,    label: "Modèles"  },
   { id: "layout",      Icon: Layout,        label: "Mise en page" },
-  { id: "analytics",   Icon: BarChart2,     label: "Stats"        },
-  { id: "radar",       Icon: Radar,         label: "Radar"        },
-  { id: "comments",    Icon: MessageSquare, label: "Notes"        },
-  { id: "orientation", Icon: BookMarked,    label: "TdM"          },
+  { id: "analytics",   Icon: BarChart2,     label: "Stats"    },
+  { id: "radar",       Icon: Radar,         label: "Radar"    },
+  { id: "comments",    Icon: MessageSquare, label: "Notes"    },
+  { id: "orientation", Icon: BookMarked,    label: "TdM"      },
 ];
 
 interface Props {
@@ -52,6 +52,8 @@ export function MobileEditor({ onExport }: Props) {
   );
   const [userScale, setUserScale] = useState<number | null>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setWindowWidth(window.innerWidth);
@@ -70,24 +72,56 @@ export function MobileEditor({ onExport }: Props) {
     }
   };
 
-  const zoomIn  = useCallback(() => setUserScale(s => Math.min(MAX_SCALE, Math.round(((s ?? fitScale) + 0.1) * 10) / 10)), [fitScale])
-  const zoomOut = useCallback(() => setUserScale(s => Math.max(MIN_SCALE, Math.round(((s ?? fitScale) - 0.1) * 10) / 10)), [fitScale])
-  const zoomFit = useCallback(() => setUserScale(null), [])
+  const zoomIn  = useCallback(() => setUserScale(s => Math.min(MAX_SCALE, Math.round(((s ?? fitScale) + 0.1) * 10) / 10)), [fitScale]);
+  const zoomOut = useCallback(() => setUserScale(s => Math.max(MIN_SCALE, Math.round(((s ?? fitScale) - 0.1) * 10) / 10)), [fitScale]);
+  const zoomFit = useCallback(() => setUserScale(null), []);
 
+  // Mise à jour des indicateurs de scroll
+  const updateScrollIndicators = useCallback(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    updateScrollIndicators();
+    el.addEventListener("scroll", updateScrollIndicators, { passive: true });
+    const ro = new ResizeObserver(updateScrollIndicators);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateScrollIndicators);
+      ro.disconnect();
+    };
+  }, [updateScrollIndicators]);
+
+  // Scroll vers l'onglet actif
   useEffect(() => {
     if (!tabBarRef.current) return;
     const btn = tabBarRef.current.querySelector(
       `[data-tab="${activeTab}"]`
     ) as HTMLElement | null;
-    if (btn) btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [activeTab]);
+    if (btn) {
+      btn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    }
+    setTimeout(updateScrollIndicators, 300);
+  }, [activeTab, updateScrollIndicators]);
+
+  const scrollTabBar = (dir: 'left' | 'right') => {
+    const el = tabBarRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === 'right' ? 80 : -80, behavior: 'smooth' });
+  };
 
   const showPanel = activeTab !== "view";
+
   const openGuide = () => {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("eetra-open-guide"));
     }
-  }
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "var(--bg)", overflow: "hidden" }}>
@@ -97,7 +131,7 @@ export function MobileEditor({ onExport }: Props) {
         height: 48, flexShrink: 0,
         background: "var(--surface)", borderBottom: "1px solid var(--border)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 10px", gap: 6,
+        padding: "0 8px", gap: 4,
       }}>
         <button
           onClick={() => router.push("/dashboard")}
@@ -107,7 +141,7 @@ export function MobileEditor({ onExport }: Props) {
         </button>
 
         <span style={{
-          fontSize: 13, fontWeight: 700, color: "var(--text)",
+          fontSize: 12, fontWeight: 700, color: "var(--text)",
           flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "center",
         }}>
           {title || "Document"}
@@ -116,30 +150,30 @@ export function MobileEditor({ onExport }: Props) {
         {/* Zoom controls */}
         <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
           <button onClick={zoomOut} disabled={scale <= MIN_SCALE}
-            style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg2)", cursor: scale <= MIN_SCALE ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text4)", opacity: scale <= MIN_SCALE ? 0.4 : 1 }}>
-            <ZoomOut size={12} />
+            style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg2)", cursor: scale <= MIN_SCALE ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text4)", opacity: scale <= MIN_SCALE ? 0.4 : 1 }}>
+            <ZoomOut size={11} />
           </button>
           <button onClick={zoomFit}
-            style={{ height: 28, padding: "0 6px", borderRadius: 6, border: "1px solid var(--border)", background: userScale ? "var(--accentS)" : "var(--bg2)", cursor: "pointer", fontSize: 10, fontWeight: 800, color: userScale ? "var(--accent)" : "var(--text4)", fontFamily: "monospace", minWidth: 42, textAlign: "center" }}>
+            style={{ height: 26, padding: "0 5px", borderRadius: 6, border: "1px solid var(--border)", background: userScale ? "var(--accentS)" : "var(--bg2)", cursor: "pointer", fontSize: 9, fontWeight: 800, color: userScale ? "var(--accent)" : "var(--text4)", fontFamily: "monospace", minWidth: 38, textAlign: "center" }}>
             {Math.round(scale * 100)}%
           </button>
           <button onClick={zoomIn} disabled={scale >= MAX_SCALE}
-            style={{ width: 28, height: 28, borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg2)", cursor: scale >= MAX_SCALE ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text4)", opacity: scale >= MAX_SCALE ? 0.4 : 1 }}>
-            <ZoomIn size={12} />
+            style={{ width: 26, height: 26, borderRadius: 6, border: "1px solid var(--border)", background: "var(--bg2)", cursor: scale >= MAX_SCALE ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text4)", opacity: scale >= MAX_SCALE ? 0.4 : 1 }}>
+            <ZoomIn size={11} />
           </button>
         </div>
 
         <button
           onClick={openGuide}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, background: "var(--bg2)", color: "var(--text4)", border: "1px solid var(--border)", borderRadius: 8, cursor: "pointer", flexShrink: 0 }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, background: "var(--bg2)", color: "var(--text4)", border: "1px solid var(--border)", borderRadius: 7, cursor: "pointer", flexShrink: 0 }}
           title="Guide"
         >
-          <CircleHelp size={14} />
+          <CircleHelp size={13} />
         </button>
 
         <button data-tour="mobile-export-btn" onClick={onExport}
-          style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-          <Download size={13} /> PDF
+          style={{ display: "flex", alignItems: "center", gap: 3, padding: "5px 10px", background: "var(--accent)", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+          <Download size={12} /> PDF
         </button>
       </div>
 
@@ -235,58 +269,131 @@ export function MobileEditor({ onExport }: Props) {
 
       {/* ─── Bottom tab bar ──────────────────────────────────────────────── */}
       <div style={{ flexShrink: 0, background: "var(--surface)", borderTop: "1px solid var(--border)", paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
-      <div
-  data-tour="mobile-tabbar"
-  ref={tabBarRef}
-  style={{
-    display: "flex", overflowX: "auto", overflowY: "hidden",
-    scrollbarWidth: "none" as any, msOverflowStyle: "none" as any,
-    WebkitOverflowScrolling: "touch" as any,
-    touchAction: "pan-x",
-    scrollBehavior: "smooth",
-    padding: "4px 6px calc(4px + env(safe-area-inset-bottom, 0)) 6px",
-    gap: 2,
-    height: 56,
-    alignItems: "center",
-    // width: "100%" implicite, flex sans wrap → scroll horizontal
-  } as React.CSSProperties}
->
-  {TABS.map(({ id, Icon, label }) => {
-    const isActive = activeTab === id;
-    const isRadar  = id === "radar";
-    return (
-      <button key={id} data-tab={id}
-        data-tour={id === "templates" ? "mobile-templates-nav" : undefined}
-        onClick={() => handleTabChange(id)}
-        style={{
-          flexShrink: 0,          // NE PAS rétrécir
-          flexGrow: 0,            // NE PAS s'étirer
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center", gap: 2,
-          padding: "4px 7px",    // légèrement réduit
-          height: 46,
-          minWidth: 42,           // réduit de 46 → 42
-          maxWidth: 64,
-          background: isActive
-            ? isRadar ? "rgba(16,185,129,.12)" : "var(--accentS)"
-            : "transparent",
-          border: isActive
-            ? isRadar ? "1px solid rgba(16,185,129,.3)" : "1px solid rgba(27,79,216,.25)"
-            : "1px solid transparent",
-          borderRadius: 10, cursor: "pointer",
-          color: isActive
-            ? isRadar ? "#059669" : "var(--accent)"
-            : "var(--text4)",
-          transition: "all .12s",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <Icon size={16} />
-        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".02em", whiteSpace: "nowrap" }}>{label}</span>
-      </button>
-    );
-  })}
-</div>
+        
+        {/* Conteneur avec flèches de navigation */}
+        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+          
+          {/* Flèche gauche */}
+          {canScrollLeft && (
+            <button
+              onClick={() => scrollTabBar('left')}
+              style={{
+                position: "absolute", left: 0, zIndex: 10,
+                width: 24, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
+                background: "linear-gradient(to right, var(--surface) 70%, transparent)",
+                border: "none", cursor: "pointer", color: "var(--text4)",
+                padding: 0, flexShrink: 0,
+              }}
+            >
+              <ChevronLeft size={14} />
+            </button>
+          )}
+
+          {/* Tab bar scrollable */}
+          <div
+            data-tour="mobile-tabbar"
+            ref={tabBarRef}
+            style={{
+              display: "flex",
+              overflowX: "auto",
+              overflowY: "hidden",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              WebkitOverflowScrolling: "touch",
+              touchAction: "pan-x",
+              scrollBehavior: "smooth",
+              padding: `4px ${canScrollRight ? 28 : 8}px 4px ${canScrollLeft ? 28 : 8}px`,
+              gap: 2,
+              height: 52,
+              alignItems: "center",
+              flex: 1,
+            } as React.CSSProperties}
+          >
+            {TABS.map(({ id, Icon, label }) => {
+              const isActive = activeTab === id;
+              const isRadar  = id === "radar";
+              const isTdm    = id === "orientation";
+              return (
+                <button
+                  key={id}
+                  data-tab={id}
+                  data-tour={id === "templates" ? "mobile-templates-nav" : undefined}
+                  onClick={() => handleTabChange(id)}
+                  style={{
+                    flexShrink: 0,
+                    flexGrow: 0,
+                    display: "flex", flexDirection: "column",
+                    alignItems: "center", justifyContent: "center", gap: 2,
+                    padding: "4px 8px",
+                    height: 44,
+                    minWidth: 44,
+                    maxWidth: 68,
+                    background: isActive
+                      ? isRadar ? "rgba(16,185,129,.12)"
+                        : isTdm ? "rgba(124,58,237,.12)"
+                        : "var(--accentS)"
+                      : "transparent",
+                    border: isActive
+                      ? isRadar ? "1px solid rgba(16,185,129,.3)"
+                        : isTdm ? "1px solid rgba(124,58,237,.25)"
+                        : "1px solid rgba(27,79,216,.25)"
+                      : "1px solid transparent",
+                    borderRadius: 10,
+                    cursor: "pointer",
+                    color: isActive
+                      ? isRadar ? "#059669"
+                        : isTdm ? "#7C3AED"
+                        : "var(--accent)"
+                      : "var(--text4)",
+                    transition: "all .12s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <Icon size={15} />
+                  <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: ".02em" }}>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Flèche droite */}
+          {canScrollRight && (
+            <button
+              onClick={() => scrollTabBar('right')}
+              style={{
+                position: "absolute", right: 0, zIndex: 10,
+                width: 28, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
+                background: "linear-gradient(to left, var(--surface) 70%, transparent)",
+                border: "none", cursor: "pointer", color: "var(--accent)",
+                padding: 0, flexShrink: 0,
+              }}
+            >
+              <ChevronRight size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Indicateur de progression des onglets - petits points */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 3, paddingBottom: 4, paddingTop: 1 }}>
+          {TABS.map(({ id }) => (
+            <div
+              key={id}
+              onClick={() => {
+                handleTabChange(id);
+                const btn = tabBarRef.current?.querySelector(`[data-tab="${id}"]`) as HTMLElement;
+                btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+              }}
+              style={{
+                width: activeTab === id ? 14 : 4,
+                height: 3,
+                borderRadius: 2,
+                background: activeTab === id ? "var(--accent)" : "var(--border2)",
+                transition: "all .2s",
+                cursor: "pointer",
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       <style>{`

@@ -87,17 +87,22 @@ export function BlockContextMenu({
     }
   }, [onClose])
 
-  // Smart positioning: appears immediately next to cursor, flips if near edge
-  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
-  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+  // ── Positionnement PRÈS du clic ────────────────────────────────────────────
+  // On laisse du CSS faire le travail de clamp pour rester dans la fenêtre.
+  // On place le coin supérieur-gauche au point de clic, puis on ajuste si
+  // le menu dépasse à droite ou en bas.
+  const OFFSET_X = 6   // px de décalage horizontal depuis le curseur
+  const OFFSET_Y = 4   // px de décalage vertical depuis le curseur
   const menuW = 228
   const menuH = isText ? 440 : 170
 
-  const spaceRight = vw - x
-  const spaceBelow = vh - y
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
 
-  const finalX = spaceRight >= menuW + 12 ? x + 6 : Math.max(6, x - menuW - 6)
-  const finalY = spaceBelow >= menuH + 12 ? y + 4 : Math.max(6, y - menuH)
+  // Place near the click, clamp inside viewport with small margin
+  const MARGIN = 6
+  const finalX = Math.min(Math.max(x + OFFSET_X, MARGIN), vw - menuW - MARGIN)
+  const finalY = Math.min(Math.max(y + OFFSET_Y, MARGIN), vh - menuH - MARGIN)
 
   const row: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 6,

@@ -98,7 +98,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
   const [remaining, setRemaining] = useState<number | null>(null)
   const [showTooltip, setShowTooltip] = useState(false)
   const canUseAI = planId !== 'starter'
-
+ 
   const handleAIAssist = async () => {
     const currentText = ref.current?.textContent?.trim() || ''
     if (!currentText || currentText.length < 5) {
@@ -123,7 +123,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
     } catch { setError('Erreur de connexion') }
     finally { setIsLoading(false) }
   }
-
+ 
   const acceptSuggestion = () => {
     if (suggestion && ref.current) {
       ref.current.textContent = suggestion
@@ -131,7 +131,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
       setSuggestion(null)
     }
   }
-
+ 
   const defaultStyle: React.CSSProperties = {
     fontFamily: fontFamily || 'Times New Roman, serif',
     fontSize: 12, lineHeight: 1.85, color: '#444',
@@ -139,49 +139,29 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
     whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 20,
   }
   const pStyle = applyBlockStyles(defaultStyle, blockStyles)
-
+ 
   return (
     <div style={{ position: 'relative' }}>
-      <div className="pdf-hidden" style={{ position: 'absolute', top: -8, right: 0, zIndex: 10 }}>
-        <div style={{ position: 'relative' }}>
-          <button
-            onClick={handleAIAssist} disabled={isLoading}
-            onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px', borderRadius: 6,
-              border: canUseAI ? '1px solid #E0E7FF' : '1px solid #E5E7EB',
-              background: canUseAI ? 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)' : '#F9FAFB',
-              color: canUseAI ? '#4F46E5' : '#9CA3AF', fontSize: 10, fontWeight: 600,
-              cursor: isLoading ? 'wait' : canUseAI ? 'pointer' : 'not-allowed',
-              opacity: isLoading ? 0.7 : 1,
-            }}
-          >
-            {isLoading ? <LoadingSpinner size={12} className="text-current" /> : canUseAI ? <Sparkles size={12} /> : <Lock size={10} />}
-            <span>{isLoading ? 'Amélioration...' : 'Améliorer'}</span>
-          </button>
-          {showTooltip && !isLoading && (
-            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, padding: '6px 10px', borderRadius: 6, background: '#1F2937', color: '#fff', fontSize: 10, whiteSpace: 'nowrap', zIndex: 20 }}>
-              <div style={{ fontWeight: 600, marginBottom: 2 }}>Assistance IA à l&apos;édition</div>
-              <div style={{ color: canUseAI ? '#10B981' : '#F59E0B', marginTop: 4 }}>{canUseAI ? 'Disponible' : 'Passez à Étudiant+'}</div>
-            </div>
-          )}
-        </div>
-      </div>
+      {/* ── BOUTON IA : positionné EN DESSOUS du contenu sur mobile ── */}
+      {/* On utilise display:flex + flex-direction:column pour éviter tout chevauchement */}
       {error && (
-        <div className="pdf-hidden" style={{ position: 'absolute', top: -28, left: 0, right: 60, padding: '4px 8px', borderRadius: 4, background: '#FEF2F2', color: '#DC2626', fontSize: 10 }}>{error}</div>
+        <div className="pdf-hidden" style={{
+          padding: '4px 8px', borderRadius: 4,
+          background: '#FEF2F2', color: '#DC2626', fontSize: 10, marginBottom: 4,
+        }}>{error}</div>
       )}
       {suggestion && (
         <div className="pdf-hidden" style={{ marginBottom: 8, padding: 12, borderRadius: 8, background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', border: '1px solid #86EFAC' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
-              <Sparkles size={12} /> Suggestion IA
+              ✦ Suggestion IA
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
               <button onClick={acceptSuggestion} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 4, background: '#059669', color: '#fff', border: 'none', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
-                <Check size={10} /> Accepter
+                ✓ Accepter
               </button>
               <button onClick={() => setSuggestion(null)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 4, background: '#fff', color: '#666', border: '1px solid #E5E7EB', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
-                <X size={10} /> Rejeter
+                ✕ Rejeter
               </button>
             </div>
           </div>
@@ -189,14 +169,46 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
           {remaining !== null && <div style={{ marginTop: 8, fontSize: 9, color: '#6B7280' }}>{remaining} utilisation{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''}</div>}
         </div>
       )}
+ 
+      {/* Texte éditable */}
       <p ref={ref} contentEditable suppressContentEditableWarning
         data-placeholder={placeholder}
-        onBlur={e => onUpdateContent?.(block.id, readAndSanitize(e.currentTarget))}
-        style={{ ...pStyle, opacity: suggestion ? 0.5 : 1, transition: 'opacity .2s' }} />
+        onBlur={e => onUpdateContent?.(block.id, sanitizeContent(e.currentTarget.textContent || ''))}
+        style={{ ...pStyle, opacity: suggestion ? 0.5 : 1, transition: 'opacity .2s', marginBottom: 0 }} />
+ 
+      {/* ── BOUTON IA : en dessous du texte, aligné à droite ── */}
+      {/* Pas en position:absolute pour éviter tout chevauchement */}
+      <div className="pdf-hidden" style={{
+        display: 'flex', justifyContent: 'flex-end', marginTop: 3,
+      }}>
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={handleAIAssist} disabled={isLoading}
+            onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px', borderRadius: 5,
+              border: canUseAI ? '1px solid #E0E7FF' : '1px solid #E5E7EB',
+              background: canUseAI ? 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)' : '#F9FAFB',
+              color: canUseAI ? '#4F46E5' : '#9CA3AF', fontSize: 9, fontWeight: 600,
+              cursor: isLoading ? 'wait' : canUseAI ? 'pointer' : 'not-allowed',
+              opacity: isLoading ? 0.7 : 1,
+            }}
+          >
+            {isLoading ? '⟳' : canUseAI ? '✦' : '🔒'}
+            <span>{isLoading ? 'Amélioration...' : 'Améliorer'}</span>
+          </button>
+          {showTooltip && !isLoading && (
+            <div style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 4, padding: '6px 10px', borderRadius: 6, background: '#1F2937', color: '#fff', fontSize: 10, whiteSpace: 'nowrap', zIndex: 20 }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>Assistance IA à l'édition</div>
+              <div style={{ color: canUseAI ? '#10B981' : '#F59E0B', marginTop: 4 }}>{canUseAI ? 'Disponible' : 'Passez à Étudiant+'}</div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
-
+ 
 // ─── Headings ─────────────────────────────────────────────────────────────────
 
 function H1Block({ block, onUpdateContent, blockStyles }: {
@@ -474,7 +486,7 @@ function InteractiveTable({ block, co, onUpdateTable, blockStyles }: {
   }
   return (
     <div style={{ overflowX: 'auto', marginTop: 4 }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit', fontSize: 11 }}>
+      <table style={{ minWidth:380, borderCollapse: 'collapse', fontFamily: 'inherit', fontSize: 11 }}>
         <thead>
           <tr style={{ borderBottom: `2px solid ${accentColor}` }}>
             {data.headers.map((h, ci) => (

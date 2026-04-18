@@ -63,6 +63,7 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
     removeBlock, updateBlock, updateBlockTable, updateBlockChart, updateBlockImage,
     updateBlockStyle, setPageBlocks, removePage, overflowBlock, coverStyle,
     addShapeToPage, updatePageShape, removePageShape,
+    pages,
   } = useDocument()
   const { profile } = useProfile()
   const { layout } = usePageLayout()
@@ -78,8 +79,22 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
   const footerH = layout.footer.show ? layout.footer.height : 0
   const CONTENT_MAX_H = A4_H - headerH - footerH - PAD_V * 2 - 32
 
+  // Detect if we're inside a scaled A4 container (mobile) — use the ratio
+  // to compute a responsive horizontal padding
+  const [isMobileScale, setIsMobileScale] = useState(false)
+  useEffect(() => {
+    // A4 is 794px wide; if window < 794, we're scaled
+    setIsMobileScale(window.innerWidth < 794)
+    const handler = () => setIsMobileScale(window.innerWidth < 794)
+    window.addEventListener('resize', handler, { passive: true })
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverId,  setDragOverId] = useState<string | null>(null)
+
+  // Cross-page drag state
+  const [crossPageDragActive, setCrossPageDragActive] = useState(false)
 
   const [contextMenu, setContextMenu] = useState<{
     x: number; y: number; blockId: string; blockIdx: number
@@ -98,6 +113,25 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
     setDraggingId(null); setDragOverId(null)
   }
 
+  // ── Cross-page drop: accept a block from another page ─────────────────────
+  const handleCrossPageDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setCrossPageDragActive(false)
+    const blockJson = e.dataTransfer.getData('application/eetra-block')
+    const fromPageId = e.dataTransfer.getData('application/eetra-from-page')
+    if (!blockJson || fromPageId === page.id) return
+    try {
+      const block = JSON.parse(blockJson)
+      // Remove from source page
+      const srcPage = pages.find(p => p.id === fromPageId)
+      if (srcPage) {
+        setPageBlocks(fromPageId, srcPage.blocks.filter(b => b.id !== block.id))
+      }
+      // Add to this page
+      setPageBlocks(page.id, [...page.blocks, block])
+    } catch {}
+  }, [page.id, page.blocks, pages, setPageBlocks])
+
   const moveBlockUp = useCallback((id: string) => {
     const b = [...page.blocks]; const i = b.findIndex(x => x.id === id)
     if (i <= 0) return
@@ -111,6 +145,28 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
     ;[b[i], b[i+1]] = [b[i+1], b[i]]
     setPageBlocks(page.id, b)
   }, [page.blocks, page.id, setPageBlocks])
+
+  // Move block to previous page
+  const moveBlockToPrevPage = useCallback((blockId: string) => {
+    if (pageIndex <= 0) return
+    const block = page.blocks.find(b => b.id === blockId)
+    if (!block) return
+    const prevPage = pages[pageIndex - 1]
+    if (!prevPage) return
+    setPageBlocks(page.id, page.blocks.filter(b => b.id !== blockId))
+    setPageBlocks(prevPage.id, [...prevPage.blocks, block])
+  }, [page, pageIndex, pages, setPageBlocks])
+
+  // Move block to next page
+  const moveBlockToNextPage = useCallback((blockId: string) => {
+    if (pageIndex >= pages.length - 1) return
+    const block = page.blocks.find(b => b.id === blockId)
+    if (!block) return
+    const nextPage = pages[pageIndex + 1]
+    if (!nextPage) return
+    setPageBlocks(page.id, page.blocks.filter(b => b.id !== blockId))
+    setPageBlocks(nextPage.id, [block, ...nextPage.blocks])
+  }, [page, pageIndex, pages, setPageBlocks])
 
   function getSectionPrefix(sectionOrdinal: number): string {
     const n = sectionOrdinal + 1
@@ -153,20 +209,39 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
     ? page.blocks.find(b => b.id === contextMenu.blockId)
     : null
 
+  // Responsive padding — full 40px inside A4, reduced when scaled on mobile
+  const contentPadX = 40 // always 40px in the A4 coordinate system (scaled externally)
+
   return (
     <div style={{
       width: '100%', height: '100%', background: '#fff',
       display: 'flex', flexDirection: 'column',
       position: 'relative', overflow: 'hidden', boxSizing: 'border-box',
-    }}>
+    }}
+      onDragOver={e => { e.preventDefault(); setCrossPageDragActive(true) }}
+      onDragLeave={() => setCrossPageDragActive(false)}
+      onDrop={handleCrossPageDrop}
+    >
       <WatermarkOverlay />
       <CoverBorderOverlay config={pageConfig} />
+
+      {/* Cross-page drop indicator */}
+      {crossPageDragActive && (
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 300, pointerEvents: 'none',
+          border: `3px dashed ${accentColor}`, borderRadius: 4, background: `${accentColor}08`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: accentColor, background: '#fff', padding: '4px 10px', borderRadius: 6 }}>
+            Déposer ici
+          </div>
+        </div>
+      )}
 
       <div style={{ position: 'absolute', left: 0, top: 0, width: 3, height: '100%', background: accentColor, opacity: .18, zIndex: 1 }} />
 
       <PageHeader pageNumber={absolutePage} totalPages={absoluteTotal} accentColor={accentColor} currentSection={currentSection} />
 
-      {/* FIX: Single PageShapeLayer - interactive only (no duplicate readonly layer) */}
       <PageShapeLayer
         pageId={page.id}
         shapes={page.shapes || []}
@@ -176,7 +251,7 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
         accentColor={accentColor}
       />
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${PAD_V / 2}px 40px 0`, flexShrink: 0, zIndex: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: `${PAD_V / 2}px ${contentPadX}px 0`, flexShrink: 0, zIndex: 2 }}>
         <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: '.22em', textTransform: 'uppercase', color: '#ccc', display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ color: accentColor }}>//</span>
           Page {pageIndex + 1}
@@ -193,15 +268,14 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
         )}
       </div>
 
-      {/* FIX: overflow:visible on content so block controls don't get clipped */}
       <div
         ref={contentRef}
         style={{
           flex: 1,
           maxHeight: CONTENT_MAX_H,
           overflowY: 'hidden',
-          overflowX: 'visible', // ← was 'hidden', now visible so controls show
-          padding: `${PAD_V / 2}px 40px`,
+          overflowX: 'visible',
+          padding: `${PAD_V / 2}px ${contentPadX}px`,
           zIndex: 2,
         }}
       >
@@ -211,7 +285,8 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
             <div style={{ fontSize: 10 }}>Ajoutez des blocs depuis le panneau de gauche</div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          // ── ESPACEMENT RÉDUIT : gap de 8px au lieu de 16px ──────────────────
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {page.blocks.map((block, idx) => {
               const sectionOrdinal = page.blocks.slice(0, idx).filter(b => b.type === 'section').length
               const prefix = layout.hierarchy.autoNumberSections && block.type === 'section'
@@ -221,12 +296,24 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                 <div
                   key={block.id}
                   draggable
-                  onDragStart={() => setDraggingId(block.id)}
+                  onDragStart={e => {
+                    setDraggingId(block.id)
+                    // Store block data for cross-page moves
+                    e.dataTransfer.setData('application/eetra-block', JSON.stringify(block))
+                    e.dataTransfer.setData('application/eetra-from-page', page.id)
+                  }}
                   onDragOver={e => { e.preventDefault(); setDragOverId(block.id) }}
-                  onDrop={() => handleDrop(block.id)}
+                  onDrop={e => {
+                    // Only same-page drops here
+                    const fromPage = e.dataTransfer.getData('application/eetra-from-page')
+                    if (fromPage === page.id) {
+                      handleDrop(block.id)
+                    }
+                  }}
                   onDragEnd={() => { setDraggingId(null); setDragOverId(null) }}
                   onContextMenu={e => {
                     e.preventDefault(); e.stopPropagation()
+                    // ── MENU CONTEXTUEL : positionner PRÈS du clic ──
                     setContextMenu({ x: e.clientX, y: e.clientY, blockId: block.id, blockIdx: idx })
                   }}
                   className="block-wrapper"
@@ -237,14 +324,13 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                     outline: dragOverId === block.id && draggingId !== block.id ? `2px solid ${accentColor}` : 'none',
                     opacity: draggingId === block.id ? 0.45 : 1,
                     transition: 'opacity .15s, outline .1s',
-                    // FIX: overflow visible so the controls panel (right side) is not clipped
                     overflow: 'visible',
                   }}
                 >
-                  {/* Hover block controls — positioned to the right */}
+                  {/* Hover controls */}
                   <div className="pdf-hidden block-controls" style={{
                     position: 'absolute',
-                    right: -56, // outside the block to the right
+                    right: -56,
                     top: 0,
                     display: 'flex',
                     flexDirection: 'column',
@@ -259,7 +345,6 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                     boxShadow: '0 2px 8px rgba(0,0,0,.08)',
                     pointerEvents: 'all',
                   }}>
-                    {/* Quick alignment buttons for text blocks */}
                     {['text', 'h1', 'h2', 'h3', 'h4', 'section', 'quote'].includes(block.type) && (
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 2, marginBottom: 3 }}>
                         {[
@@ -285,7 +370,26 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
                       </div>
                     )}
 
-                    {/* Move & Delete */}
+                    {/* Move between pages */}
+                    {pages.length > 1 && (
+                      <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
+                        <button
+                          onClick={() => moveBlockToPrevPage(block.id)}
+                          disabled={pageIndex === 0}
+                          title="Déplacer page précédente"
+                          style={{ width: 20, height: 20, borderRadius: 3, border: '1px solid #e0e0e0', background: pageIndex === 0 ? '#f5f5f5' : '#fff', cursor: pageIndex === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: pageIndex === 0 ? '#ddd' : '#666', flex: 1 }}>
+                          ⇡P
+                        </button>
+                        <button
+                          onClick={() => moveBlockToNextPage(block.id)}
+                          disabled={pageIndex >= pages.length - 1}
+                          title="Déplacer page suivante"
+                          style={{ width: 20, height: 20, borderRadius: 3, border: '1px solid #e0e0e0', background: pageIndex >= pages.length - 1 ? '#f5f5f5' : '#fff', cursor: pageIndex >= pages.length - 1 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: pageIndex >= pages.length - 1 ? '#ddd' : '#666', flex: 1 }}>
+                          ⇣P
+                        </button>
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', gap: 2 }}>
                       <button onClick={() => moveBlockUp(block.id)} disabled={idx === 0} title="Monter"
                         style={{ width: 20, height: 20, borderRadius: 3, border: '1px solid #e8e8e8', background: '#fff', cursor: idx === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: idx === 0 ? '#e0e0e0' : '#888', padding: 0, flex: 1 }}>
@@ -325,7 +429,7 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
 
       <PageFooter pageNumber={absolutePage} totalPages={absoluteTotal} accentColor={accentColor} />
 
-      {/* Right-click context menu */}
+      {/* ── MENU CONTEXTUEL : positionné exactement au clic ── */}
       {contextMenu && ctxBlock && (
         <BlockContextMenu
           x={contextMenu.x}
@@ -353,6 +457,27 @@ export function ContentPage({ page, pageIndex, totalPages }: Props) {
       <style>{`
         .block-wrapper:hover .block-controls    { opacity: 1 !important; }
         .block-wrapper:hover .block-drag-handle { opacity: 1 !important; }
+
+        /* ── TABLE RESPONSIVE dans la zone A4 ── */
+        .block-wrapper table {
+          width: 100%;
+          table-layout: fixed;
+          word-break: break-word;
+        }
+        .block-wrapper table th,
+        .block-wrapper table td {
+          padding: 4px 6px !important;
+          font-size: 10px !important;
+          white-space: normal !important;
+          word-wrap: break-word;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 0;
+        }
+        .block-wrapper table th {
+          font-size: 8px !important;
+          letter-spacing: .06em !important;
+        }
       `}</style>
     </div>
   )

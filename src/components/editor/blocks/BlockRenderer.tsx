@@ -98,7 +98,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
   const [remaining, setRemaining] = useState<number | null>(null)
   const [showTooltip, setShowTooltip] = useState(false)
   const canUseAI = planId !== 'starter'
- 
+
   const handleAIAssist = async () => {
     const currentText = ref.current?.textContent?.trim() || ''
     if (!currentText || currentText.length < 5) {
@@ -123,7 +123,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
     } catch { setError('Erreur de connexion') }
     finally { setIsLoading(false) }
   }
- 
+
   const acceptSuggestion = () => {
     if (suggestion && ref.current) {
       ref.current.textContent = suggestion
@@ -131,7 +131,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
       setSuggestion(null)
     }
   }
- 
+
   const defaultStyle: React.CSSProperties = {
     fontFamily: fontFamily || 'Times New Roman, serif',
     fontSize: 12, lineHeight: 1.85, color: '#444',
@@ -139,11 +139,9 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
     whiteSpace: 'pre-wrap', cursor: 'text', minHeight: 20,
   }
   const pStyle = applyBlockStyles(defaultStyle, blockStyles)
- 
+
   return (
     <div style={{ position: 'relative' }}>
-      {/* ── BOUTON IA : positionné EN DESSOUS du contenu sur mobile ── */}
-      {/* On utilise display:flex + flex-direction:column pour éviter tout chevauchement */}
       {error && (
         <div className="pdf-hidden" style={{
           padding: '4px 8px', borderRadius: 4,
@@ -154,14 +152,14 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
         <div className="pdf-hidden" style={{ marginBottom: 8, padding: 12, borderRadius: 8, background: 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)', border: '1px solid #86EFAC' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: 4 }}>
-              ✦ Suggestion IA
+              <Sparkles size={10} /> Suggestion IA
             </span>
             <div style={{ display: 'flex', gap: 4 }}>
               <button onClick={acceptSuggestion} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 4, background: '#059669', color: '#fff', border: 'none', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
-                ✓ Accepter
+                <Check size={9} /> Accepter
               </button>
               <button onClick={() => setSuggestion(null)} style={{ display: 'flex', alignItems: 'center', gap: 3, padding: '3px 8px', borderRadius: 4, background: '#fff', color: '#666', border: '1px solid #E5E7EB', fontSize: 10, fontWeight: 600, cursor: 'pointer' }}>
-                ✕ Rejeter
+                <X size={9} /> Rejeter
               </button>
             </div>
           </div>
@@ -169,38 +167,54 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
           {remaining !== null && <div style={{ marginTop: 8, fontSize: 9, color: '#6B7280' }}>{remaining} utilisation{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''}</div>}
         </div>
       )}
- 
+
       {/* Texte éditable */}
       <p ref={ref} contentEditable suppressContentEditableWarning
         data-placeholder={placeholder}
         onBlur={e => onUpdateContent?.(block.id, sanitizeContent(e.currentTarget.textContent || ''))}
         style={{ ...pStyle, opacity: suggestion ? 0.5 : 1, transition: 'opacity .2s', marginBottom: 0 }} />
- 
-      {/* ── BOUTON IA : en dessous du texte, aligné à droite ── */}
-      {/* Pas en position:absolute pour éviter tout chevauchement */}
-      <div className="pdf-hidden" style={{
-        display: 'flex', justifyContent: 'flex-end', marginTop: 3,
+
+      {/* ── BOUTON IA : position absolue, sans impact sur la hauteur du bloc ── */}
+      <div className="pdf-hidden ai-improve-btn" style={{
+        position: 'absolute',
+        right: 0,
+        bottom: -20,
+        height: 20,
+        display: 'flex',
+        alignItems: 'center',
+        opacity: 0,
+        transition: 'opacity .15s',
+        pointerEvents: 'none',
+        zIndex: 5,
       }}>
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative', pointerEvents: 'auto' }}>
           <button
-            onClick={handleAIAssist} disabled={isLoading}
-            onMouseEnter={() => setShowTooltip(true)} onMouseLeave={() => setShowTooltip(false)}
+            onClick={handleAIAssist}
+            disabled={isLoading}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
             style={{
-              display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px', borderRadius: 5,
-              border: canUseAI ? '1px solid #E0E7FF' : '1px solid #E5E7EB',
+              display: 'flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 5,
+              border: canUseAI ? '1px solid #C7D2FE' : '1px solid #E5E7EB',
               background: canUseAI ? 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)' : '#F9FAFB',
               color: canUseAI ? '#4F46E5' : '#9CA3AF', fontSize: 9, fontWeight: 600,
               cursor: isLoading ? 'wait' : canUseAI ? 'pointer' : 'not-allowed',
               opacity: isLoading ? 0.7 : 1,
             }}
           >
-            {isLoading ? '⟳' : canUseAI ? '✦' : '🔒'}
-            <span>{isLoading ? 'Amélioration...' : 'Améliorer'}</span>
+            {isLoading
+              ? <LoadingSpinner size={9} className="text-current" />
+              : !canUseAI
+              ? <Lock size={9} />
+              : <Sparkles size={9} />}
+            <span>{isLoading ? 'En cours…' : 'Améliorer'}</span>
           </button>
           {showTooltip && !isLoading && (
             <div style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 4, padding: '6px 10px', borderRadius: 6, background: '#1F2937', color: '#fff', fontSize: 10, whiteSpace: 'nowrap', zIndex: 20 }}>
               <div style={{ fontWeight: 600, marginBottom: 2 }}>Assistance IA à l'édition</div>
-              <div style={{ color: canUseAI ? '#10B981' : '#F59E0B', marginTop: 4 }}>{canUseAI ? 'Disponible' : 'Passez à Étudiant+'}</div>
+              <div style={{ color: canUseAI ? '#10B981' : '#F59E0B', marginTop: 4 }}>
+                {canUseAI ? 'Disponible' : 'Passez à Étudiant+'}
+              </div>
             </div>
           )}
         </div>
@@ -208,7 +222,7 @@ function TextBlock({ block, onUpdateContent, fontFamily, blockStyles }: {
     </div>
   )
 }
- 
+
 // ─── Headings ─────────────────────────────────────────────────────────────────
 
 function H1Block({ block, onUpdateContent, blockStyles }: {
@@ -485,25 +499,25 @@ function InteractiveTable({ block, co, onUpdateTable, blockStyles }: {
     update({ ...data, rows: data.rows.map((row, ri) => ri === r ? row.map((cell, ci) => ci === c ? sanitizeContent(val) : cell) : row) })
   }
   return (
-    <div style={{ overflowX: 'auto', marginTop: 4 }}>
-      <table style={{ minWidth:380, borderCollapse: 'collapse', fontFamily: 'inherit', fontSize: 11 }}>
+    <div style={{ overflowX: 'auto', marginTop: 4, maxWidth: '100%' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'inherit', fontSize: 11, tableLayout: 'fixed' }}>
         <thead>
           <tr style={{ borderBottom: `2px solid ${accentColor}` }}>
             {data.headers.map((h, ci) => (
-              <th key={ci} style={{ textAlign: 'left', padding: '8px 10px' }}>
+              <th key={ci} style={{ textAlign: 'left', padding: '6px 8px', wordBreak: 'break-word', minWidth: 40 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span contentEditable suppressContentEditableWarning onBlur={e => updateHeader(ci, e.currentTarget.textContent || '')}
-                    style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.15em', textTransform: 'uppercase', color: '#111', outline: 'none', flex: 1, cursor: 'text' }}>{h}</span>
+                    style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: '#111', outline: 'none', flex: 1, cursor: 'text', wordBreak: 'break-word' }}>{h}</span>
                   {data.headers.length > 1 && (
                     <button onClick={() => removeCol(ci)} className="pdf-hidden"
-                      style={{ width: 14, height: 14, borderRadius: 3, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#DC2626', padding: 0 }}>×</button>
+                      style={{ width: 14, height: 14, borderRadius: 3, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#DC2626', padding: 0, flexShrink: 0 }}>×</button>
                   )}
                 </div>
               </th>
             ))}
-            <th style={{ width: 28, padding: '4px' }} className="pdf-hidden">
-              <button onClick={addCol} style={{ width: 22, height: 22, borderRadius: 4, background: `${accentColor}18`, border: `1px dashed ${accentColor}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: accentColor, padding: 0 }}>
-                <Plus size={10} />
+            <th style={{ width: 24, padding: '4px' }} className="pdf-hidden">
+              <button onClick={addCol} style={{ width: 20, height: 20, borderRadius: 4, background: `${accentColor}18`, border: `1px dashed ${accentColor}`, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: accentColor, padding: 0 }}>
+                <Plus size={9} />
               </button>
             </th>
           </tr>
@@ -512,21 +526,21 @@ function InteractiveTable({ block, co, onUpdateTable, blockStyles }: {
           {data.rows.map((row, ri) => (
             <tr key={ri} style={{ borderBottom: '1px solid #f0f0f0', background: ri % 2 ? '#fafafa' : '#fff' }}>
               {row.map((cell, ci) => (
-                <td key={ci} style={{ padding: '9px 10px' }}>
+                <td key={ci} style={{ padding: '7px 8px', wordBreak: 'break-word' }}>
                   <span contentEditable suppressContentEditableWarning onBlur={e => updateCell(ri, ci, e.currentTarget.textContent || '')}
-                    style={{ color: '#555', outline: 'none', display: 'block', minWidth: 40, cursor: 'text' }}>{cell}</span>
+                    style={{ color: '#555', outline: 'none', display: 'block', cursor: 'text', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{cell}</span>
                 </td>
               ))}
-              <td style={{ padding: '4px', width: 28 }} className="pdf-hidden">
-                <button onClick={() => removeRow(ri)} style={{ width: 22, height: 22, borderRadius: 4, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', padding: 0 }}>
-                  <Trash2 size={9} />
+              <td style={{ padding: '4px', width: 24 }} className="pdf-hidden">
+                <button onClick={() => removeRow(ri)} style={{ width: 20, height: 20, borderRadius: 4, background: '#FEE2E2', border: '1px solid #FCA5A5', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626', padding: 0 }}>
+                  <Trash2 size={8} />
                 </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button onClick={addRow} className="pdf-hidden" style={{ marginTop: 6, width: '100%', padding: '6px', borderRadius: 5, background: `${accentColor}10`, border: `1px dashed ${accentColor}50`, cursor: 'pointer', color: accentColor, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+      <button onClick={addRow} className="pdf-hidden" style={{ marginTop: 6, width: '100%', padding: '5px', borderRadius: 5, background: `${accentColor}10`, border: `1px dashed ${accentColor}50`, cursor: 'pointer', color: accentColor, fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
         <Plus size={10} /> Ajouter une ligne
       </button>
     </div>
